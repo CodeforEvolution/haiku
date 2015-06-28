@@ -609,6 +609,7 @@ void	set_signal_stack(void* base, size_t size);
 
 /* WARNING: Experimental API! */
 
+/* Event Queues & Object State Monitoring */
 enum {
 	B_OBJECT_TYPE_FD		= 0,
 	B_OBJECT_TYPE_SEMAPHORE	= 1,
@@ -628,9 +629,11 @@ enum {
 
 	B_EVENT_ACQUIRE_SEMAPHORE	= 0x0001,	/* semaphore can be acquired */
 
-	B_EVENT_INVALID				= 0x1000	/* FD/port/sem/thread ID not or
+	B_EVENT_INVALID				= 0x1000,	/* FD/port/sem/thread ID not or
 											   no longer valid (e.g. has been
 											   close/deleted) */
+
+	B_EVENT_ONE_SHOT			= 0x0100	/* Delete event after delivery */
 };
 
 typedef struct object_wait_info {
@@ -651,6 +654,24 @@ extern ssize_t		wait_for_objects(object_wait_info* infos, int numInfos);
 extern ssize_t		wait_for_objects_etc(object_wait_info* infos, int numInfos,
 						uint32 flags, bigtime_t timeout);
 
+enum {
+	B_EVENT_SELECT		= 0x01000000,
+	B_EVENT_MODIFY		= 0x02000000,
+	B_EVENT_DESELECT	= 0x04000000
+};
+
+typedef struct event_wait_info {
+	int32		object;						/* ID of the object */
+	uint16		type;						/* Type of the object */
+	int32		events;						/* Mask of events to watch */
+	void*		user_data;					/* Store whatever you need here */
+} event_wait_info;
+
+extern int		event_queue_create(int openFlags);
+extern status_t	event_queue_select(int queue, event_wait_info* infos,
+					int numInfos);
+extern ssize_t	event_queue_wait(int queue, event_wait_info* infos,
+					int numInfos, uint32 flags, bigtime_t timeout);
 
 #ifdef __cplusplus
 }
