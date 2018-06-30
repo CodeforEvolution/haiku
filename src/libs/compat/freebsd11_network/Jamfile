@@ -47,6 +47,7 @@ KernelStaticLibrary libfreebsd11_network.a :
 	taskqueue.c
 	unit.c
 	Unit.cpp
+	usb_ethernet.c
 	;
 
 rule MIIHeaderGen
