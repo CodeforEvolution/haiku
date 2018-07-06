@@ -15,7 +15,6 @@
 #include <machine/atomic.h>
 #include <machine/cpufunc.h>
 
-
 #define MA_OWNED		0x1
 #define MA_NOTOWNED		0x2
 #define MA_RECURSED		0x4
@@ -24,6 +23,7 @@
 #define mtx_assert(mtx, what)
 
 #define MTX_DEF				0x0000
+#define MTX_SPIN			0x0001
 #define MTX_RECURSE			0x0004
 #define MTX_QUIET			0x40000
 #define MTX_DUPOK			0x400000
@@ -37,11 +37,9 @@
 
 extern struct mtx Giant;
 
-
 void mtx_init(struct mtx*, const char*, const char*, int);
 void mtx_sysinit(void *arg);
 void mtx_destroy(struct mtx*);
-
 
 static inline void
 mtx_lock(struct mtx* mutex)
@@ -88,6 +86,29 @@ mtx_owned(struct mtx* mutex)
 
 	return 0;
 }
+
+extern cpu_status former;
+
+static inline void
+mtx_lock_spin(struct mtx* mutex)
+{
+	if (mutex->type == MTX_SPIN) {
+		former = disable_interrupts();
+		acquire_spinlock((spinlock*)mutex->u.spinlock);
+	}
+}
+
+static inline void
+mtx_unlock_spin(struct mtx* mutex)
+{
+	if (mutex->type == MTX_SPIN) {
+		release_spinlock((spinlock*)mutex->u.spinlock);
+		restore_interrupts(former);
+	}
+}
+
+#define	thread_lock(td) mtx_lock_spin((td)->td_lock)
+#define	thread_unlock(td) mtx_unlock_spin((td)->td_lock)
 
 
 struct mtx_args {

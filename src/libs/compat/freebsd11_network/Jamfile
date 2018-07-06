@@ -33,6 +33,8 @@ KernelStaticLibrary libfreebsd11_network.a :
 	fbsd_mii_physubr.c
 	fbsd_subr_sbuf.c
 	fbsd_time.c
+	fbsd_usb_ethernet.c
+	fbsd_usb_process.c
 	firmware.c
 	if.c
 	libkern.c
@@ -47,7 +49,6 @@ KernelStaticLibrary libfreebsd11_network.a :
 	taskqueue.c
 	unit.c
 	Unit.cpp
-	usb_ethernet.c
 	;
 
 rule MIIHeaderGen

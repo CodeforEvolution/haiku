@@ -19,6 +19,8 @@
 /* The version this compatibility layer is based on */
 #define __FreeBSD_version 1101000
 
+#define	MAXCOMLEN	19
+
 #define MAXBSIZE	0x10000
 
 #define PAGE_SHIFT	12

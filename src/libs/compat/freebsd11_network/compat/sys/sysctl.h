@@ -91,6 +91,7 @@ sysctl_add_oid(struct sysctl_ctx_list *clist, void *parent, int nbr,
 	return NULL;
 }
 
+#define	SYSCTL_OUT_STR(r, p)	(r->oldfunc)(r, p, strlen(p) + 1)
 
 static inline int sysctl_handle_long(SYSCTL_HANDLER_ARGS) { return -1; }
 static inline int sysctl_handle_opaque(SYSCTL_HANDLER_ARGS) { return -1; }
@@ -164,6 +165,8 @@ SYSCTL_CHILDREN(void *ptr)
 	return NULL;
 }
 
+#define	SYSCTL_NODE_CHILDREN(parent, name) \
+	sysctl__##parent##_##name.oid_children
 
 #define SYSCTL_STATIC_CHILDREN(...) NULL
 
