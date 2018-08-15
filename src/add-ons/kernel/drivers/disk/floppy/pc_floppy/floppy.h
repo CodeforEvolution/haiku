@@ -14,19 +14,12 @@
 #include <KernelExport.h>
 
 // TODO: switch to native lock.
-#ifdef __HAIKU__
 #include <lock.h>
 typedef recursive_lock lock;
 #define new_lock recursive_lock_init
 #define free_lock recursive_lock_destroy
 #define	LOCK(l)		recursive_lock_lock(&l);
 #define	UNLOCK(l)	recursive_lock_unlock(&l);
-#else
-#ifndef _IMPEXP_KERNEL
-#define _IMPEXP_KERNEL
-#endif
-#include "lock.h"
-#endif
 
 #define FLO "floppy: "
 #if defined(DEBUG) && DEBUG > 0

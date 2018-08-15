@@ -41,7 +41,7 @@
 /* compile time configuration */
 
 /* enables support for more than one drive */
-#define NEW_DEV_LAYOUT
+#define NEW_DEV_LAYOUT 1
 /* don't symlink raw -> 0/raw */
 #define NO_SYMLINK_OLD
 /* publish the first drive as floppy/raw */
