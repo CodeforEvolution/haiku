@@ -14,6 +14,7 @@
 #include <Button.h>
 #include <CheckBox.h>
 #include <TextControl.h>
+#include <LayoutBuilder.h>
 #include <MenuField.h>
 #include <PopUpMenu.h>
 #include <MenuItem.h>
@@ -247,212 +248,148 @@ RecorderWindow::InitWindow()
 		fRecorder->SetAcceptedFormat(output_format);
 
 		//	Create the window header with controls
-		BRect r(Bounds());
-		r.bottom = r.top + 175;
-		BBox *background = new BBox(r, "_background",
-			B_FOLLOW_LEFT_RIGHT	| B_FOLLOW_TOP, B_WILL_DRAW
+		BBox *background = new BBox("_background", B_WILL_DRAW
 			| B_FRAME_EVENTS | B_NAVIGABLE_JUMP, B_NO_BORDER);
 
-		AddChild(background);
+		//AddChild(background);
 
-		r = background->Bounds();
-		r.left = 0;
-		r.right = r.left + 38;
-		r.bottom = r.top + 104;
-		fVUView = new VUView(r, B_FOLLOW_LEFT|B_FOLLOW_TOP);
-		background->AddChild(fVUView);
+		fVUView = new VUView();
+		//background->AddChild(fVUView);
 
-		r = background->Bounds();
-		r.left = r.left + 40;
-		r.bottom = r.top + 104;
-		fScopeView = new ScopeView(r, B_FOLLOW_LEFT_RIGHT|B_FOLLOW_TOP);
-		background->AddChild(fScopeView);
+		fScopeView = new ScopeView();
+		//background->AddChild(fScopeView);
 
-		r = background->Bounds();
-		r.left = 2;
-		r.right -= 26;
-		r.top = 115;
-		r.bottom = r.top + 30;
-		fTrackSlider = new TrackSlider(r, "trackSlider", new BMessage(POSITION_CHANGED),
-			B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP);
-		background->AddChild(fTrackSlider);
+		fTrackSlider = new TrackSlider("trackSlider",
+			new BMessage(POSITION_CHANGED));
+		//background->AddChild(fTrackSlider);
 
 		BRect buttonRect;
 
 		//	Button for rewinding
 		buttonRect = BRect(BPoint(0,0), kSkipButtonSize);
-		buttonRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-7, 25));
 		fRewindButton = new TransportButton(buttonRect, B_TRANSLATE("Rewind"),
 			kSkipBackBitmapBits, kPressedSkipBackBitmapBits,
 			kDisabledSkipBackBitmapBits, new BMessage(REWIND));
-		background->AddChild(fRewindButton);
+		//background->AddChild(fRewindButton);
 
 		//	Button for stopping recording or playback
 		buttonRect = BRect(BPoint(0,0), kStopButtonSize);
-		buttonRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-48, 25));
 		fStopButton = new TransportButton(buttonRect, B_TRANSLATE("Stop"),
 			kStopButtonBitmapBits, kPressedStopButtonBitmapBits,
 			kDisabledStopButtonBitmapBits, new BMessage(STOP));
-		background->AddChild(fStopButton);
+		//background->AddChild(fStopButton);
 
 		//	Button for starting playback of selected sound
 		BRect playRect(BPoint(0,0), kPlayButtonSize);
-		playRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-82, 25));
 		fPlayButton = new PlayPauseButton(playRect, B_TRANSLATE("Play"),
 			new BMessage(PLAY), new BMessage(PLAY_PERIOD), ' ', 0);
-		background->AddChild(fPlayButton);
+		//background->AddChild(fPlayButton);
 
 		//	Button for forwarding
 		buttonRect = BRect(BPoint(0,0), kSkipButtonSize);
-		buttonRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-133, 25));
 		fForwardButton = new TransportButton(buttonRect, B_TRANSLATE("Forward"),
 			kSkipForwardBitmapBits, kPressedSkipForwardBitmapBits,
 			kDisabledSkipForwardBitmapBits, new BMessage(FORWARD));
-		background->AddChild(fForwardButton);
+		//background->AddChild(fForwardButton);
 
 		//	Button to start recording (or waiting for sound)
 		buttonRect = BRect(BPoint(0,0), kRecordButtonSize);
-		buttonRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-174, 25));
 		fRecordButton = new RecordButton(buttonRect, B_TRANSLATE("Record"),
 			new BMessage(RECORD), new BMessage(RECORD_PERIOD));
-		background->AddChild(fRecordButton);
+		//background->AddChild(fRecordButton);
 
 		//	Button for saving selected sound
 		buttonRect = BRect(BPoint(0,0), kDiskButtonSize);
-		buttonRect.OffsetTo(background->Bounds().LeftBottom() - BPoint(-250, 21));
 		fSaveButton = new TransportButton(buttonRect, B_TRANSLATE("Save"),
 			kDiskButtonBitmapsBits, kPressedDiskButtonBitmapsBits,
 			kDisabledDiskButtonBitmapsBits, new BMessage(SAVE));
 		fSaveButton->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
-		background->AddChild(fSaveButton);
+		//background->AddChild(fSaveButton);
 
 		//	Button Loop
 		buttonRect = BRect(BPoint(0,0), kArrowSize);
-		buttonRect.OffsetTo(background->Bounds().RightBottom() - BPoint(23, 48));
 		fLoopButton = new DrawButton(buttonRect, B_TRANSLATE("Loop"),
 			kLoopArrowBits, kArrowBits, new BMessage(LOOP));
 		fLoopButton->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
 		fLoopButton->SetTarget(this);
-		background->AddChild(fLoopButton);
+		//background->AddChild(fLoopButton);
 
 		buttonRect = BRect(BPoint(0,0), kSpeakerIconBitmapSize);
-		buttonRect.OffsetTo(background->Bounds().RightBottom() - BPoint(121, 17));
 		SpeakerView *speakerView = new SpeakerView(buttonRect,
 			B_FOLLOW_LEFT | B_FOLLOW_TOP);
 		speakerView->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
-		background->AddChild(speakerView);
+		//background->AddChild(speakerView);
 
 		buttonRect = BRect(BPoint(0,0), BPoint(84, 19));
-		buttonRect.OffsetTo(background->Bounds().RightBottom() - BPoint(107, 20));
 		fVolumeSlider = new VolumeSlider(buttonRect, "volumeSlider",
 			B_FOLLOW_LEFT | B_FOLLOW_TOP);
 		fVolumeSlider->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
-		background->AddChild(fVolumeSlider);
+		//background->AddChild(fVolumeSlider);
 
 		// Button to mask/see sounds list
 		buttonRect = BRect(BPoint(0,0), kUpDownButtonSize);
-		buttonRect.OffsetTo(background->Bounds().RightBottom() - BPoint(21, 25));
 		fUpDownButton = new UpDownButton(buttonRect, new BMessage(VIEW_LIST));
 		fUpDownButton->SetResizingMode(B_FOLLOW_RIGHT | B_FOLLOW_TOP);
-		background->AddChild(fUpDownButton);
+		//background->AddChild(fUpDownButton);
 
-		r = Bounds();
-		r.top = background->Bounds().bottom + 1;
-		fBottomBox = new BBox(r, "bottomBox", B_FOLLOW_ALL);
+		fBottomBox = new BBox("bottomBox");
 		fBottomBox->SetBorder(B_NO_BORDER);
-		AddChild(fBottomBox);
+		//AddChild(fBottomBox);
 
 		//	The actual list of recorded sounds (initially empty) sits
 		//	below the header with the controls.
-		r = fBottomBox->Bounds();
-		r.left += 190;
-		r.InsetBy(10, 10);
-		r.left -= 10;
-		r.top += 4;
-		r.right -= B_V_SCROLL_BAR_WIDTH;
-		r.bottom -= 25;
-		fSoundList = new SoundListView(r, B_TRANSLATE("Sound List"),
-			B_FOLLOW_ALL);
+		fSoundList = new SoundListView(B_TRANSLATE("Sound List"));
 		fSoundList->SetSelectionMessage(new BMessage(SOUND_SELECTED));
 		fSoundList->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
-		BScrollView *scroller = new BScrollView("scroller", fSoundList,
-			B_FOLLOW_ALL, 0, false, true, B_FANCY_BORDER);
-		fBottomBox->AddChild(scroller);
+		BScrollView *scroller = new BScrollView("scroller", fSoundList, 0,
+			false, true, B_FANCY_BORDER);
+		//fBottomBox->AddChild(scroller);
 
-		r = fBottomBox->Bounds();
-		r.right = r.left + 190;
-		r.bottom -= 25;
-		r.InsetBy(10, 8);
-		r.top -= 1;
-		fFileInfoBox = new BBox(r, "fileinfo", B_FOLLOW_LEFT);
+		fFileInfoBox = new BBox("fileinfo");
 		fFileInfoBox->SetLabel(B_TRANSLATE("File info"));
 
 		fFileInfoBox->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
 		BFont font = be_plain_font;
 		font.SetSize(font.Size() * 0.92f);
-		font_height height;
-		font.GetHeight(&height);
-		float fontHeight = height.ascent + height.leading + height.descent;
 
-		r = fFileInfoBox->Bounds();
-		r.left = 8;
-		r.top = fontHeight + 6;
-		r.bottom = r.top + fontHeight + 3;
-		r.right -= 10;
-		fFilename = new BStringView(r, "filename", B_TRANSLATE("File name:"));
-		fFileInfoBox->AddChild(fFilename);
+		fFilename = new BStringView("filename", B_TRANSLATE("File name:"));
+		//fFileInfoBox->AddChild(fFilename);
 		fFilename->SetFont(&font, B_FONT_SIZE);
 		fFilename->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fFormat = new BStringView(r, "format", B_TRANSLATE("Format:"));
-		fFileInfoBox->AddChild(fFormat);
+		fFormat = new BStringView("format", B_TRANSLATE("Format:"));
+		//fFileInfoBox->AddChild(fFormat);
 		fFormat->SetFont(&font, B_FONT_SIZE);
 		fFormat->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fCompression = new BStringView(r, "compression",
+		fCompression = new BStringView("compression",
 			B_TRANSLATE("Compression:"));
-		fFileInfoBox->AddChild(fCompression);
+		//fFileInfoBox->AddChild(fCompression);
 		fCompression->SetFont(&font, B_FONT_SIZE);
 		fCompression->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fChannels = new BStringView(r, "channels", B_TRANSLATE("Channels:"));
-		fFileInfoBox->AddChild(fChannels);
+		fChannels = new BStringView("channels", B_TRANSLATE("Channels:"));
+		//fFileInfoBox->AddChild(fChannels);
 		fChannels->SetFont(&font, B_FONT_SIZE);
 		fChannels->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fSampleSize = new BStringView(r, "samplesize",
+		fSampleSize = new BStringView("samplesize",
 			B_TRANSLATE("Sample size:"));
-		fFileInfoBox->AddChild(fSampleSize);
+		//fFileInfoBox->AddChild(fSampleSize);
 		fSampleSize->SetFont(&font, B_FONT_SIZE);
 		fSampleSize->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fSampleRate = new BStringView(r, "samplerate",
+		fSampleRate = new BStringView("samplerate",
 			B_TRANSLATE("Sample rate:"));
-		fFileInfoBox->AddChild(fSampleRate);
+		//fFileInfoBox->AddChild(fSampleRate);
 		fSampleRate->SetFont(&font, B_FONT_SIZE);
 		fSampleRate->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
 
-		r.top += fontHeight;
-		r.bottom = r.top + fontHeight + 3;
-		fDuration = new BStringView(r, "duration", B_TRANSLATE("Duration:"));
-		fFileInfoBox->AddChild(fDuration);
+		fDuration = new BStringView("duration", B_TRANSLATE("Duration:"));
+		//fFileInfoBox->AddChild(fDuration);
 		fDuration->SetFont(&font, B_FONT_SIZE);
 		fDuration->SetHighColor(ui_color(B_PANEL_TEXT_COLOR));
-
-		fFileInfoBox->ResizeTo(fFileInfoBox->Frame().Width(),
-			r.bottom + fontHeight / 2.0f);
-		fDeployedHeight = MIN_HEIGHT + fFileInfoBox->Bounds().Height() + 40.0f;
 
 		//	Input selection lists all available physical inputs that produce
 		//	buffers with B_MEDIA_RAW_AUDIO format data.
@@ -491,26 +428,59 @@ RecorderWindow::InitWindow()
 		}
 
 		//	Create the actual widget
-		r = fFileInfoBox->Bounds();
-		r.top = r.bottom + 2;
-		r.bottom = r.top + 18;
-		r.InsetBy(10, 10);
-		fInputField = new BMenuField(r, "Input", B_TRANSLATE("Input:"), popup);
+		fInputField = new BMenuField("Input", B_TRANSLATE("Input:"), popup);
 		fInputField->SetDivider(fInputField->StringWidth(B_TRANSLATE("Input:"))
 			+ 4.0f);
-		fBottomBox->AddChild(fInputField);
+		//fBottomBox->AddChild(fInputField);
 
-		fBottomBox->AddChild(fFileInfoBox);
+		//fBottomBox->AddChild(fFileInfoBox);
 
 		fBottomBox->Hide();
-		CalcSizes(MIN_WIDTH, MIN_HEIGHT);
-		ResizeTo(Frame().Width(), MIN_HEIGHT);
+		//CalcSizes(MIN_WIDTH, MIN_HEIGHT);
+		//ResizeTo(Frame().Width(), MIN_HEIGHT);
 
 		popup->Superitem()->SetLabel(selected_name);
 
 		// Make sure the save panel is happy.
 		fSavePanel = new BFilePanel(B_SAVE_PANEL);
 		fSavePanel->SetTarget(this);
+		
+		BLayoutBuilder::Group<>(background, B_VERTICAL)
+			.Add(fVUView)
+			.Add(fScopeView)
+			.Add(fTrackSlider)
+			.Add(fRewindButton)
+			.Add(fStopButton)
+			.Add(fPlayButton)
+			.Add(fForwardButton)
+			.Add(fRecordButton)
+			.Add(fSaveButton)
+			.Add(fLoopButton)
+			.Add(speakerView)
+			.Add(fVolumeSlider)
+			.Add(fUpDownButton)
+		.End();
+			
+		BLayoutBuilder::Group<>(fBottomBox, B_VERTICAL)
+			.Add(scroller)
+			.Add(fInputField)
+			.Add(fFileInfoBox)
+		.End();
+			
+		BLayoutBuilder::Group<>(fFileInfoBox, B_VERTICAL)
+			.Add(fFilename)
+			.Add(fFormat)
+			.Add(fCompression)
+			.Add(fChannels)
+			.Add(fSampleSize)
+			.Add(fSampleRate)
+			.Add(fDuration)
+		.End();
+		
+		BLayoutBuilder::Group<>(this, B_VERTICAL)
+			.Add(background)
+			.Add(fBottomBox)
+		.End();
 	}
 	catch (...) {
 		goto bad_mojo;

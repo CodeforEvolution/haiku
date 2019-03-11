@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <LayoutBuilder.h>
 #include <MediaDefs.h>
 #include <Screen.h>
 #include <StackOrHeapArray.h>
@@ -21,12 +22,14 @@ const rgb_color back_color = {12, 36, 12};
 const rgb_color low_color = {40, 120, 40};
 const rgb_color high_color = {240, 255, 240};
 
-VUView::VUView(BRect rect, uint32 resizeFlags)
-	: BView(rect, "vumeter", resizeFlags, B_WILL_DRAW),
+VUView::VUView()
+	: BView("vumeter", B_WILL_DRAW),
 	fThreadId(-1),
 	fBitmap(NULL),
 	fQuitting(false)
 {
+	BRect rect = BRect(0, 0, 100, 100);
+	
 	rect.OffsetTo(B_ORIGIN);
 	fLevelCount = int(rect.Height()) / 2;
 	fChannels = 2;
@@ -35,12 +38,16 @@ VUView::VUView(BRect rect, uint32 resizeFlags)
 		fCurrentLevels[channel] = 0;
 	fBitmap = new BBitmap(rect, BScreen().ColorSpace(), true);
 	
-	
 	memset(fBitmap->Bits(), 0, fBitmap->BitsLength());
 	
-	fBitmapView = new BView(rect, "bitmapView", B_FOLLOW_LEFT|B_FOLLOW_TOP, 
+	fBitmapView = new BView(rect, "bitmapView", B_FOLLOW_LEFT | B_FOLLOW_TOP,
 		B_WILL_DRAW);
-	fBitmap->AddChild(fBitmapView);
+		
+	BLayoutBuilder::Group<>(this)
+		.Add(fBitmapView)
+	.End();
+
+	//fBitmap->AddChild(fBitmapView);
 }
 
 
@@ -149,21 +156,24 @@ VUView::_RenderLoop()
 		}
 		
 		/* rendering */
-		fBitmap->Lock();
-		fBitmapView->BeginLineArray(fLevelCount * 2);
-		BPoint start1, end1, start2, end2;
-		start1.x = 3;
-		start2.x = 22;
-		end1.x = 16;
-		end2.x = 35;
-		start1.y = end1.y = start2.y = end2.y = 2;
-		for (int32 i = fLevelCount - 1; i >= 0; i--) {
-			fBitmapView->AddLine(start1, end1, levels[i][0]);
-			fBitmapView->AddLine(start2, end2, levels[i][1]);
-			start1.y = end1.y = start2.y = end2.y = end2.y + 2;
+		if (fBitmap->Lock())
+		{
+			fBitmapView->BeginLineArray(fLevelCount * 2);
+			BPoint start1, end1, start2, end2;
+			start1.x = 3;
+			start2.x = 22;
+			end1.x = 16;
+			end2.x = 35;
+			start1.y = end1.y = start2.y = end2.y = 2;
+			for (int32 i = fLevelCount - 1; i >= 0; i--) {
+				fBitmapView->AddLine(start1, end1, levels[i][0]);
+				fBitmapView->AddLine(start2, end2, levels[i][1]);
+				start1.y = end1.y = start2.y = end2.y = end2.y + 2;
+			}
+			fBitmapView->EndLineArray();
+			fBitmapView->Unlock();
+			fBitmap->Unlock();
 		}
-		fBitmapView->EndLineArray();
-		fBitmap->Unlock();
 	
 		/* ask drawing */
 	

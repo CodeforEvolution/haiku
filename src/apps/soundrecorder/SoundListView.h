@@ -12,7 +12,7 @@
 
 class SoundListView : public BListView {
 public:
-	SoundListView(const BRect & area, const char * name, uint32 resize);
+	SoundListView(const char * name);
 	virtual	~SoundListView();
 
 	virtual void Draw(BRect updateRect);

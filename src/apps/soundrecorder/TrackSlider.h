@@ -31,7 +31,7 @@ public:
 class TrackSlider : public BControl
 {
 public:
-	TrackSlider(BRect rect, const char* title, BMessage *msg, uint32 resizeFlags);
+	TrackSlider(const char* title, BMessage *msg);
 	~TrackSlider();
 	void AttachedToWindow();
 	virtual void Draw(BRect);

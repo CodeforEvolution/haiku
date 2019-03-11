@@ -16,7 +16,7 @@
 class VUView : public BView
 {
 public:
-	VUView(BRect rect, uint32 resizeFlags);
+	VUView();
 	~VUView();
 	void AttachedToWindow();
 	void DetachedFromWindow();

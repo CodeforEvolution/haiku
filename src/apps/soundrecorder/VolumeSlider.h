@@ -15,7 +15,7 @@
 class VolumeSlider : public BControl
 {
 public:
-	VolumeSlider(BRect rect, const char* title, uint32 resizeFlags);
+	VolumeSlider(BRect frame, const char* title, uint32 resizeFlags);
 	~VolumeSlider();
 	virtual void Draw(BRect);
 	virtual void MouseMoved(BPoint point, uint32 transit, const BMessage *message);
