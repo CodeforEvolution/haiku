@@ -24,8 +24,8 @@
 #define TRACE(x...)
 #endif
 
-ScopeView::ScopeView(BRect rect, uint32 resizeFlags)
-	: BView(rect, "scope", resizeFlags, B_WILL_DRAW | B_FRAME_EVENTS),
+ScopeView::ScopeView()
+	: BView("scope", B_WILL_DRAW | B_FRAME_EVENTS),
 	fThreadId(-1),
 	fBitmap(NULL),
 	fBitmapView(NULL),

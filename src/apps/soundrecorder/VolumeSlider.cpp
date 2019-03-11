@@ -14,8 +14,8 @@
 #define VOLUME_CHANGED 'vlcg'
 #define RATIO 2.0f
 
-VolumeSlider::VolumeSlider(BRect rect, const char *title, uint32 resizeFlags)
-	: BControl(rect, "slider", NULL, new BMessage(VOLUME_CHANGED),
+VolumeSlider::VolumeSlider(BRect frame, const char *title, uint32 resizeFlags)
+	: BControl(frame, "slider", NULL, new BMessage(VOLUME_CHANGED),
 		resizeFlags, B_WILL_DRAW),
 	fLeftBitmap(BRect(0, 0, kLeftVolumeWidth - 1, kLeftVolumeHeight - 1),
 		B_CMAP8),

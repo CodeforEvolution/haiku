@@ -16,7 +16,7 @@
 class ScopeView : public BView
 {
 public:
-	ScopeView(BRect rect, uint32 resizeFlags);
+	ScopeView();
 	~ScopeView();
 	void AttachedToWindow();
 	void DetachedFromWindow();

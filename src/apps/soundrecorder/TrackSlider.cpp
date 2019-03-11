@@ -13,11 +13,9 @@
 #include "TrackSlider.h"
 #include "icon_button.h"
 
-TrackSlider::TrackSlider(BRect rect, const char *title, BMessage *msg, 
-	uint32 resizeFlags)
+TrackSlider::TrackSlider(const char *title, BMessage *msg)
 	: 
-	BControl(rect, "slider", NULL, msg, resizeFlags, B_WILL_DRAW 
-		| B_FRAME_EVENTS),
+	BControl("slider", NULL, msg, B_WILL_DRAW | B_FRAME_EVENTS),
 	fLeftTime(0),
 	fRightTime(1000000),
 	fMainTime(0),

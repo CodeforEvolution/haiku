@@ -16,11 +16,9 @@
 #define B_TRANSLATION_CONTEXT "SoundListView"
 
 
-SoundListView::SoundListView(
-	const BRect & area,
-	const char * name,
-	uint32 resize) :
-	BListView(area, name, B_SINGLE_SELECTION_LIST, resize)
+SoundListView::SoundListView(const char * name)
+	:
+	BListView(name, B_SINGLE_SELECTION_LIST)
 {
 }
 
