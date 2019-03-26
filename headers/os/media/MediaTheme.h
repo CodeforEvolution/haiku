@@ -1,9 +1,9 @@
 /*
- * Copyright 2006, Haiku, Inc. All Rights Reserved.
+ * Copyright 2006-2021, Haiku, Inc. All Rights Reserved.
  * Distributed under the terms of the MIT License.
  */
-#ifndef _CONTROL_THEME_H
-#define _CONTROL_THEME_H
+#ifndef _MEDIA_THEME_H
+#define _MEDIA_THEME_H
 
 
 #include <Entry.h>
@@ -29,7 +29,7 @@ class BMediaTheme {
 		static BView* ViewFor(BParameterWeb* web, const BRect* hintRect = NULL,
 			BMediaTheme* usingTheme = NULL);
 
-		static status_t SetPreferredTheme(BMediaTheme* defaultTheme = NULL);
+		static status_t SetPreferredTheme(BMediaTheme* newPreferredTheme = NULL);
 		static BMediaTheme* PreferredTheme();
 
 		virtual	BControl* MakeControlFor(BParameter* control) = 0;
@@ -69,14 +69,14 @@ class BMediaTheme {
 		BMediaTheme(const BMediaTheme& other);
 		BMediaTheme& operator=(const BMediaTheme& other);
 
-		virtual status_t _Reserved_ControlTheme_0(void *);
-		virtual status_t _Reserved_ControlTheme_1(void *);
-		virtual status_t _Reserved_ControlTheme_2(void *);
-		virtual status_t _Reserved_ControlTheme_3(void *);
-		virtual status_t _Reserved_ControlTheme_4(void *);
-		virtual status_t _Reserved_ControlTheme_5(void *);
-		virtual status_t _Reserved_ControlTheme_6(void *);
-		virtual status_t _Reserved_ControlTheme_7(void *);
+		virtual status_t _Reserved_ControlTheme_0(void*);
+		virtual status_t _Reserved_ControlTheme_1(void*);
+		virtual status_t _Reserved_ControlTheme_2(void*);
+		virtual status_t _Reserved_ControlTheme_3(void*);
+		virtual status_t _Reserved_ControlTheme_4(void*);
+		virtual status_t _Reserved_ControlTheme_5(void*);
+		virtual status_t _Reserved_ControlTheme_6(void*);
+		virtual status_t _Reserved_ControlTheme_7(void*);
 
 		char*		fName;
 		char*		fInfo;
@@ -92,9 +92,10 @@ class BMediaTheme {
 
 // Theme add-ons should export these functions:
 #if defined(_BUILDING_THEME_ADDON)
-extern "C" BMediaTheme* make_theme(int32 id, image_id you);
-extern "C" status_t get_theme_at(int32 index, const char** _name,
-	const char** _info, int32* _id);
+	extern "C" BMediaTheme* make_theme(int32 id, image_id you);
+	extern "C" status_t get_theme_at(int32 index, const char** _name,
+		const char** _info, int32* _id);
 #endif	// _BUILDING_THEME_ADDON
 
-#endif	// _CONTROL_THEME_H
+
+#endif	// _MEDIA_THEME_H
