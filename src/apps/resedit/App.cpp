@@ -6,9 +6,10 @@
  *		DarkWyrm <darkwyrm@gmail.com>
  */
 #include "App.h"
-#include "ResWindow.h"
 
 #include <Entry.h>
+
+#include "ResWindow.h"
 
 int
 main(void)
@@ -20,7 +21,8 @@ main(void)
 
 
 App::App(void)
-  :	BApplication("application/x-vnd.Haiku-ResEdit")
+  :
+  BApplication("application/x-vnd.Haiku-ResEdit")
 {
 	fOpenPanel = new BFilePanel();
 }
