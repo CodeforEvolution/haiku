@@ -257,6 +257,7 @@ CharacterWindow::CharacterWindow()
 	menu->SetTargetForItems(this);
 	menuBar->AddItem(menu);
 
+	// "View" menu
 	menu = new BMenu(B_TRANSLATE("View"));
 	menu->AddItem(item = new BMenuItem(B_TRANSLATE("Show private blocks"),
 		new BMessage(kMsgPrivateBlocks)));
@@ -269,8 +270,15 @@ CharacterWindow::CharacterWindow()
 #endif
 	menuBar->AddItem(menu);
 
+	// "Font" menu
 	fFontMenu = _CreateFontMenu();
 	menuBar->AddItem(fFontMenu);
+
+	// "Help" menu
+	menu = new BMenu(B_TRANSLATE("Help"));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("About" B_UTF8_ELLIPSIS),
+		new BMessage(B_ABOUT_REQUESTED)));
+	menuBar->AddItem(menu);
 
 	AddCommonFilter(new EscapeMessageFilter(kMsgClearFilter));
 	AddCommonFilter(new RedirectUpAndDownFilter(fUnicodeBlockView));
@@ -307,6 +315,10 @@ CharacterWindow::MessageReceived(BMessage* message)
 	}
 
 	switch (message->what) {
+		case B_ABOUT_REQUESTED:
+			be_app->PostMessage(message);
+			break;
+
 		case B_COPY:
 			PostMessage(message, fCharacterView);
 			break;

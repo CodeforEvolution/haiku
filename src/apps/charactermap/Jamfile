@@ -2,7 +2,7 @@ SubDir HAIKU_TOP src apps charactermap ;
 
 AddSubDirSupportedPlatforms libbe_test ;
 
-UsePrivateHeaders shared system ;
+UsePrivateHeaders interface shared system ;
 
 Application CharacterMap :
 	CharacterMap.cpp

@@ -1,6 +1,10 @@
 /*
- * Copyright 2009, Axel Dörfler, axeld@pinc-software.de. All rights reserved.
+ * Copyright 2009-2019 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Axel Dörfler, axeld@pinc-software.de
+ *		Jacob Secunda
  */
 
 
@@ -11,16 +15,20 @@
 #include <Application.h>
 #include <Catalog.h>
 
+#include <AboutWindow.h>
+
 #include "CharacterWindow.h"
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "CharacterMap"
 
+const char* kAppName = B_TRANSLATE_SYSTEM_NAME("CharacterMap");
 const char* kSignature = "application/x-vnd.Haiku-CharacterMap";
 
 
 CharacterMap::CharacterMap()
-	: BApplication(kSignature)
+	:
+	BApplication(kSignature)
 {
 }
 
@@ -49,6 +57,24 @@ void
 CharacterMap::MessageReceived(BMessage* message)
 {
 	BApplication::MessageReceived(message);
+}
+
+
+void
+CharacterMap::AboutRequested()
+{
+	const char* authors[] = {
+		"Axel Dörfler",
+		"Jacob Secunda",
+		NULL
+	};
+
+	BAboutWindow* window = new BAboutWindow(kAppName, kSignature);
+	window->AddCopyright(2009, "Haiku, Inc.");
+	window->AddDescription(B_TRANSLATE("A viewer for UTF-8 characters "
+									   "within fonts."));
+	window->AddAuthors(authors);
+	window->Show();
 }
 
 

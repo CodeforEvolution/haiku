@@ -1,8 +1,11 @@
 /*
- * Copyright 2008-2015, Axel Dörfler, axeld@pinc-software.de.
+ * Copyright 2008-2019 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Axel Dörfler, axeld@pinc-software.de
+ *		Jacob Secunda
  */
-
 
 #include "ActivityWindow.h"
 
@@ -20,6 +23,8 @@
 #include <MenuItem.h>
 #include <Path.h>
 #include <Roster.h>
+
+#include <AboutWindow.h>
 
 #include "ActivityMonitor.h"
 #include "ActivityView.h"
@@ -138,9 +143,18 @@ ActivityWindow::ActivityWindow()
 		new BMessage(kMsgShowSettings)));
 
 	menu->AddSeparatorItem();
-	fAlwaysOnTop = new BMenuItem(B_TRANSLATE("Always on top"), new BMessage(kMsgAlwaysOnTop));
+	fAlwaysOnTop = new BMenuItem(B_TRANSLATE("Always on top"),
+		new BMessage(kMsgAlwaysOnTop));
 	_SetAlwaysOnTop(settings.GetBool("always on top", false));
 	menu->AddItem(fAlwaysOnTop);
+
+	menu->SetTargetForItems(this);
+	menuBar->AddItem(menu);
+
+	// "Help" menu
+	menu = new BMenu(B_TRANSLATE("Help"));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("About" B_UTF8_ELLIPSIS),
+		new BMessage(B_ABOUT_REQUESTED)));
 
 	menu->SetTargetForItems(this);
 	menuBar->AddItem(menu);
@@ -164,6 +178,10 @@ ActivityWindow::MessageReceived(BMessage* message)
 		case B_REFS_RECEIVED:
 		case B_SIMPLE_DATA:
 			_MessageDropped(message);
+			break;
+
+		case B_ABOUT_REQUESTED:
+			be_app->PostMessage(message);
 			break;
 
 		case kMsgAddView:
