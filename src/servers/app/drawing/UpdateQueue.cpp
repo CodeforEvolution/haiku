@@ -155,7 +155,7 @@ UpdateQueue::_ExecuteUpdates()
 						int32 count = fUpdateRegion.CountRects();
 						if (count > 0) {
 							TRACE("CopyBackToFront() - rects: %" B_PRId32 "\n", count);
-							// NOTE: not using the BRegion version, since that - 78
+							// NOTE: not using the BRegion version, since that
 							// doesn't take care of leaving out and compositing
 							// the cursor.
 							for (int32 i = 0; i < count; i++)
