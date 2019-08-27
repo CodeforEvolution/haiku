@@ -35,7 +35,7 @@ UpdateQueue::UpdateQueue(HWInterface* interface)
 	fUpdateRegion(),
 	fUpdateExecutor(B_BAD_THREAD_ID),
 	fRetraceSem(B_BAD_SEM_ID),
-	fRefreshDuration(1000000 / 60)
+	fRefreshDuration(0)
 {
 	CALLED();
 	TRACE("this: %p\n", this);
@@ -68,9 +68,14 @@ UpdateQueue::Init()
 	Shutdown();
 
 	fRetraceSem = fInterface->RetraceSemaphore();
-//	fRefreshDuration = fInterface->...
+	
+	display_mode mode;
+	fInterface->GetMode(&mode);
+	
+	fRefreshDuration = 1.0 / ((mode.timing.pixel_clock * 1000.0) /
+		(mode.timing.h_total * mode.timing.v_total));
 
-	TRACE("fRetraceSem: %ld, fRefreshDuration: %lld\n",
+	TRACE("fRetraceSem: %" B_PRId32 ", fRefreshDuration: %" B_PRId64 "\n",
 		fRetraceSem, fRefreshDuration);
 
 	fQuitting = false;
@@ -115,7 +120,7 @@ UpdateQueue::AddRect(const BRect& rect)
 int32
 UpdateQueue::_ExecuteUpdatesEntry(void* cookie)
 {
-	UpdateQueue *gc = (UpdateQueue*)cookie;
+	UpdateQueue* gc = (UpdateQueue*)cookie;
 	return gc->_ExecuteUpdates();
 }
 
@@ -127,14 +132,14 @@ UpdateQueue::_ExecuteUpdates()
 		status_t err;
 		if (fRetraceSem >= 0) {
 			bigtime_t timeout = system_time() + fRefreshDuration * 2;
-//			TRACE("acquire_sem_etc(%lld)\n", timeout);
+//			TRACE("acquire_sem_etc(%" B_PRId64 ")\n", timeout);
 			do {
 				err = acquire_sem_etc(fRetraceSem, 1,
 					B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT, timeout);
 			} while (err == B_INTERRUPTED && !fQuitting);
 		} else {
 			bigtime_t timeout = system_time() + fRefreshDuration;
-//			TRACE("snooze_until(%lld)\n", timeout);
+//			TRACE("snooze_until(%" B_PRId64 ")\n", timeout);
 			do {
 				err = snooze_until(timeout, B_SYSTEM_TIMEBASE);
 			} while (err == B_INTERRUPTED && !fQuitting);
@@ -149,8 +154,8 @@ UpdateQueue::_ExecuteUpdates()
 					if (Lock()) {
 						int32 count = fUpdateRegion.CountRects();
 						if (count > 0) {
-							TRACE("CopyBackToFront() - rects: %ld\n", count);
-							// NOTE: not using the BRegion version, since that
+							TRACE("CopyBackToFront() - rects: %" B_PRId32 "\n", count);
+							// NOTE: not using the BRegion version, since that - 78
 							// doesn't take care of leaving out and compositing
 							// the cursor.
 							for (int32 i = 0; i < count; i++)
