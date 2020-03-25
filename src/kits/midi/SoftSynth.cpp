@@ -12,11 +12,13 @@
  *		Pete Goodeve
  */
 
-#include <MidiRoster.h>
-#include <MidiConsumer.h>
+#include "SoftSynth.h"
+
 #include <Directory.h>
 #include <File.h>
 #include <FindDirectory.h>
+#include <MidiConsumer.h>
+#include <MidiRoster.h>
 #include <Node.h>
 #include <NodeInfo.h>
 #include <Path.h>
@@ -29,7 +31,6 @@
 
 #include "debug.h"
 #include "MidiGlue.h"   // for MAKE_BIGTIME
-#include "SoftSynth.h"
 
 using namespace BPrivate;
 
@@ -46,7 +47,8 @@ struct ReverbSettings {
 
 
 BSoftSynth::BSoftSynth()
-: 	fInitCheck(false),
+	:
+	fInitCheck(false),
 	fSynth(NULL),
 	fSettings(NULL),
 	fSoundPlayer(NULL),
@@ -82,7 +84,7 @@ BSoftSynth::~BSoftSynth()
 bool 
 BSoftSynth::InitCheck()
 {
-	if (!fSynth)
+	if (fSynth == NULL)
 		_Init();
 	return fInitCheck;
 }
@@ -214,7 +216,6 @@ void
 BSoftSynth::FlushInstrumentCache(bool startStopCache)
 {
 	// TODO: we may decide not to support this function because it's weird!
-	
 	UNIMPLEMENTED
 }
 
@@ -222,10 +223,10 @@ BSoftSynth::FlushInstrumentCache(bool startStopCache)
 void 
 BSoftSynth::SetVolume(double volume)
 {
-	if (InitCheck())
-		if (volume >= 0.0) {
+	if (InitCheck()) {
+		if (volume >= 0.0)
 			fluid_synth_set_gain(fSynth, volume);
-		}
+	}
 }
 
 
@@ -258,7 +259,7 @@ BSoftSynth::SamplingRate() const
 status_t 
 BSoftSynth::SetInterpolation(interpolation_mode mode)
 {
-	// not used because our synth uses the same format than the soundplayer
+	// Not used because our synth uses the same format than the soundplayer
 	fInterpMode = mode;
 	return B_OK;
 }
@@ -294,7 +295,7 @@ BSoftSynth::SetReverb(reverb_mode mode)
 		return;
 
 	fReverbMode = mode;
-	if (fSynth) {
+	if (fSynth != NULL) {
 		// We access the table using "mode - 1" because B_REVERB_NONE == 1
 		ReverbSettings *rvb = &gReverbSettings[mode - 1];
 		fluid_synth_set_reverb(fSynth, rvb->room, rvb->damp, rvb->width,
@@ -391,7 +392,7 @@ BSoftSynth::KeyPressure(
 {
 	if (InitCheck()) {
 		snooze_until(MAKE_BIGTIME(time), B_SYSTEM_TIMEBASE);
-		// unavailable
+		fluid_synth_key_pressure(fSynth, channel - 1, note, pressure);
 	}
 }
 
@@ -423,7 +424,7 @@ BSoftSynth::ChannelPressure(uchar channel, uchar pressure, uint32 time)
 {
 	if (InitCheck()) {
 		snooze_until(MAKE_BIGTIME(time), B_SYSTEM_TIMEBASE);
-		//unavailable
+		fluid_synth_channel_pressure(fSynth, channel - 1, pressure);
 	}
 }
 
@@ -445,7 +446,7 @@ BSoftSynth::SystemExclusive(void* data, size_t length, uint32 time)
 {
 	if (InitCheck()) {
 		snooze_until(MAKE_BIGTIME(time), B_SYSTEM_TIMEBASE);
-		// unsupported
+		fluid_synth_sysex(fSynth, dynamic_cast<const char*>(data), static_cast<int>(length), NULL, NULL, NULL, FALSE); 
 	}
 }
 
@@ -514,7 +515,7 @@ BSoftSynth::_Init()
 	fluid_settings_setint(fSettings, (char*)"synth.polyphony", fMaxVoices);
 
 	fSynth = new_fluid_synth(fSettings);
-	if (!fSynth)
+	if (fSynth == NULL)
 		return;
 	
 	err = fluid_synth_sfload(fSynth, fInstrumentsFile, 1); 
