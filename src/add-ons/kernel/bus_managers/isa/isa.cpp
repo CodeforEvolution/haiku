@@ -36,7 +36,7 @@
 
 #define ISA_MODULE_NAME "bus_managers/isa/root/driver_v1"
 
-device_manager_info *pnp;
+device_manager_info* gDeviceManager;
 
 
 static long
@@ -61,6 +61,8 @@ static status_t
 lock_isa_dma_channel(long channel)
 {
 	// ToDo: implement this?!
+	
+	
 	return B_NOT_ALLOWED;
 }
 
@@ -95,8 +97,8 @@ isa_supports_device(device_node *parent)
 {
 	const char *bus;
 
-	// make sure parent is really pnp root
-	if (pnp->get_attr_string(parent, B_DEVICE_BUS, &bus, false))
+	// make sure parent is really the device_manager root
+	if (gDeviceManager->get_attr_string(parent, B_DEVICE_BUS, &bus, false))
 		return B_ERROR;
 
 	if (strcmp(bus, "root"))
@@ -113,11 +115,13 @@ isa_register_device(device_node *parent)
 		// tell where to look for child devices
 		{B_DEVICE_BUS, B_STRING_TYPE, {string: "isa" }},
 		{B_DEVICE_FLAGS, B_UINT32_TYPE,
-			{ui32: B_FIND_CHILD_ON_DEMAND | B_FIND_MULTIPLE_CHILDREN}},
+			{ui32: B_FIND_CHILD_ON_DEMAND |
+				   B_FIND_MULTIPLE_CHILDREN | 
+				   B_KEEP_DRIVER_LOADED}},
 		{}
 	};
 
-	return pnp->register_node(parent, ISA_MODULE_NAME, attrs, NULL, NULL);
+	return gDeviceManager->register_node(parent, ISA_MODULE_NAME, attrs, NULL, NULL);
 }
 
 
@@ -137,7 +141,7 @@ std_ops(int32 op, ...)
 
 
 module_dependency module_dependencies[] = {
-	{ B_DEVICE_MANAGER_MODULE_NAME, (module_info **)&pnp },
+	{ B_DEVICE_MANAGER_MODULE_NAME, (module_info **)&gDeviceManager },
 	{}
 };
 
