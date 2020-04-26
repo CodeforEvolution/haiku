@@ -147,6 +147,7 @@ local sources =
 	ExpressionPromptWindow.cpp
 	SignalDispositionEditWindow.cpp
 	StartTeamWindow.cpp
+	UserAlertWindow.cpp
 	VariableEditWindow.cpp
 	WatchPromptWindow.cpp
 

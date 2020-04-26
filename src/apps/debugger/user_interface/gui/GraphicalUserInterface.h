@@ -14,6 +14,7 @@ class BFilePanel;
 class BHandler;
 class BMessenger;
 class TeamWindow;
+class UserAlertWindow;
 
 
 class GraphicalUserInterface : public UserInterface {
@@ -50,10 +51,11 @@ private:
 			class FilePanelHandler;
 
 private:
-			TeamWindow*			fTeamWindow;
-			BMessenger*			fTeamWindowMessenger;
-			FilePanelHandler*	fFilePanelHandler;
-			BFilePanel*			fFilePanel;
+			TeamWindow*				fTeamWindow;
+			BMessenger*				fTeamWindowMessenger;
+			FilePanelHandler*		fFilePanelHandler;
+			BFilePanel*				fFilePanel;
+			UserAlertWindow*		fUserAlertWindow;
 };
 
 

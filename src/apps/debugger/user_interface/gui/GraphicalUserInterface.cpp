@@ -17,6 +17,7 @@
 #include "MessageCodes.h"
 #include "TeamWindow.h"
 #include "Tracing.h"
+#include "UserAlertWindow.h"
 
 
 // #pragma mark - GraphicalUserInterface::FilePanelHandler
@@ -129,7 +130,8 @@ GraphicalUserInterface::GraphicalUserInterface()
 	fTeamWindow(NULL),
 	fTeamWindowMessenger(NULL),
 	fFilePanelHandler(NULL),
-	fFilePanel(NULL)
+	fFilePanel(NULL),
+	fUserAlertWindow(NULL)
 {
 }
 
@@ -166,9 +168,12 @@ GraphicalUserInterface::Init(Team* team, UserInterfaceListener* listener)
 		// start the message loop
 		fTeamWindow->Hide();
 		fTeamWindow->Show();
+		
+		// Create user alert window
+		fUserAlertWindow = new UserAlertWindow();
 	} catch (...) {
 		// TODO: Notify the user!
-		ERROR("Error: Failed to create team window!\n");
+		ERROR("Error: Failed to create team and alert windows!\n");
 		return B_NO_MEMORY;
 	}
 
@@ -241,17 +246,24 @@ GraphicalUserInterface::NotifyUser(const char* title, const char* message,
 		case USER_NOTIFICATION_INFO:
 			alertType = B_INFO_ALERT;
 			break;
-		case USER_NOTIFICATION_WARNING:
 		case USER_NOTIFICATION_ERROR:
+			alertType = B_STOP_ALERT;
+		case USER_NOTIFICATION_WARNING:
 		default:
 			alertType = B_WARNING_ALERT;
 			break;
 	}
-
-	BAlert* alert = new(std::nothrow) BAlert(title, message, "OK",
-		NULL, NULL, B_WIDTH_AS_USUAL, alertType);
-	if (alert != NULL)
-		alert->Go(NULL);
+	
+	if (fUserAlertWindow->LockLooper()) {
+		fUserAlertWindow->AddAlert(title, message, alertType);
+		fUserAlertWindow->Show();
+		fUserAlertWindow->UnlockLooper();
+	} else {
+		BAlert* alert = new(std::nothrow) BAlert(title, message, "OK",
+			NULL, NULL, B_WIDTH_AS_USUAL, alertType);
+		if (alert != NULL)
+			alert->Go(NULL);
+	}
 
 	// TODO: We need to let the alert run asynchronously, but we shouldn't just
 	// create it and don't care anymore. Maybe an error window, which can
