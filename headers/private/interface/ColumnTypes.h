@@ -55,6 +55,8 @@ public:
 								BStringField(const char* string);
 
 			void				SetString(const char* string);
+			void				SetTo(const char* string);
+									// BeOS compatibility method
 			const char*			String() const;
 			void				SetClippedString(const char* string);
 			bool				HasClippedString() const;
@@ -77,6 +79,10 @@ public:
 								BStringColumn(const char* title, float width,
 									float minWidth, float maxWidth, uint32 truncate,
 									alignment align = B_ALIGN_LEFT);
+								BStringColumn(const char* title, float width,
+									float minWidth, float maxWidth,
+									unsigned long truncate);
+									// BeOS compatibility constructor
 	virtual	void				DrawField(BField* field, BRect rect, BView* parent);
 	virtual	int					CompareFields(BField* field1, BField* field2);
 	virtual	float				GetPreferredWidth(BField* field, BView* parent) const;
@@ -133,6 +139,8 @@ class BSizeField : public BField
 {
 public:
 								BSizeField(off_t size);
+								BSizeField(unsigned long size);
+									// BeOS compatibility constructor
 			void				SetSize(off_t);
 			off_t				Size();
 
@@ -149,6 +157,9 @@ public:
 								BSizeColumn(const char* title, float width,
 									float minWidth, float maxWidth,
 									alignment align = B_ALIGN_LEFT);
+								BSizeColumn(const char* title, float width,
+									float minWidth, float maxWidth);
+									// BeOS compatibility constructor
 	virtual	void				DrawField(BField* field, BRect rect, BView* parent);
 	virtual	int					CompareFields(BField* field1, BField* field2);
 };
@@ -177,6 +188,9 @@ public:
 								BIntegerColumn(const char* title, float width,
 									float minWidth, float maxWidth,
 									alignment align = B_ALIGN_LEFT);
+								BIntegerColumn(const char* title, float width,
+									float minWidth, float maxWidth);
+									// BeOS compatibility constructor
 	virtual	void				DrawField(BField* field, BRect rect, BView* parent);
 	virtual	int					CompareFields(BField* field1, BField* field2);
 };

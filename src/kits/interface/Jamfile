@@ -53,6 +53,8 @@ for architectureObject in [ MultiArchSubDirSetup ] {
 			ColorConversion.cpp
 			ColorControl.cpp
 			ColorMenuItem.cpp
+			ColumnListView.cpp #New
+			ColumnTypes.cpp #New
 			Control.cpp
 			ControlLook.cpp
 			DecorInfo.cpp
@@ -156,10 +158,10 @@ for architectureObject in [ MultiArchSubDirSetup ] {
 			: <$(architecture)>libshared.a
 			;
 
-		StaticLibrary [ MultiArchDefaultGristFiles libcolumnlistview.a ] :
-			ColumnListView.cpp
-			ColumnTypes.cpp
-		;
+#		StaticLibrary [ MultiArchDefaultGristFiles libcolumnlistview.a ] :
+#			ColumnListView.cpp
+#			ColumnTypes.cpp
+#		;
 	}
 }
 

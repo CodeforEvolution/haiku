@@ -752,6 +752,22 @@ BColumnListView::BColumnListView(BRect rect, const char* name,
 }
 
 
+BColumnListView::BColumnListView(BRect rect, const char* name,
+	unsigned long resizingMode, unsigned long flags, border_style border)
+	:
+	BView(rect, name, (uint32)resizingMode,
+		(uint32)flags | B_WILL_DRAW | B_FRAME_EVENTS | B_FULL_UPDATE_ON_RESIZE),
+	fStatusView(NULL),
+	fSelectionMessage(NULL),
+	fSortingEnabled(true),
+	fLatchWidth(kLatchWidth),
+	fBorderStyle(border),
+	fShowingHorizontalScrollBar(true)
+{
+	_Init();
+}
+
+
 BColumnListView::BColumnListView(const char* name, uint32 flags,
 	border_style border, bool showHorizontalScrollbar)
 	:
@@ -1215,6 +1231,13 @@ bool
 BColumnListView::GetRowRect(const BRow* row, BRect* outRect) const
 {
 	return fOutlineView->FindRect(row, outRect);
+}
+
+
+bool
+BColumnListView::GetRowRect(BRow* row, BRect* outRect)
+{
+	return fOutlineView->FindRect(const_cast<const BRow*>(row), outRect);
 }
 
 

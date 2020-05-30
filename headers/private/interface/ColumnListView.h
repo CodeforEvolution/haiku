@@ -251,6 +251,10 @@ public:
 									const char* name, uint32 resizingMode,
 									uint32 flags, border_style = B_NO_BORDER,
 									bool showHorizontalScrollbar = true);
+								BColumnListView(BRect rect, const char* name,
+									unsigned long resizingMode, unsigned long flags,
+									border_style border);
+									// BeOS compatibility constructor
 								BColumnListView(const char* name,
 									uint32 flags, border_style = B_NO_BORDER,
 									bool showHorizontalScrollbar = true);
@@ -316,6 +320,8 @@ public:
 			const BRow*			RowAt(BPoint) const;
 			BRow*				RowAt(BPoint);
 			bool				GetRowRect(const BRow* row, BRect* _rect) const;
+			bool				GetRowRect(BRow* row, BRect* outRect);
+									// BeOS compatibility method
 			bool				FindParent(BRow* row, BRow** _parent,
 									bool *_isVisible) const;
 			int32				IndexOf(BRow* row);

@@ -149,6 +149,13 @@ BStringField::SetString(const char* val)
 }
 
 
+void
+BStringField::SetTo(const char* val)
+{
+	SetString(val);	
+}
+
+
 const char*
 BStringField::String() const
 {
@@ -199,6 +206,15 @@ BStringColumn::BStringColumn(const char* title, float width, float minWidth,
 	:
 	BTitledColumn(title, width, minWidth, maxWidth, align),
 	fTruncate(truncate)
+{
+}
+
+
+BStringColumn::BStringColumn(const char* title, float width, float minWidth,
+	float maxWidth, unsigned long truncate)
+	:
+	BTitledColumn(title, width, minWidth, maxWidth, B_ALIGN_LEFT),
+	fTruncate((uint32)truncate)
 {
 }
 
@@ -386,6 +402,12 @@ BSizeField::BSizeField(off_t size)
 }
 
 
+BSizeField::BSizeField(unsigned long size)
+	:
+	fSize((off_t)size)
+{
+}
+
 void
 BSizeField::SetSize(off_t size)
 {
@@ -407,6 +429,14 @@ BSizeColumn::BSizeColumn(const char* title, float width, float minWidth,
 	float maxWidth, alignment align)
 	:
 	BTitledColumn(title, width, minWidth, maxWidth, align)
+{
+}
+
+
+BSizeColumn::BSizeColumn(const char* title, float width, float minWidth,
+	float maxWidth)
+	:
+	BTitledColumn(title, width, minWidth, maxWidth, B_ALIGN_LEFT)
 {
 }
 
@@ -514,6 +544,13 @@ BIntegerColumn::BIntegerColumn(const char* title, float width, float minWidth,
 	float maxWidth, alignment align)
 	:
 	BTitledColumn(title, width, minWidth, maxWidth, align)
+{
+}
+
+
+BIntegerColumn::BIntegerColumn(const char* title, float width, float minWidth, float maxWidth)
+	:
+	BTitledColumn(title, width, minWidth, maxWidth, B_ALIGN_LEFT)
 {
 }
 
