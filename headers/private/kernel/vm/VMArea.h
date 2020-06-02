@@ -101,6 +101,8 @@ public:
 	char					name[B_OS_NAME_LENGTH];
 	uint32					protection;
 	uint16					wiring;
+	uint32					wire_count;
+	uint32					unwire_count;
 
 private:
 	uint16					memory_type;	// >> shifted by MEMORY_TYPE_SHIFT

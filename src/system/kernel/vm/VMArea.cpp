@@ -30,6 +30,8 @@ VMArea::VMArea(VMAddressSpace* addressSpace, uint32 wiring, uint32 protection)
 	:
 	protection(protection),
 	wiring(wiring),
+	wire_count(0),
+	unwire_count(0),
 	memory_type(0),
 	cache(NULL),
 	no_cache_change(0),
@@ -93,6 +95,8 @@ VMArea::Wire(VMAreaWiredRange* range)
 
 	range->area = this;
 	fWiredRanges.Add(range);
+
+	wire_count++;
 }
 
 
@@ -116,6 +120,8 @@ VMArea::Unwire(VMAreaWiredRange* range)
 	}
 
 	range->waiters.MakeEmpty();
+
+	unwire_count++;
 }
 
 

@@ -5036,12 +5036,15 @@ fill_area_info(struct VMArea* area, area_info* info, size_t size)
 	info->address = (void*)area->Base();
 	info->size = area->Size();
 	info->protection = area->protection;
-	info->lock = B_FULL_LOCK;
+	info->lock = area->wiring;
 	info->team = area->address_space->ID();
+	info->in_count = area->wire_count;
+	info->out_count = area->unwire_count;
+
 	info->copy_count = 0;
-	info->in_count = 0;
-	info->out_count = 0;
-		// TODO: retrieve real values here!
+		// NOTE: The BeBook mentions how this value "can be ignored" as it kept
+		// track of copy-on-write areas that only the system could create. In
+		// other words, do we need this?
 
 	VMCache* cache = vm_area_get_locked_cache(area);
 
