@@ -21,6 +21,8 @@
 #include <Point.h>
 #include <View.h>
 
+#include <WindowPrivate.h>
+
 #include "DesktopSettings.h"
 #include "DrawingEngine.h"
 #include "PatternHandler.h"
@@ -33,6 +35,9 @@
 #else
 #	define STRACE(x) ;
 #endif
+
+
+static const float kResizeKnobSize = 18.0;
 
 
 MacDecorAddOn::MacDecorAddOn(image_id id, const char* name)
@@ -59,9 +64,7 @@ MacDecorator::MacDecorator(DesktopSettings& settings, BRect frame,
 	fFrameHighColor((rgb_color) { 255, 255, 255, 255 }),
 	fFrameMidColor((rgb_color) { 216, 216, 216, 255 }),
 	fFrameLowColor((rgb_color) { 156, 156, 156, 255 }),
-	fFrameLowerColor((rgb_color) { 0, 0, 0, 255 }),
-	fFocusTextColor(settings.UIColor(B_WINDOW_TEXT_COLOR)),
-	fNonFocusTextColor(settings.UIColor(B_WINDOW_INACTIVE_TEXT_COLOR))
+	fFrameLowerColor((rgb_color) { 0, 0, 0, 255 })
 {
 	STRACE(("MacDecorator()\n"));
 	STRACE(("\tFrame (%.1f,%.1f,%.1f,%.1f)\n",
@@ -78,58 +81,33 @@ MacDecorator::~MacDecorator()
 // TODO : Add GetSettings
 
 
-void
-MacDecorator::Draw(BRect updateRect)
-{
-	STRACE(("MacDecorator: Draw(BRect updateRect): "));
-	updateRect.PrintToStream();
-
-	// We need to draw a few things: the tab, the borders,
-	// and the buttons
-	fDrawingEngine->SetDrawState(&fDrawState);
-
-	_DrawFrame(updateRect & fBorderRect);
-	_DrawTabs(updateRect & fTitleBarRect);
-}
-
-
-void
-MacDecorator::Draw()
-{
-	STRACE("MacDecorator::Draw()\n");
-	fDrawingEngine->SetDrawState(&fDrawState);
-
-	_DrawFrame(fBorderRect);
-	_DrawTabs(fTitleBarRect);
-}
-
-
 // TODO : add GetSizeLimits
 
 
-Decorator::Region
-MacDecorator::RegionAt(BPoint where, int32& tab) const
+void
+MacDecorator::UpdateColors(DesktopSettings& settings)
 {
-	// Let the base class version identify hits of the buttons and the tab.
-	Region region = Decorator::RegionAt(where, tab);
-	if (region != REGION_NONE)
-		return region;
+	fFocusTextColor = settings.UIColor(B_WINDOW_TEXT_COLOR);
+	fNonFocusTextColor = settings.UIColor(B_WINDOW_INACTIVE_TEXT_COLOR);
+}
 
-	// check the resize corner
-	if (fTopTab->look == B_DOCUMENT_WINDOW_LOOK && fResizeRect.Contains(where))
-		return REGION_RIGHT_BOTTOM_CORNER;
 
-	// hit-test the borders
-	if (!(fTopTab->flags & B_NOT_RESIZABLE)
-		&& (fTopTab->look == B_TITLED_WINDOW_LOOK
-			|| fTopTab->look == B_FLOATING_WINDOW_LOOK
-			|| fTopTab->look == B_MODAL_WINDOW_LOOK)
-		&& fBorderRect.Contains(where) && !fFrame.Contains(where)) {
-		return REGION_BOTTOM_BORDER;
-			// TODO: Determine the actual border!
+Decorator::Region
+MacDecorator::RegionAt(BPoint where, int32& tabIndex) const
+{
+	tabIndex = -1;
+
+	for (int32 i = 0; i < fTabList.CountItems(); i++) {
+		Decorator::Tab* tab = fTabList.ItemAt(i);
+		if (tab->minimizeRect.Contains(where)) {
+			tabIndex = i;
+			return REGION_MINIMIZE_BUTTON;
+		}
 	}
 
-	return REGION_NONE;
+	// Let the base class version try to identify hits of
+	// the buttons and the tab.
+	return TabDecorator::RegionAt(where, tabIndex);
 }
 
 
@@ -281,13 +259,21 @@ MacDecorator::_DoLayout()
 void
 MacDecorator::_DrawFrame(BRect invalid)
 {
+	STRACE(("_DrawFrame(%f,%f,%f,%f)\n", invalid.left, invalid.top,
+		invalid.right, invalid.bottom));
+
+	// NOTE: the DrawingEngine needs to be locked for the entire
+	// time for the clipping to stay valid for this decorator
+
 	if (fTopTab->look == B_NO_BORDER_WINDOW_LOOK)
 		return;
 
 	if (fBorderWidth <= 0)
 		return;
 
+	// Draw the border frame
 	BRect r = fBorderRect;
+	//BRect r = BRect(fTopBorder.LeftTop(), fBottomBorder.RightBottom());
 	switch (fTopTab->look) {
 		case B_TITLED_WINDOW_LOOK:
 		case B_DOCUMENT_WINDOW_LOOK:
@@ -391,7 +377,7 @@ MacDecorator::_DrawFrame(BRect invalid)
 				} else {
 					// Some odd stuff here where the title bar is melded into the
 					// window border so that the sides are drawn into the title
-					// so we draw this bottom up 
+					// so we draw this bottom up
 					offset = topleftpt;
 					pt2 = toprightpt;
 
@@ -474,6 +460,11 @@ MacDecorator::_DrawFrame(BRect invalid)
 				fDrawingEngine->StrokeLine(r.LeftTop(), r.RightTop(),
 					inactive);
 			}
+			break;
+		}
+		case B_FLOATING_WINDOW_LOOK:
+		case kLeftTitledWindowLook:
+		{
 			break;
 		}
 		case B_BORDERED_WINDOW_LOOK:
@@ -646,9 +637,9 @@ MacDecorator::_DrawTitle(Decorator::Tab* tab, BRect rect)
 
 
 void
-MacDecorator::_DrawClose(Decorator::Tab* tab, bool direct, BRect r)
+MacDecorator::_DrawClose(Decorator::Tab* tab, bool direct, BRect rect)
 {
-	_DrawButton(tab, direct, r, tab->closePressed);
+	_DrawButton(tab, direct, rect, tab->closePressed);
 }
 
 
@@ -700,9 +691,6 @@ MacDecorator::_SetTitle(Tab* tab, const char* string, BRegion* updateRegion)
 
 	updateRegion->Include(rect);
 }
-
-
-// TODO : _SetFocus
 
 
 void
@@ -840,21 +828,6 @@ MacDecorator::_GetFootprint(BRegion* region)
 	if (fTopTab->look == B_BORDERED_WINDOW_LOOK)
 		return;
 	region->Include(fTitleBarRect);
-}
-
-
-void
-MacDecorator::_UpdateFont(DesktopSettings& settings)
-{
-	ServerFont font;
-	if (fTopTab && fTopTab->look == B_FLOATING_WINDOW_LOOK)
-		settings.GetDefaultPlainFont(font);
-	else
-		settings.GetDefaultBoldFont(font);
-
-	font.SetFlags(B_FORCE_ANTIALIASING);
-	font.SetSpacing(B_STRING_SPACING);
-	fDrawState.SetFont(font);
 }
 
 

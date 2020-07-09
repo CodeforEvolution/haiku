@@ -32,8 +32,7 @@ public:
 									BRect frame, Desktop* desktop);
 	virtual						~MacDecorator();
 
-			void				Draw(BRect updateRect);
-			void				Draw();
+	virtual void				UpdateColors(DesktopSettings& settings);
 
 	virtual	Region				RegionAt(BPoint where, int32& tab) const;
 
@@ -61,7 +60,7 @@ protected:
 	virtual	void				_SetTitle(Tab* tab, const char* string,
 									BRegion* updateRegion = NULL);
 
-	virtual	void				_MoveBy(BPoint offset);
+	virtual void				_MoveBy(BPoint offset);
 	virtual	void				_ResizeBy(BPoint offset, BRegion* dirty);
 
 			Decorator::Tab*		_AllocateNewTab();
@@ -74,9 +73,7 @@ protected:
 	virtual	bool				_MoveTab(int32 from, int32 to, bool isMoving,
 									BRegion* updateRegion = NULL);
 
-	virtual	void				_GetFootprint(BRegion *region);
-
-	virtual	void				_UpdateFont(DesktopSettings& settings);
+	virtual	void				_GetFootprint(BRegion* region);
 
 private:
 			void				_DrawButton(Decorator::Tab* tab, bool direct,
