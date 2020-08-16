@@ -1699,6 +1699,18 @@ ServerApp::_DispatchMessage(int32 code, BPrivate::LinkReceiver& link)
 			break;
 		}
 
+		case AS_GET_STANDARD_FONT:
+		{
+
+			break;
+		}
+
+		case AS_SET_STANDARD_FONT:
+		{
+
+			break;
+		}
+
 		case AS_GET_FONT_LIST_REVISION:
 		{
 			STRACE(("ServerApp %s: AS_GET_FONT_LIST_REVISION\n", Signature()));

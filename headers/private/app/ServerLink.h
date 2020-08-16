@@ -6,6 +6,7 @@
  *		DarkWyrm <bpmagic@columbus.rr.com>
  *		Pahtz <pahtz@yahoo.com.au>
  *		Axel Dörfler, axeld@pinc-software.de
+ *		Jacob Secunda, secundaja@gmail.com
  */
 #ifndef _SERVER_LINK_H
 #define _SERVER_LINK_H
@@ -18,6 +19,7 @@
 class BShape;
 class BString;
 class BGradient;
+class BFont;
 
 /*
  * Error checking rules: (for if you don't want to check every return code)
@@ -58,6 +60,7 @@ public:
 			status_t			AttachRegion(const BRegion& region);
 			status_t			AttachShape(BShape& shape);
 			status_t			AttachGradient(const BGradient& gradient);
+			status_t			AttachFont(const BFont& font);
 
 			template <class Type>
 			status_t			Attach(const Type& data);
@@ -79,7 +82,8 @@ public:
 			status_t			ReadRegion(BRegion* region);
 			status_t			ReadShape(BShape* shape);
 			status_t			ReadGradient(BGradient** _gradient);
-			
+			status_t			ReadFont(BFont* font);
+
 			template <class Type>
 			status_t			Read(Type* data);
 

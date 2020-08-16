@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2016, Haiku, Inc. All rights reserved.
+ * Copyright 2005-2020, Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  */
 #ifndef _FONT_H_
@@ -87,7 +87,19 @@ enum {
 	// new in Haiku:
 	B_CONDENSED_FACE		= 0x0080,
 	B_LIGHT_FACE			= 0x0100,
-	B_HEAVY_FACE			= 0x0200,
+	B_HEAVY_FACE			= 0x0200
+};
+
+
+enum font_which {
+	B_PLAIN_FONT			= 0,
+	B_BOLD_FONT				= 1,
+	B_FIXED_FONT			= 2,
+	B_MENU_FONT				= 3,
+	B_SYMBOL_FONT			= 4,
+	B_SERIF_FONT			= 5,
+
+	B_FONT_COUNT			= 6
 };
 
 
@@ -169,14 +181,18 @@ struct tuned_font_info {
 
 class BShape;
 class BString;
-class BFontPrivate;
 
 
 class BFont {
 public:
 								BFont();
+								BFont(font_which which);
 								BFont(const BFont& font);
 								BFont(const BFont* font);
+
+	static	status_t			GetStandardFont(font_which which, BFont* into);
+	static	status_t			SetStandardFont(font_which which,
+									const BFont& from);
 
 			status_t			SetFamilyAndStyle(const font_family family,
 									const font_style style);
@@ -284,6 +300,7 @@ public:
 
 private:
 		friend void _init_global_fonts_();
+		friend class BPrivate::ServerLink;
 
 			void				_GetExtraFlags() const;
 			void				_GetBoundingBoxes(const char charArray[],

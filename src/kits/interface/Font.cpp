@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2015, Haiku, Inc.
+ * Copyright 2001-2020, Haiku, Inc.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -8,6 +8,7 @@
  *		Axel Dörfler, axeld@pinc-software.de
  *		Stephan Aßmus <superstippi@gmx.de>
  *		Andrej Spielmann, <andrej.spielmann@seh.ox.ac.uk>
+ *		Jacob Secunda, secundaja@gmail.com
  */
 
 
@@ -521,6 +522,13 @@ BFont::BFont()
 }
 
 
+BFont::BFont(font_which which)
+{
+	if (GetStandardFont(which, this) != B_OK)
+		debugger("Could not retrieve standard font!");
+}
+
+
 BFont::BFont(const BFont& font)
 {
 	*this = font;
@@ -533,6 +541,62 @@ BFont::BFont(const BFont* font)
 		*this = *font;
 	else
 		*this = *be_plain_font;
+}
+
+
+status_t
+BFont::GetStandardFont(font_which which, BFont* into)
+{
+	if (into == NULL)
+		return B_BAD_VALUE;
+
+	if (which < 0 || which => B_FONT_COUNT)
+		return B_BAD_VALUE;
+
+	BPrivate::AppServerLink link;
+
+	link.StartMessage(AS_GET_STANDARD_FONT);
+	link.Attach<font_which>(which);
+
+	int32 status = B_ERROR;
+	if (link.FlushWithReply(status) != B_OK || status != B_OK)
+		return status;
+
+	status_t result = link.ReadFont(&into);
+	if (result != B_OK)
+		return result;
+
+//	link.Read<uint16>(&into->fFamilyID);
+//	link.Read<uint16>(&into->fStyleID);
+//	link.Read<float>(&into->fSize);
+//	link.Read<uint16>(&into->fFace);
+//	link.Read<uint32>(&into->fFlags);
+
+	into->fHeight.ascent = kUninitializedAscent;
+	into->fExtraFlags = kUninitializedExtraFlags;
+
+	return B_OK;
+}
+
+
+// Should a call that allows ANY app to set system fonts be allowed?
+status_t
+BFont::SetStandardFont(font_which which, const BFont& from)
+{
+	if (which < 0 || which => B_FONT_COUNT)
+		return B_BAD_VALUE;
+
+	BPrivate::AppServerLink link;
+
+	link.StartMessage(AS_SET_STANDARD_FONT);
+	link.Attach<font_which>(which);
+	link.AttachFont(from);
+
+	int32 status = B_ERROR;
+	if (link.FlushWithReply(status) != B_OK || status != B_OK)
+		return status;
+
+	return B_OK;
 }
 
 

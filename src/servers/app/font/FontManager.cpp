@@ -106,10 +106,11 @@ FontManager::FontManager()
 	fDirectories(10, true),
 	fMappings(10, true),
 	fFamilies(20),
+	fDefaultFonts(B_FONT_COUNT, true),
 
-	fDefaultPlainFont(NULL),
-	fDefaultBoldFont(NULL),
-	fDefaultFixedFont(NULL),
+//	fDefaultPlainFont(NULL),
+//	fDefaultBoldFont(NULL),
+//	fDefaultFixedFont(NULL),
 
 	fScanned(false),
 	fNextID(0)
@@ -124,8 +125,10 @@ FontManager::FontManager()
 
 		if (fInitStatus == B_OK) {
 			// Precache the plain and bold fonts
-			_PrecacheFontFile(fDefaultPlainFont);
-			_PrecacheFontFile(fDefaultBoldFont);
+//			_PrecacheFontFile(fDefaultPlainFont);
+//			_PrecacheFontFile(fDefaultBoldFont);
+			_PrecacheFontFile(fDefaultFonts.ItemAt(B_PLAIN_FONT));
+			_PrecacheFontFile(fDefaultFonts.ItemAt(B_BOLD_FONT));
 		}
 	}
 }

@@ -10,6 +10,7 @@
 #define FONT_MANAGER_H
 
 
+#include <Font.h>
 #include <HashMap.h>
 #include <Looper.h>
 #include <ObjectList.h>
@@ -68,6 +69,8 @@ public:
 			const ServerFont*	DefaultPlainFont() const;
 			const ServerFont*	DefaultBoldFont() const;
 			const ServerFont*	DefaultFixedFont() const;
+
+			const ServerFont*	DefaultFont(font_which which) const;
 
 			void				AttachUser(uid_t userID);
 			void				DetachUser(uid_t userID);
@@ -135,16 +138,21 @@ private:
 			typedef BObjectList<font_directory>		DirectoryList;
 			typedef BObjectList<font_mapping>		MappingList;
 			typedef BObjectList<FontFamily>			FamilyList;
+			typedef BObjectList<ServerFont*>		DefaultFontList;
 
 			DirectoryList		fDirectories;
 			MappingList			fMappings;
 			FamilyList			fFamilies;
+			DefaultFontList		fDefaultFonts;
 
 			HashMap<FontKey, FontStyle*> fStyleHashTable;
 
-			ServerFont*			fDefaultPlainFont;
-			ServerFont*			fDefaultBoldFont;
-			ServerFont*			fDefaultFixedFont;
+//			ServerFont*			fDefaultPlainFont;
+//			ServerFont*			fDefaultBoldFont;
+//			ServerFont*			fDefaultFixedFont;
+//			ServerFont*			fDefaultMenuFont;
+//			ServerFont*			fDefaultSymbolFont;
+//			ServerFont*			fDefaultSerifFont;
 
 			bool				fScanned;
 			int32				fNextID;

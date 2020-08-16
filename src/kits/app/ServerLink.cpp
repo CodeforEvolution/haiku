@@ -215,6 +215,33 @@ ServerLink::AttachGradient(const BGradient& gradient)
 
 
 status_t
+ServerLink::ReadFont(BFont* font)
+{
+	fReceiver->Read(&font->fFamilyID, sizeof(uint16));
+	fReceiver->Read(&font->fStyleID, sizeof(uint16));
+	fReceiver->Read(&font->fSize, sizeof(float));
+	fReceiver->Read(&font->fFace, sizeof(uint16));
+
+//	font->fHeight.ascent = kUninitializedAscent;
+//	font->fExtraFlags = kUninitializedExtraFlags;
+
+	return fReceiver->Read(&font->fFlags, sizeof(uint32));
+}
+
+
+status_t
+ServerLink::AttachFont(const BFont& font)
+{
+	fSender->Attach(&font.fFamilyID, sizeof(uint16));
+	fSender->Attach(&font.fStyleID, sizeof(uint16));
+	fSender->Attach(&font.fSize, sizeof(float));
+	fSender->Attach(&font.fFace, sizeof(uint16));
+
+	return fSender->Attach(&font.fFlags, sizeof(uint32));
+}
+
+
+status_t
 ServerLink::FlushWithReply(int32& code)
 {
 	status_t status = Flush(B_INFINITE_TIMEOUT, true);
