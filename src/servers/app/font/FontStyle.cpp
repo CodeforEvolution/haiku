@@ -52,6 +52,53 @@ FontStyle::FontStyle(node_ref& nodeRef, const char* path, FT_Face face)
 	fHeight.leading = (double)(face->height - face->ascender + face->descender)
 		/ face->units_per_EM;
 
+	// This isn't completely accurate...we would need to call "font format specific
+	// functions" to see if a font is actually in the "Windows format".
+	// We'll use these functions to detect the font's encoding and direction anyways...
+	const char* fileFormat = FT_Get_Font_Format(face);
+	if (fileFormat != NULL) {
+		switch (fileFormat) {
+			case "Type 1":
+				fFileFormat = B_POSTSCRIPT_TYPE1_WINDOWS;
+				break;
+				
+			case "BDF":
+				fFileFormat = ;
+				break;
+				
+			case "PCF":
+				fFileFormat = ;
+				break;
+
+			case "Type 42":
+				fFileFormat = ;
+				break;
+				
+
+			case "CID Type 1":
+				fFileFormat = ;
+				break;
+
+			case "CFF":
+				fFileFormat = ;
+				break;
+
+			case "PFR":
+				fFileFormat = ;
+				break;
+
+			case "Windows FNT":
+				fFileFormat = ;
+				break;
+
+			case "TrueType":
+			default:
+				fFileFormat = B_TRUETYPE_WINDOWS;
+		}
+	} else {
+		fFileFormat = B_TRUETYPE_WINDOWS;	
+	}
+
 	if (IsFixedWidth())
 		return;
 
