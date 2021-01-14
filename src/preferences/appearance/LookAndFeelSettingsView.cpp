@@ -62,6 +62,9 @@ static const int32 kMsgArrowStyleDouble = 'masd';
 
 static const bool kDefaultDoubleScrollBarArrowsSetting = false;
 
+static const int32 kMsgSetMediaTheme = 'mthm';
+static const int32 kMsgMediaThemeInfo = 'imth';
+
 
 //	#pragma mark - LookAndFeelSettingsView
 
@@ -81,7 +84,11 @@ LookAndFeelSettingsView::LookAndFeelSettingsView(const char* name)
 	fCurrentDecor(NULL),
 	fSavedControlLook(NULL),
 	fCurrentControlLook(NULL),
-	fSavedDoubleArrowsValue(_DoubleScrollBarArrows())
+	fSavedDoubleArrowsValue(_DoubleScrollBarArrows()),
+	fSavedMediaThemeRef(NULL),
+	fSavedMediaThemeID(-1)
+	fCurrentMediaThemeRef(NULL),
+	fCurrentMediaThemeID(-1)
 {
 	fCurrentDecor = fDecorUtility.CurrentDecorator()->Name();
 	fSavedDecor = fCurrentDecor;
@@ -137,6 +144,25 @@ LookAndFeelSettingsView::LookAndFeelSettingsView(const char* name)
 	scrollBarLabel->SetExplicitAlignment(
 		BAlignment(B_ALIGN_LEFT, B_ALIGN_TOP));
 
+	// Load BMediaTheme settings
+	BMediaTheme* savedMediaTheme = BMediaTheme::PreferredTheme();
+
+	savedMediaTheme->GetRef(&fCurrentMediaThemeRef);
+	fCurrentMediaThemeID = savedMediaTheme->ID();
+
+	fSavedMediaThemeRef = fCurrentMediaThemeRef;
+	fSavedMediaThemeID = fCurrentMediaThemeID;
+
+	// BMediaTheme menu
+	_BuildMediaThemeMenu();
+	fMediaThemeMenuField = new BMenuField("media theme",
+		B_TRANSLATE("Media Theme:"), fMediaThemeMenu);
+	fMediaThemeMenuField->SetToolTip(B_TRANSLATE("No effect on running applications"));
+
+	fMediaThemeButton = new BButton(B_TRANSLATE("About"),
+		new BMessage(kMsgMediaThemeInfo));
+
+
 	// control layout
 	BLayoutBuilder::Grid<>(this, B_USE_DEFAULT_SPACING, B_USE_DEFAULT_SPACING)
 		.Add(fDecorMenuField->CreateLabelLayoutItem(), 0, 0)
@@ -147,8 +173,12 @@ LookAndFeelSettingsView::LookAndFeelSettingsView(const char* name)
 		.Add(fControlLookInfoButton, 2, 1)
 		.Add(scrollBarLabel, 0, 2)
 		.Add(arrowStyleBox, 1, 2)
+		.Add(fMediaThemeMenuField->CreateLabelLayoutItem(), 0, 3)
+		.Add(fMediaThemeMenuField->CreateMenuBarLayoutItem(), 1, 3)
+		.Add(fMediaThemeInfoButton, 2, 3)
 		.AddGlue(0, 3)
-		.SetInsets(B_USE_WINDOW_SPACING);
+		.SetInsets(B_USE_WINDOW_SPACING)
+	.End();
 
 	// TODO : Decorator Preview Image?
 }
@@ -173,6 +203,8 @@ LookAndFeelSettingsView::AttachedToWindow()
 	fControlLookInfoButton->SetTarget(this);
 	fArrowStyleSingle->SetTarget(this);
 	fArrowStyleDouble->SetTarget(this);
+	fMediaThemeMenu->SetTargetForItems(this);
+	fMediaThemeInfoButton->SetTarget(this);
 
 	if (fSavedDoubleArrowsValue)
 		fArrowStyleDouble->SetValue(B_CONTROL_ON);
@@ -268,6 +300,31 @@ LookAndFeelSettingsView::MessageReceived(BMessage* message)
 		case kMsgArrowStyleDouble:
 			_SetDoubleScrollBarArrows(true);
 			break;
+
+		case kMsgSetMediaTheme:
+		{
+			entry_ref mediaThemeRef;
+			int32 mediaThemeID;
+			if (message->FindRef("media_theme_ref", &mediaThemeRef) == B_OK
+				&& message->FindInt32("media_theme_id", mediaThemeID) == B_OK)
+				_SetMediaTheme(mediaThemeRef, mediaThemeID);
+			break;
+		}
+
+		case kMsgMediaThemeInfo:
+		{
+			BString infoText(B_TRANSLATE("Default Haiku Media Theme"));
+			BString path;
+
+
+
+			BAlert* infoAlert = new BAlert(B_TRANSLATE("About media theme"),
+				infoText.String(), B_TRANSLATE("OK"));
+			infoAlert->SetFlags(infoAlert->Flags() | B_CLOSE_ON_ESCAPE);
+			infoAlert->Go();
+
+			break;
+		}
 
 		default:
 			BView::MessageReceived(message);
@@ -428,12 +485,142 @@ LookAndFeelSettingsView::_SetDoubleScrollBarArrows(bool doubleArrows)
 }
 
 
+
+
+BMediaTheme*
+LookAndFeelSettingsView::_LoadMediaTheme(const entry_ref ref, int32 id)
+{
+	BMediaTheme* newMediaTheme = NULL;
+
+	BEntry themeEntry = BEntry(&ref);
+
+	// Haiku's built-in BMediaTheme lives deep within libmedia.so,
+	// and it's not a bad idea to fallback to the system default
+	// theme anyway if some error occurs.
+	if (themeEntry.Exists() == false)
+		return newMediaTheme;
+
+	BPath themePath;
+	themeEntry.GetPath(&themePath);
+
+	image_id themeImage = load_add_on(themePath);
+
+	BMediaTheme* (*make_theme)(int32, image_id);
+	result = get_image_symbol(themeImage, "make_theme",
+		B_SYMBOL_TYPE_TEXT, (void**)&make_theme);
+	if (result == B_OK)
+		newMediaTheme = make_theme(id, themeImage);
+
+	unload_add_on(themeImage);
+
+	return newMediaTheme;
+}
+
+
+void
+LookAndFeelSettingsView::_SetMediaTheme(const entry_ref ref, int32 id)
+{
+	BMediaTheme* mediaTheme = NULL;
+
+	// Are we using Haiku's built-in media theme?
+	if (id != -1)
+		mediaTheme = _LoadMediaTheme(ref, id);
+
+	if (BMediaTheme::SetPreferredTheme(mediaTheme) != B_OK)
+		return;
+
+	fCurrentMediaThemeRef = ref;
+	fCurrentMediaThemeID = id;
+
+	if (mediaTheme != NULL)
+		fMediaThemeMenu->FindItem(mediaTheme->Name())->SetMarked(true);
+	else
+		fMediaThemeMenu->FindItem(B_TRANSLATE("Default"))->SetMarked(true);
+
+	Window()->PostMessage(kMsgUpdate);
+}
+
+
+void
+LookAndFeelSettingsView::_BuildMediaThemeMenu()
+{
+	BPathFinder thePathFinder;
+	BStringList themePaths;
+	BDirectory themeDir;
+
+	fMediaThemeMenu = new BPopUpMenu(B_TRANSLATE("Choose Media Theme"));
+
+	BMessage* message = new BMessage(kMsgSetMediaTheme);
+
+	entry_ref dummy;
+	message->AddRef("media_theme_ref", dummy);
+	message->AddInt32("media_theme_id", -1);
+
+	BMenuItem* item = new BMenuItem(B_TRANSLATE("Default"), message);
+
+	// Using the default decorator?
+	BEntry themeEntry = BEntry(fCurrentMediaThemeRef);
+	if (themeEntry.Exists() == false)
+		item->SetMarked(true);
+	fMediaThemeMenu->AddItem(item);
+
+	status_t error = pathFinder.FindPaths(B_FIND_PATH_ADD_ONS_DIRECTORY,
+		"media/themes", paths);
+
+	int32 count = paths.CountStrings();
+	for (int32 i = 0; i < count; ++i) {
+		if (error != B_OK || dir.SetTo(paths.StringAt(i)) != B_OK)
+			continue;
+
+		BEntry entry;
+		while (dir.GetNextEntry(&entry) == B_OK) {
+			BPath themePath(paths.StringAt(i), entry.Name());
+
+			image_id themeImage = load_add_on(themePath);
+
+			status_t (*get_theme_at)(int32, const char**, const char**,
+				int32*);
+			result = get_image_symbol(themeImage, "get_theme_at",
+				B_SYMBOL_TYPE_TEXT, (void**)&get_theme_at);
+			if (result != B_OK)
+				continue;
+
+			entry_ref themeRef;
+			if (entry.GetRef(&themeRef) != B_OK)
+				continue;
+
+			const char* themeName = B_EMPTY_STRING;
+			const char* themeInfo = B_EMPTY_STRING;
+			int32 themeID = -1;
+			int32 themeCookie = 0;
+			while (get_theme_at(themeCookie, &themeName, &themeInfo, &themeID)
+				== B_OK) {
+				message = new BMessage(kMsgSetMediaTheme);
+				message->AddRef("media_theme_ref", themeRef);
+				message->AddInt32("media_theme_id", themeID);
+
+				item = new BMenuItem(themeName, message);
+				fMediaThemeMenu->AddItem(item);
+				if (themeRef == fCurrentMediaThemeRef
+					&& themeID == fCurrentMediaThemeID)
+					item->SetMarked(true);
+
+				themeCookie++;
+			}
+
+			unload_add_on(themeImage);
+		}
+	}
+}
+
+
 bool
 LookAndFeelSettingsView::IsDefaultable()
 {
 	return fCurrentDecor != fDecorUtility.DefaultDecorator()->Name()
 		|| fCurrentControlLook.Length() != 0
-		|| _DoubleScrollBarArrows() != false;
+		|| _DoubleScrollBarArrows() != false
+		|| fCurrentMediaThemeID != -1;
 }
 
 
@@ -443,6 +630,9 @@ LookAndFeelSettingsView::SetDefaults()
 	_SetDecor(fDecorUtility.DefaultDecorator());
 	_SetControlLook(BString(""));
 	_SetDoubleScrollBarArrows(false);
+
+	entry_ref dummyRef;
+	_SetMediaTheme(dummyRef, -1);
 }
 
 
@@ -451,7 +641,9 @@ LookAndFeelSettingsView::IsRevertable()
 {
 	return fCurrentDecor != fSavedDecor
 		|| fCurrentControlLook != fSavedControlLook
-		|| _DoubleScrollBarArrows() != fSavedDoubleArrowsValue;
+		|| _DoubleScrollBarArrows() != fSavedDoubleArrowsValue
+		|| (fCurrentMediaThemeRef != fSavedMediaThemeRef
+			&& fCurrentMediaThemeID != fSavedMediaThemeID);
 }
 
 
@@ -462,5 +654,6 @@ LookAndFeelSettingsView::Revert()
 		_SetDecor(fSavedDecor);
 		_SetControlLook(fSavedControlLook);
 		_SetDoubleScrollBarArrows(fSavedDoubleArrowsValue);
+		_SetMediaTheme(fSavedMediaThemeRef, fSavedMediaThemeID);
 	}
 }

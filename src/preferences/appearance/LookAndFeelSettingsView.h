@@ -13,6 +13,7 @@
 
 
 #include <DecorInfo.h>
+#include <MediaTheme.h>
 #include <String.h>
 #include <View.h>
 
@@ -22,6 +23,9 @@ class BCheckBox;
 class BMenuField;
 class BPopUpMenu;
 class FakeScrollBar;
+
+class BPrivate::DefaultMediaTheme;
+
 
 class LookAndFeelSettingsView : public BView {
 public:
@@ -50,6 +54,10 @@ private:
 			bool				_DoubleScrollBarArrows();
 			void				_SetDoubleScrollBarArrows(bool doubleArrows);
 
+			BMediaTheme*		_LoadMediaTheme(const entry_ref ref, int32 id);
+			void				_SetMediaTheme(const entry_ref ref, int32 id);
+			void				_BuildMediaThemeMenu();
+
 private:
 			DecorInfoUtility	fDecorUtility;
 
@@ -64,6 +72,10 @@ private:
 			FakeScrollBar*		fArrowStyleSingle;
 			FakeScrollBar*		fArrowStyleDouble;
 
+			BButton*			fMediaThemeInfoButton;
+			BMenuField*			fMediaThemeMenuField;
+			BPopUpMenu*			fMediaThemeMenu;
+
 			BString				fSavedDecor;
 			BString				fCurrentDecor;
 
@@ -71,6 +83,12 @@ private:
 			BString				fCurrentControlLook;
 
 			bool				fSavedDoubleArrowsValue : 1;
+
+			entry_ref			fSavedMediaThemeRef;
+			int32				fSavedMediaThemeID;
+
+			entry_ref			fCurrentMediaThemeRef;
+			int32				fCurrentMediaThemeID;
 };
 
 
