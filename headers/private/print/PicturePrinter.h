@@ -1,44 +1,21 @@
 /*
-
-PicturePrinter
-
-Copyright (c) 2001, 2002 OpenBeOS. 
-
-Author: 
-	Michael Pfeiffer
-	
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-*/
-
+ * Copyright 2001-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Michael Pfeiffer
+ */
 #ifndef _PICTURE_PRINTER_H
 #define _PICTURE_PRINTER_H
 
+
 #include "PictureIterator.h"
 
-#include <Shape.h>
 
-class PicturePrinter : public PictureIterator
-{
+class PicturePrinter : public PictureIterator {
 public:
 		PicturePrinter(int indent = 0);
-		
+
 		// BPicture playback handlers
 		virtual void		Op(int number);
 		virtual void		MovePenBy(BPoint delta);
@@ -47,20 +24,20 @@ public:
 		virtual void		FillRect(BRect rect);
 		virtual void		StrokeRoundRect(BRect rect, BPoint radii);
 		virtual void		FillRoundRect(BRect rect, BPoint radii);
-		virtual void		StrokeBezier(BPoint *control);
-		virtual void		FillBezier(BPoint *control);
+		virtual void		StrokeBezier(BPoint* control);
+		virtual void		FillBezier(BPoint* control);
 		virtual void		StrokeArc(BPoint center, BPoint radii, float startTheta, float arcTheta);
 		virtual void		FillArc(BPoint center, BPoint radii, float startTheta, float arcTheta);
 		virtual void		StrokeEllipse(BPoint center, BPoint radii);
 		virtual void		FillEllipse(BPoint center, BPoint radii);
-		virtual void		StrokePolygon(int32 numPoints, BPoint *points, bool isClosed);
-		virtual void		FillPolygon(int32 numPoints, BPoint *points, bool isClosed);
-		virtual void        StrokeShape(BShape *shape);
-		virtual void        FillShape(BShape *shape);
-		virtual void		DrawString(char *string, float escapement_nospace, float escapement_space);
-		virtual void		DrawPixels(BRect src, BRect dest, int32 width, int32 height, int32 bytesPerRow, int32 pixelFormat, int32 flags, void *data);
-		virtual void		SetClippingRects(BRect *rects, uint32 numRects);
-		virtual void    	ClipToPicture(BPicture *picture, BPoint point, bool clip_to_inverse_picture);
+		virtual void		StrokePolygon(int32 numPoints, BPoint* points, bool isClosed);
+		virtual void		FillPolygon(int32 numPoints, BPoint* points, bool isClosed);
+		virtual void        StrokeShape(BShape* shape);
+		virtual void        FillShape(BShape* shape);
+		virtual void		DrawString(char* string, float escapement_nospace, float escapement_space);
+		virtual void		DrawPixels(BRect src, BRect dest, int32 width, int32 height, int32 bytesPerRow, int32 pixelFormat, int32 flags, void* data);
+		virtual void		SetClippingRects(BRect* rects, uint32 numRects);
+		virtual void    	ClipToPicture(BPicture* picture, BPoint point, bool clip_to_inverse_picture);
 		virtual void		PushState();
 		virtual void		PopState();
 		virtual void		EnterStateChange();
@@ -76,8 +53,8 @@ public:
 		virtual void		SetBackColor(rgb_color color);
 		virtual void		SetStipplePattern(pattern p);
 		virtual void		SetScale(float scale);
-		virtual void		SetFontFamily(char *family);
-		virtual void		SetFontStyle(char *style);
+		virtual void		SetFontFamily(char* family);
+		virtual void		SetFontStyle(char* style);
 		virtual void		SetFontSpacing(int32 spacing);
 		virtual void		SetFontSize(float size);
 		virtual void		SetFontRotate(float rotation);
@@ -87,14 +64,14 @@ public:
 		virtual void		SetFontFace(int32 flags);
 
 private:
-		int fIndent;
+		friend class ShapePrinter;
 
 		void Print(const char* text);
 		void Print(BPoint* point);
 		void Print(BRect* rect);
 		void Print(int numPoints, BPoint* points);
 		void Print(int numRects, BRect* rects);
-		void Print(BShape* shape); 
+		void Print(BShape* shape);
 		void Print(const char* label, float f);
 		void Print(const char* label, BPoint *point);
 		void Print(rgb_color color);
@@ -102,9 +79,10 @@ private:
 		void Cr();
 		void Indent(int inc = 0);
 		void IncIndent();
-		void DecIndent();		
+		void DecIndent();
 
-		friend class ShapePrinter;
+private:
+		int fIndent;
 };
 
 class ShapePrinter : public BShapeIterator {
@@ -112,11 +90,11 @@ public:
 	ShapePrinter(PicturePrinter* printer);
 	~ShapePrinter();
 
-	status_t IterateBezierTo(int32 bezierCount, BPoint *bezierPoints);
-	status_t IterateClose(void);
-	status_t IterateLineTo(int32 lineCount, BPoint *linePoints);
-	status_t IterateMoveTo(BPoint *point);
-	
+	status_t IterateBezierTo(int32 bezierCount, BPoint* bezierPoints);
+	status_t IterateClose();
+	status_t IterateLineTo(int32 lineCount, BPoint* linePoints);
+	status_t IterateMoveTo(BPoint* point);
+
 private:
 	PicturePrinter* fPrinter;
 };

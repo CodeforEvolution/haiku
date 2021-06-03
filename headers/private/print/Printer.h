@@ -1,12 +1,12 @@
 /*
- * Copyright 2008 Haiku Inc. All rights reserved.
+ * Copyright 2008 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Julun, <host.haiku@gmx.de
  */
-#ifndef _PRINTER_H_
-#define _PRINTER_H_
+#ifndef _PRINTER_H
+#define _PRINTER_H
 
 
 #include <Directory.h>
@@ -20,7 +20,6 @@
 
 namespace BPrivate {
 	namespace Print {
-
 
 class BPrinter {
 public:
@@ -80,4 +79,4 @@ private:
 }	// namespace BPrivate
 
 
-#endif	// _PRINTER_H_
+#endif	// _PRINTER_H

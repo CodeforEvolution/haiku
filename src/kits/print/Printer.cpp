@@ -1,54 +1,38 @@
 /*
- * Copyright 2008 Haiku Inc. All rights reserved.
+ * Copyright 2021 Haiku Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Julun, <host.haiku@gmx.de
  */
 
+
 #include <Printer.h>
+
+#include <new>
 
 #include <FindDirectory.h>
 #include <NodeInfo.h>
 #include <NodeMonitor.h>
 
-
-#include <new>
+#include <pr_server.h>
 
 
 namespace BPrivate {
 	namespace Print {
 
 
-// TODO: remove, after pr_server.h cleanup
-
-// mime file types
-#define PSRV_PRINTER_MIMETYPE					"application/x-vnd.Be.printer"
-
-
-// printer attributes
-#define PSRV_PRINTER_ATTR_STATE					"state"
-#define PSRV_PRINTER_ATTR_COMMENTS				"Comments"
-#define PSRV_PRINTER_ATTR_TRANSPORT				"transport"
-#define PSRV_PRINTER_ATTR_DRIVER_NAME			"Driver Name"
-#define PSRV_PRINTER_ATTR_PRINTER_NAME			"Printer Name"
-#define PSRV_PRINTER_ATTR_DEFAULT_PRINTER		"Default Printer"
-#define PSRV_PRINTER_ATTR_TRANSPORT_ADDRESS		"transport_address"
-
-
-// message fields
-#define PSRV_FIELD_CURRENT_PRINTER				"current_printer"
-
-
 BPrinter::BPrinter()
-	: fListener(NULL)
+	:
+	fListener(NULL)
 {
 	memset(&fPrinterEntryRef, 0, sizeof(entry_ref));
 }
 
 
 BPrinter::BPrinter(const BEntry& entry)
-	: fListener(NULL)
+	:
+	fListener(NULL)
 {
 	SetTo(entry);
 }
@@ -68,14 +52,16 @@ BPrinter::BPrinter(const node_ref& nodeRef)
 
 
 BPrinter::BPrinter(const entry_ref& entryRef)
-	: fListener(NULL)
-	, fPrinterEntryRef(entryRef)
+	:
+	fListener(NULL),
+	fPrinterEntryRef(entryRef)
 {
 }
 
 
 BPrinter::BPrinter(const BDirectory& directory)
-	: fListener(NULL)
+	:
+	fListener(NULL)
 {
 	SetTo(directory);
 }
@@ -240,23 +226,27 @@ BPrinter::DefaultSettings(BMessage& settings)
 {
 	status_t status = B_ERROR;
 	image_id id = _LoadDriver();
-	if (id < 0)
+	if (id < B_NO_ERROR)
 		return status;
 
 	typedef BMessage* (*default_settings_func_t)(BNode*);
 	default_settings_func_t default_settings;
-	if (get_image_symbol(id, "default_settings", B_SYMBOL_TYPE_TEXT
-		, (void**)&default_settings) == B_OK) {
+	if (get_image_symbol(id, "default_settings", B_SYMBOL_TYPE_TEXT,
+		(void**)&default_settings) == B_OK) {
 		BNode printerNode(&fPrinterEntryRef);
-		BMessage *newSettings = default_settings(&printerNode);
-		if (newSettings) {
+
+		BMessage* newSettings = default_settings(&printerNode);
+		if (newSettings != NULL) {
 			status = B_OK;
 			settings = *newSettings;
 			_AddPrinterName(settings);
 		}
+
 		delete newSettings;
 	}
+
 	unload_add_on(id);
+
 	return status;
 }
 
@@ -270,7 +260,7 @@ BPrinter::StartWatching(const BMessenger& listener)
 		return B_BAD_VALUE;
 
 	fListener = new(std::nothrow) BMessenger(listener);
-	if (!fListener)
+	if (fListener == NULL)
 		return B_NO_MEMORY;
 
 	node_ref nodeRef;
@@ -284,7 +274,7 @@ BPrinter::StartWatching(const BMessenger& listener)
 void
 BPrinter::StopWatching()
 {
-	if (fListener) {
+	if (fListener != NULL) {
 		stop_watching(*fListener);
 		delete fListener;
 		fListener = NULL;
@@ -298,9 +288,10 @@ BPrinter::operator=(const BPrinter& printer)
 	if (this != &printer) {
 		Unset();
 		fPrinterEntryRef = printer.fPrinterEntryRef;
-		if (printer.fListener)
+		if (printer.fListener != NULL)
 			StartWatching(*printer.fListener);
 	}
+
 	return *this;
 }
 
@@ -324,22 +315,23 @@ BPrinter::_Configure() const
 {
 	status_t status = B_ERROR;
 	image_id id = _LoadDriver();
-	if (id < 0)
+	if (id < B_NO_ERROR)
 		return status;
 
 	BString printerName(_ReadAttribute(PSRV_PRINTER_ATTR_PRINTER_NAME));
 	if (printerName.Length() > 0) {
 		typedef char* (*add_printer_func_t)(const char*);
 		add_printer_func_t add_printer;
-		if (get_image_symbol(id, "add_printer", B_SYMBOL_TYPE_TEXT
-			, (void**)&add_printer) == B_OK) {
-				if (add_printer(printerName.String()) != NULL)
-					status = B_OK;
+		if (get_image_symbol(id, "add_printer", B_SYMBOL_TYPE_TEXT,
+			(void**)&add_printer) == B_OK) {
+			if (add_printer(printerName.String()) != NULL)
+				status = B_OK;
 		}
-	} else {
+	} else
 		status = B_ERROR;
-	}
+
 	unload_add_on(id);
+
 	return status;
 }
 
@@ -349,23 +341,26 @@ BPrinter::_ConfigureJob(BMessage& settings)
 {
 	status_t status = B_ERROR;
 	image_id id = _LoadDriver();
-	if (id < 0)
+	if (id < B_NO_ERROR)
 		return status;
 
 	typedef BMessage* (*config_job_func_t)(BNode*, const BMessage*);
 	config_job_func_t configure_job;
-	if (get_image_symbol(id, "config_job", B_SYMBOL_TYPE_TEXT
-		, (void**)&configure_job) == B_OK) {
+	if (get_image_symbol(id, "config_job", B_SYMBOL_TYPE_TEXT,
+		(void**)&configure_job) == B_OK) {
 		BNode printerNode(&fPrinterEntryRef);
-		BMessage *newSettings = configure_job(&printerNode, &settings);
-		if (newSettings && (newSettings->what == 'okok')) {
+		BMessage* newSettings = configure_job(&printerNode, &settings);
+		if (newSettings != NULL && (newSettings->what == 'okok')) {
 			status = B_OK;
 			settings = *newSettings;
 			_AddPrinterName(settings);
 		}
+
 		delete newSettings;
 	}
+
 	unload_add_on(id);
+
 	return status;
 }
 
@@ -375,23 +370,26 @@ BPrinter::_ConfigurePage(BMessage& settings)
 {
 	status_t status = B_ERROR;
 	image_id id = _LoadDriver();
-	if (id < 0)
+	if (id < B_NO_ERROR)
 		return status;
 
 	typedef BMessage* (*config_page_func_t)(BNode*, const BMessage*);
 	config_page_func_t configure_page;
-	if (get_image_symbol(id, "config_page", B_SYMBOL_TYPE_TEXT
-		, (void**)&configure_page) == B_OK) {
+	if (get_image_symbol(id, "config_page", B_SYMBOL_TYPE_TEXT,
+		(void**)&configure_page) == B_OK) {
 		BNode printerNode(&fPrinterEntryRef);
-		BMessage *newSettings = configure_page(&printerNode, &settings);
-		if (newSettings && (newSettings->what == 'okok')) {
+		BMessage* newSettings = configure_page(&printerNode, &settings);
+		if (newSettings != NULL && (newSettings->what == 'okok')) {
 			status = B_OK;
 			settings = *newSettings;
 			_AddPrinterName(settings);
 		}
+
 		delete newSettings;
 	}
+
 	unload_add_on(id);
+
 	return status;
 }
 
@@ -421,6 +419,7 @@ BPrinter::_DriverPath() const
 				return path;
 		}
 	}
+
 	return BPath();
 }
 

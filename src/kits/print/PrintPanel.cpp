@@ -6,12 +6,12 @@
  *		Julun, <host.haiku@gmx.de
  */
 
+
 #include <PrintPanel.h>
 
 #include <Button.h>
 #include <GroupLayoutBuilder.h>
 #include <GroupView.h>
-#include <Screen.h>
 
 
 namespace BPrivate {
@@ -22,21 +22,23 @@ namespace BPrivate {
 
 
 BPrintPanel::_BPrintPanelFilter_::_BPrintPanelFilter_(BPrintPanel* panel)
-	: BMessageFilter(B_KEY_DOWN)
-	, fPrintPanel(panel)
+	:
+	BMessageFilter(B_KEY_DOWN),
+	fPrintPanel(panel)
 {
 }
 
 
 filter_result
-BPrintPanel::_BPrintPanelFilter_::Filter(BMessage* msg, BHandler** target)
+BPrintPanel::_BPrintPanelFilter_::Filter(BMessage* message, BHandler** target)
 {
 	int32 key;
 	filter_result result = B_DISPATCH_MESSAGE;
-	if (msg->FindInt32("key", &key) == B_OK && key == 1) {
+	if (message->FindInt32("key", &key) == B_OK && key == 1) {
 		fPrintPanel->PostMessage(B_QUIT_REQUESTED);
 		result = B_SKIP_MESSAGE;
 	}
+
 	return result;
 }
 
@@ -45,17 +47,19 @@ BPrintPanel::_BPrintPanelFilter_::Filter(BMessage* msg, BHandler** target)
 
 
 BPrintPanel::BPrintPanel(const BString& title)
-	: BWindow(BRect(0, 0, 640, 480), title.String(), B_TITLED_WINDOW_LOOK,
+	:
+	BWindow(BRect(0, 0, 640, 480), title.String(), B_TITLED_WINDOW_LOOK,
 		B_MODAL_APP_WINDOW_FEEL, B_NOT_ZOOMABLE | B_NOT_RESIZABLE |
-		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS | B_CLOSE_ON_ESCAPE)
-	, fPanel(new BGroupView)
-	, fPrintPanelSem(-1)
-	, fPrintPanelResult(B_CANCEL)
+		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS|
+		B_CLOSE_ON_ESCAPE),
+	fPanel(new BGroupView),
+	fPrintPanelSem(-1),
+	fPrintPanelResult(B_CANCEL)
 {
 	BButton* ok = new BButton("OK", new BMessage('_ok_'));
 	BButton* cancel = new BButton("Cancel", new BMessage('_cl_'));
 
-	BGroupLayout *layout = new BGroupLayout(B_HORIZONTAL);
+	BGroupLayout* layout = new BGroupLayout(B_HORIZONTAL);
 	SetLayout(layout);
 
 	AddChild(BGroupLayoutBuilder(B_VERTICAL, 10.0)
@@ -81,7 +85,8 @@ BPrintPanel::~BPrintPanel()
 
 
 BPrintPanel::BPrintPanel(BMessage* data)
-	: BWindow(data)
+	:
+	BWindow(data)
 {
 	// TODO: implement
 }
@@ -114,7 +119,7 @@ void
 BPrintPanel::AddPanel(BView* panel)
 {
 	BView* child = Panel();
-	if (child) {
+	if (child != NULL) {
 		RemovePanel(child);
 		delete child;
 	}
@@ -141,14 +146,17 @@ void
 BPrintPanel::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
-		case '_ok_': {
+		case '_ok_':
 			fPrintPanelResult = B_OK;
 
 		// fall through
 		case '_cl_':
+		{
 			delete_sem(fPrintPanelSem);
 			fPrintPanelSem = -1;
-		}	break;
+
+			break;
+		}
 
 		default:
 			BWindow::MessageReceived(message);
@@ -164,8 +172,8 @@ BPrintPanel::FrameResized(float newWidth, float newHeight)
 
 
 BHandler*
-BPrintPanel::ResolveSpecifier(BMessage* message, int32 index, BMessage* specifier,
-	int32 form, const char* property)
+BPrintPanel::ResolveSpecifier(BMessage* message, int32 index,
+	BMessage* specifier, int32 form, const char* property)
 {
 	return BWindow::ResolveSpecifier(message, index, specifier, form, property);
 }
@@ -179,9 +187,9 @@ BPrintPanel::GetSupportedSuites(BMessage* data)
 
 
 status_t
-BPrintPanel::Perform(perform_code d, void* arg)
+BPrintPanel::Perform(perform_code code, void* arg)
 {
-	return BWindow::Perform(d, arg);
+	return BWindow::Perform(code, arg);
 }
 
 
@@ -215,31 +223,28 @@ BPrintPanel::ShowPanel()
 		return B_CANCEL;
 	}
 
-	BWindow* window = dynamic_cast<BWindow*> (BLooper::LooperForThread(find_thread(NULL)));
+	BWindow* window = dynamic_cast<BWindow*>
+		(BLooper::LooperForThread(find_thread(NULL)));
 
-	{
-		BRect bounds(Bounds());
-		BRect frame(BScreen(B_MAIN_SCREEN_ID).Frame());
-		MoveTo((frame.Width() - bounds.Width()) / 2.0,
-			(frame.Height() - bounds.Height()) / 2.0);
-	}
+	CenterOnScreen();
 
 	Show();
 
-	if (window) {
+	if (window != NULL) {
 		status_t err;
 		while (true) {
 			do {
-				err = acquire_sem_etc(fPrintPanelSem, 1, B_RELATIVE_TIMEOUT, 50000);
+				err = acquire_sem_etc(fPrintPanelSem, 1, B_RELATIVE_TIMEOUT,
+					50000);
 			} while (err == B_INTERRUPTED);
 
 			if (err == B_BAD_SEM_ID)
 				break;
+
 			window->UpdateIfNeeded();
 		}
-	} else {
-		while (acquire_sem(fPrintPanelSem) == B_INTERRUPTED) {}
-	}
+
+	while (acquire_sem(fPrintPanelSem) == B_INTERRUPTED) {};
 
 	return fPrintPanelResult;
 }

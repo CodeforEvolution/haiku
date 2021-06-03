@@ -1,206 +1,259 @@
-/*****************************************************************************/
-// Jobs
-//
-// Author
-//   Michael Pfeiffer
-//
-// This application and all source files used in its construction, except 
-// where noted, are licensed under the MIT License, and have been written 
-// and are:
-//
-// Copyright (c) 2002 OpenBeOS Project
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-// and/or sell copies of the Software, and to permit persons to whom the 
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included 
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-/*****************************************************************************/
+/*
+ * Copyright 2002-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Michael Pfeiffer
+ */
 
 
-#include "pr_server.h"
 #include "Jobs.h"
-// #include "PrintServerApp.h"
 
-// posix
 #include <stdlib.h>
 #include <string.h>
 
-// BeOS
-#include <kernel/fs_attr.h>
 #include <Application.h>
+#include <fs_attr.h>
 #include <Node.h>
 #include <NodeInfo.h>
 #include <NodeMonitor.h>
 
+#include "pr_server.h"
+
 
 // Implementation of Job
-
-Job::Job(const BEntry& job, Folder* folder) 
-	: fFolder(folder)
-	, fTime(-1)
-	, fStatus(kUnknown)
-	, fValid(false)
-	, fPrinter(NULL)
+Job::Job(const BEntry& job, Folder* folder)
+	:
+	fFolder(folder),
+	fTime(-1),
+	fStatus(kUnknown),
+	fValid(false),
+	fPrinter(NULL)
 {
 	// store light weight versions of BEntry and BNode
 	job.GetRef(&fEntry);
 	job.GetNodeRef(&fNode);
 
 	fValid = IsValidJobFile();
-	
+
 	BNode node(&job);
-	if (node.InitCheck() != B_OK) return;
+	if (node.InitCheck() != B_OK)
+		return;
 
 	BString status;
-		// read status attribute
-	if (node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) != B_OK) {
+		// Read status attribute
+	if (node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) != B_OK)
 		status = "";
-	}
+
     UpdateStatus(status.String());
-    
-    	// Now get file name and creation time from file name
+
+    // Now get file name and creation time from file name
     fTime = 0;
     BEntry entry(job);
     char name[B_FILE_NAME_LENGTH];
-    if (entry.InitCheck() == B_OK && entry.GetName(name) == B_OK) {
-    	fName = name;
-    		// search for last '@' in file name
-		char* p = NULL, *c = name;
-		while ((c = strchr(c, '@')) != NULL) {
-			p = c; c ++;
-		}
-			// and get time from file name
-		if (p) fTime = atoi(p+1);
-    }
+
+    if (entry.InitCheck() != B_OK || entry.GetName(name) != B_OK)
+		return;
+
+	fName = name;
+
+	// Search for last '@' in file name
+	char* p = NULL
+	char* c = name;
+	while ((c = strchr(c, '@')) != NULL) {
+		p = c;
+		c++;
+	}
+
+	// Get time from file name
+	if (p != NULL)
+		fTime = atoi(p + 1);
 }
 
-// conversion from string representation of status to JobStatus constant
-void Job::UpdateStatus(const char* status) {
-	if (strcmp(status, PSRV_JOB_STATUS_WAITING) == 0) fStatus = kWaiting;
-	else if (strcmp(status, PSRV_JOB_STATUS_PROCESSING) == 0) fStatus = kProcessing;
-	else if (strcmp(status, PSRV_JOB_STATUS_FAILED) == 0) fStatus = kFailed;
-	else if (strcmp(status, PSRV_JOB_STATUS_COMPLETED) == 0) fStatus = kCompleted;
-	else fStatus = kUnknown;
+
+// Conversion from string representation of status to JobStatus constant
+void
+Job::UpdateStatus(const char* status)
+{
+	if (strcmp(status, PSRV_JOB_STATUS_WAITING) == 0)
+		fStatus = kWaiting;
+	else if (strcmp(status, PSRV_JOB_STATUS_PROCESSING) == 0)
+		fStatus = kProcessing;
+	else if (strcmp(status, PSRV_JOB_STATUS_FAILED) == 0)
+		fStatus = kFailed;
+	else if (strcmp(status, PSRV_JOB_STATUS_COMPLETED) == 0)
+		fStatus = kCompleted;
+	else
+		fStatus = kUnknown;
 }
+
 
 // Write to status attribute of node
-void Job::UpdateStatusAttribute(const char* status) {
+void
+Job::UpdateStatusAttribute(const char* status)
+{
 	BNode node(&fEntry);
-	if (node.InitCheck() == B_OK) {
-		node.WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0, status, strlen(status)+1);
-	}
+	if (node.InitCheck() == B_OK)
+		node.WriteAttrString(PSRV_SPOOL_ATTR_STATUS, status);
+
+		// node.WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0, status, strlen(status)+1);
 }
 
 
-bool Job::HasAttribute(BNode* n, const char* name) {
+bool
+Job::HasAttribute(BNode* node, const char* name)
+{
 	attr_info info;
-	return n->GetAttrInfo(name, &info) == B_OK;
+	return node->GetAttrInfo(name, &info) == B_OK;
 }
 
 
-bool Job::IsValidJobFile() {
+bool
+Job::IsValidJobFile()
+{
 	BNode node(&fEntry);
-	if (node.InitCheck() != B_OK) return false;
+	if (node.InitCheck() != B_OK)
+		return false;
 
 	BNodeInfo info(&node);
-	char mimeType[256];
+	char mimeType[B_MIME_TYPE_LENGTH];
 
-		// Is job a spool file?
-	return (info.InitCheck() == B_OK && 
-	    info.GetType(mimeType) == B_OK &&
-	    strcmp(mimeType, PSRV_SPOOL_FILETYPE) == 0) &&
-	    HasAttribute(&node, PSRV_SPOOL_ATTR_MIMETYPE) &&
-	    HasAttribute(&node, PSRV_SPOOL_ATTR_PAGECOUNT) &&
-	    HasAttribute(&node, PSRV_SPOOL_ATTR_DESCRIPTION) &&
-	    HasAttribute(&node, PSRV_SPOOL_ATTR_PRINTER) &&
-	    HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS); 
+	// Is the job a spool file?
+	if (info.InitCheck() == B_OK
+		&& info.GetType(mimeType) == B_OK
+		&& strcmp(mimeType, PSRV_SPOOL_FILETYPE) == 0)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_MIMETYPE)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PAGECOUNT)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_DESCRIPTION)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PRINTER)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS)
+		return true;
+
+	return false;
 }
 
 
 // Set status of object and optionally write to attribute of node
-void Job::SetStatus(JobStatus s, bool writeToNode) {
-	fStatus = s; 
-	if (!writeToNode) return;
-	switch (s) {
-		case kWaiting: UpdateStatusAttribute(PSRV_JOB_STATUS_WAITING); break;
-		case kProcessing: UpdateStatusAttribute(PSRV_JOB_STATUS_PROCESSING); break;
-		case kFailed: UpdateStatusAttribute(PSRV_JOB_STATUS_FAILED); break;
-		case kCompleted: UpdateStatusAttribute(PSRV_JOB_STATUS_COMPLETED); break;
-		default: break;
+void
+Job::SetStatus(JobStatus status, bool writeToNode)
+{
+	fStatus = status;
+
+	if (!writeToNode)
+		return;
+
+	switch (status) {
+		case kWaiting:
+			UpdateStatusAttribute(PSRV_JOB_STATUS_WAITING);
+			break;
+
+		case kProcessing:
+			UpdateStatusAttribute(PSRV_JOB_STATUS_PROCESSING);
+			break;
+
+		case kFailed:
+			UpdateStatusAttribute(PSRV_JOB_STATUS_FAILED);
+			break;
+
+		case kCompleted:
+			UpdateStatusAttribute(PSRV_JOB_STATUS_COMPLETED);
+			break;
+
+		default:
+			break;
 	}
 }
+
 
 // Synchronize file attribute with member variable
-void Job::UpdateAttribute() {
-	fValid = fValid || IsValidJobFile();	
+void
+Job::UpdateAttribute()
+{
+	fValid = fValid || IsValidJobFile();
+
 	BNode node(&fEntry);
 	BString status;
-	if (node.InitCheck() == B_OK &&
-		node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) == B_OK) {
+	if (node.InitCheck() == B_OK
+		&& node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) == B_OK)
 		UpdateStatus(status.String());
-	}
 }
 
-void Job::Remove() {
+void
+Job::Remove()
+{
 	BEntry entry(&fEntry);
-	if (entry.InitCheck() == B_OK) entry.Remove();
+	if (entry.InitCheck() == B_OK)
+		entry.Remove();
 }
+
 
 // Implementation of Folder
 
 // BObjectList CompareFunction
-int Folder::AscendingByTime(const Job* a, const Job* b) {
+int
+Folder::AscendingByTime(const Job* a, const Job* b)
+{
 	return a->Time() - b->Time();
 }
 
-bool Folder::AddJob(BEntry& entry, bool notify) {
+
+bool
+Folder::AddJob(BEntry& entry, bool notify)
+{
 	Job* job = new Job(entry, this);
+	if (job == NULL)
+		return false;
+
 	if (job->InitCheck() == B_OK) {
 		fJobs.AddItem(job);
-		if (notify) Notify(job, kJobAdded);
+		if (notify)
+			Notify(job, kJobAdded);
+
 		return true;
-	} else {
-		job->Release();
-		return false;
 	}
+
+	job->Release();
+
+	return false;
 }
 
-// simplified assumption that ino_t identifies job file
+
+// Simplified assumption that ino_t identifies job file
 // will probabely not work in all cases with link to a file on another volume???
-Job* Folder::Find(node_ref* node) {
-	for (int i = 0; i < fJobs.CountItems(); i ++) {
-		Job* job = fJobs.ItemAt(i);
-		if (job->NodeRef() == *node) return job;
+Job*
+Folder::Find(node_ref* node)
+{
+	if (node == NULL)
+		return NULL;
+
+	for (int32 index = 0; index < fJobs.CountItems(); index++) {
+		Job* job = fJobs.ItemAt(index);
+		if (job != NULL && job->NodeRef() == *node)
+			return job;
 	}
+
 	return NULL;
 }
 
-void Folder::EntryCreated(node_ref* node, entry_ref* entry) {
+
+void
+Folder::EntryCreated(node_ref* node, entry_ref* entry)
+{
 	BEntry job(entry);
 	if (job.InitCheck() == B_OK && Lock()) {
-		if (AddJob(job)) {
+		if (AddJob(job))
 			fJobs.SortItems(AscendingByTime);
-		}
+
 		Unlock();
 	}
 }
 
-void Folder::EntryRemoved(node_ref* node) {
+
+void
+Folder::EntryRemoved(node_ref* node)
+{
 	Job* job = Find(node);
-	if (job && Lock()) {
+	if (job != NULL && Lock()) {
 		fJobs.RemoveItem(job);
 		Notify(job, kJobRemoved);
 		job->Release();
@@ -208,34 +261,44 @@ void Folder::EntryRemoved(node_ref* node) {
 	}
 }
 
-void Folder::AttributeChanged(node_ref* node) {
+
+void
+Folder::AttributeChanged(node_ref* node)
+{
 	Job* job = Find(node);
-	if (job && Lock()) {
+	if (job != NULL && Lock()) {
 		job->UpdateAttribute();
 		Notify(job, kJobAttrChanged);
 		Unlock();
 	}
 }
 
-// initial setup of job list
-void Folder::SetupJobList() {
-	if (inherited::Folder()->InitCheck() == B_OK) {
-		inherited::Folder()->Rewind();
-		
-		BEntry entry;
-		while (inherited::Folder()->GetNextEntry(&entry) == B_OK) {
-			AddJob(entry, false);
-		}
-		fJobs.SortItems(AscendingByTime);
-	}	
+
+// Initial setup of job list
+void
+Folder::SetupJobList()
+{
+	if (inherited::Folder()->InitCheck() != B_OK)
+		return;
+
+	inherited::Folder()->Rewind();
+
+	BEntry entry;
+	while (inherited::Folder()->GetNextEntry(&entry) == B_OK)
+		AddJob(entry, false);
+
+	fJobs.SortItems(AscendingByTime);
 }
 
-Folder::Folder(BLocker* locker, BLooper* looper, const BDirectory& spoolDir) 
-	: FolderWatcher(looper, spoolDir, true)
-	, fLocker(locker)
-	, fJobs()
+
+Folder::Folder(BLocker* locker, BLooper* looper, const BDirectory& spoolDir)
+	:
+	FolderWatcher(looper, spoolDir, true),
+	fLocker(locker),
+	fJobs()
 {
 	SetListener(this);
+
 	if (Lock()) {
 		SetupJobList();
 		Unlock();
@@ -243,23 +306,33 @@ Folder::Folder(BLocker* locker, BLooper* looper, const BDirectory& spoolDir)
 }
 
 
-Folder::~Folder() {
-	if (!Lock()) return;
-		// release jobs
-	for (int i = 0; i < fJobs.CountItems(); i ++) {
-		Job* job = fJobs.ItemAt(i);
-		job->Release();
+Folder::~Folder()
+{
+	if (!Lock())
+		return;
+
+	// Release jobs
+	for (int32 index = 0; index < fJobs.CountItems(); index++) {
+		Job* job = fJobs.ItemAt(index);
+		if (job != NULL)
+			job->Release();
 	}
+
 	Unlock();
 }
 
-Job* Folder::GetNextJob() {
-	for (int i = 0; i < fJobs.CountItems(); i ++) {
-		Job* job = fJobs.ItemAt(i);
-		if (job->IsValid() && job->IsWaiting()) {
-			job->Acquire(); return job;
+
+Job*
+Folder::GetNextJob()
+{
+	for (int32 index = 0; index < fJobs.CountItems(); index++) {
+		Job* job = fJobs.ItemAt(index);
+		if (job != NULL && job->IsValid() && job->IsWaiting()) {
+			job->Acquire();
+			return job;
 		}
 	}
+
 	return NULL;
 }
 

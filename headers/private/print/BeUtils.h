@@ -1,60 +1,34 @@
-/*****************************************************************************/
-// BeUtils.h
-//
-// Version: 1.0.0d1
-//
-// Several utilities for writing applications for the BeOS. It are small
-// very specific functions, but generally useful (could be here because of a
-// lack in the APIs, or just sheer lazyness :))
-//
-// Authors
-//   Ithamar R. Adema
-//   Michael Pfeiffer
-//
-// This application and all source files used in its construction, except 
-// where noted, are licensed under the MIT License, and have been written 
-// and are:
-//
-// Copyright (c) 2001, 2002 OpenBeOS Project
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-// and/or sell copies of the Software, and to permit persons to whom the 
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included 
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-/*****************************************************************************/
-
+/*
+ * Copyright 2001-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Ithamar R. Adema
+ *		Michael Pfeiffer
+ */
 #ifndef _BE_UTILS_H
 #define _BE_UTILS_H
 
+
+// Several utilities for writing applications for the BeOS. These are small
+// very specific functions, but generally useful (could be here because of a
+// lack in the APIs, or just sheer lazyness :))
+
+
 #include <FindDirectory.h>
 #include <Path.h>
-#include <SupportDefs.h>
 #include <Picture.h>
 #include <PictureButton.h>
-#include <TranslatorFormats.h>
+#include <SupportDefs.h>
 #include <TranslationUtils.h>
+#include <TranslatorFormats.h>
+
 
 status_t TestForAddonExistence(const char* name, directory_which which,
 							   const char* section, BPath& outPath);
 
 // Reference counted object
 class Object {
-private:
-	int32 fRefCount;
-
 public:
 	// After construction reference count is 1
 	Object() : fRefCount(1) { }
@@ -69,23 +43,28 @@ public:
 
 	bool Release() {
 		if (atomic_add(&fRefCount, -1) == 1) {
-			delete this; return true;
-		} else {
+			delete this;
+			return true;
+		} else
 			return false;
-		}
 	}
+
+private:
+	int32 fRefCount;
 };
 
 // Automatically send a reply to sender on destruction of object
 // and delete sender
 class AutoReply {
-	BMessage* fSender;
-	BMessage  fReply;
-	
 public:
 	AutoReply(BMessage* sender, uint32 what);
 	~AutoReply();
-	void SetReply(BMessage* m) { fReply = *m; }
+
+	void SetReply(BMessage* message) { fReply = *message; }
+
+private:
+	BMessage* fSender;
+	BMessage  fReply;
 };
 
 // mimetype from sender

@@ -8,6 +8,7 @@
 #ifndef PRINT_ADD_ON_SERVER_PROTOCOL_H
 #define PRINT_ADD_ON_SERVER_PROTOCOL_H
 
+
 extern const char* kPrintAddOnServerApplicationSignature;
 
 extern const char* kPrintAddOnServerStatusAttribute;
@@ -16,6 +17,7 @@ extern const char* kPrinterNameAttribute;
 extern const char* kPrinterFolderAttribute;
 extern const char* kPrintJobFileAttribute;
 extern const char* kPrintSettingsAttribute;
+
 
 enum {
 	// message constants for the five corresponding

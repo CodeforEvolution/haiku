@@ -237,10 +237,11 @@ BPrintJob::BeginJob()
 	if (status != B_OK)
 		return;
 
-	char *printer = _GetCurrentPrinterName();
+	char* printer = _GetCurrentPrinterName();
 	if (printer == NULL)
 		return;
-	MemoryDeleter _(printer);
+
+	MemoryDeleter printerDeleter(printer);
 
 	path.Append(printer);
 
@@ -256,7 +257,7 @@ BPrintJob::BeginJob()
 	strlcpy(fSpoolFileName, path.Path(), sizeof(fSpoolFileName));
 	fSpoolFile = new BFile(fSpoolFileName, B_READ_WRITE | B_CREATE_FILE);
 
-	if (fSpoolFile->InitCheck() != B_OK) {
+	if (fSpoolFile == NULL || fSpoolFile->InitCheck() != B_OK) {
 		CancelJob();
 		return;
 	}
@@ -313,18 +314,24 @@ BPrintJob::CommitJob()
 	fSetupMessage->FindString(PSRV_FIELD_CURRENT_PRINTER, &printerName);
 
 	BNodeInfo info(fSpoolFile);
-	info.SetType(PSRV_SPOOL_FILETYPE);
+	info.SetType(PSRV_SPOOL_MIMETYPE);
 
 	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PAGECOUNT, B_INT32_TYPE, 0,
 		&fSpoolFileHeader.page_count, sizeof(int32));
-	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_DESCRIPTION, B_STRING_TYPE, 0,
-		fPrintJobName, strlen(fPrintJobName) + 1);
-	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PRINTER, B_STRING_TYPE, 0,
-		printerName, strlen(printerName) + 1);
-	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0,
-		PSRV_JOB_STATUS_WAITING, strlen(PSRV_JOB_STATUS_WAITING) + 1);
-	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_MIMETYPE, B_STRING_TYPE, 0,
-		appInfo.signature, strlen(appInfo.signature) + 1);
+//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_DESCRIPTION, B_STRING_TYPE, 0,
+//		fPrintJobName, strlen(fPrintJobName) + 1);
+//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PRINTER, B_STRING_TYPE, 0,
+//		printerName, strlen(printerName) + 1);
+//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0,
+//		PSRV_JOB_STATUS_WAITING, strlen(PSRV_JOB_STATUS_WAITING) + 1);
+//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_MIMETYPE, B_STRING_TYPE, 0,
+//		appInfo.signature, strlen(appInfo.signature) + 1);
+
+	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_DESCRIPTION, fPrintJobName);
+	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_PRINTER, printerName);
+	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_STATUS,
+		PSRV_JOB_STATUS_WAITING);
+	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_MIMETYPE, appInfo.signature);
 
 	delete fSpoolFile;
 	fSpoolFile = NULL;
@@ -352,6 +359,7 @@ BPrintJob::CancelJob()
 
 	fAbort = 1;
 	BEntry(fSpoolFileName).Remove();
+
 	delete fSpoolFile;
 	fSpoolFile = NULL;
 }
@@ -722,7 +730,7 @@ void BPrintJob::_ReservedPrintJob4() {}
 namespace BPrivate {
 
 
-PrintServerMessenger::PrintServerMessenger(uint32 what, BMessage *input)
+PrintServerMessenger::PrintServerMessenger(uint32 what, BMessage* input)
 	:
 	fWhat(what),
 	fInput(input),
@@ -739,7 +747,10 @@ PrintServerMessenger::~PrintServerMessenger()
 {
 	DeleteSemaphore();
 		// in case SendRequest could not start the thread
-	delete fRequest; fRequest = NULL;
+
+	delete fRequest;
+	fRequest = NULL;
+
 	AllowUserInput();
 }
 

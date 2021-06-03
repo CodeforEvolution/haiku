@@ -6,6 +6,8 @@
  *		Ithamar R. Adema
  *		Michael Pfeiffer
  */
+
+
 #include "PrinterDriverAddOn.h"
 
 #include <File.h>
@@ -32,7 +34,7 @@ PrinterDriverAddOn::PrinterDriverAddOn(const char* driver)
 	if (result != B_OK)
 		return;
 
-	fAddOnID = ::load_add_on(path.Path());
+	fAddOnID = load_add_on(path.Path());
 }
 
 
@@ -59,6 +61,7 @@ PrinterDriverAddOn::AddPrinter(const char* spoolFolderName)
 
 	if ((*func)(spoolFolderName) == NULL)
 		return B_ERROR;
+
 	return B_OK;
 }
 
@@ -121,6 +124,7 @@ PrinterDriverAddOn::DefaultSettings(BDirectory* spoolFolder, BMessage* settings)
 		settings->what = 'okok';
 	} else
 		result = B_ERROR;
+
 	delete newSettings;
 
 	return result;
@@ -149,6 +153,7 @@ PrinterDriverAddOn::TakeJob(const char* spoolFile, BDirectory* spoolFolder)
 	BMessage* message = (*func)(&file, spoolFolder, &parameters);
 	if (message == NULL || message->what != 'okok')
 		result = B_ERROR;
+
 	delete message;
 
 	return result;
@@ -183,7 +188,7 @@ PrinterDriverAddOn::FindPathToDriver(const char* driver, BPath* path)
 bool
 PrinterDriverAddOn::IsLoaded() const
 {
-	return fAddOnID > 0;
+	return fAddOnID > -1;
 }
 
 
@@ -195,5 +200,6 @@ PrinterDriverAddOn::CopyValidSettings(BMessage* settings, BMessage* newSettings)
 		settings->what = 'okok';
 		return B_OK;
 	}
+
 	return B_ERROR;
 }

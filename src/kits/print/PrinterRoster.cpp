@@ -6,7 +6,10 @@
  *		Julun, <host.haiku@gmx.de
  */
 
+
 #include <PrinterRoster.h>
+
+#include <new>
 
 #include <FindDirectory.h>
 #include <Node.h>
@@ -15,15 +18,13 @@
 #include <Printer.h>
 
 
-#include <new>
-
-
 namespace BPrivate {
 	namespace Print {
 
 
 BPrinterRoster::BPrinterRoster()
-	: fListener(NULL)
+	:
+	fListener(NULL)
 {
 	BPath path;
 	find_directory(B_USER_PRINTERS_DIRECTORY, &path, true);
@@ -44,24 +45,24 @@ BPrinterRoster::CountPrinters()
 {
 	Rewind();
 
-	int32 i = 0;
+	int32 numPrinters = 0;
 	BPrinter printer;
 	while (GetNextPrinter(&printer) == B_OK)
-		i++;
+		numPrinters++;
 
 	Rewind();
-	return i;
+	return numPrinters;
 }
 
 
 status_t
 BPrinterRoster::GetNextPrinter(BPrinter* printer)
 {
-	if (!printer)
+	if (printer == NULL)
 		return B_BAD_VALUE;
 
 	status_t status = fUserPrintersDirectory.InitCheck();
-	if (!status == B_OK)
+	if (status != B_OK)
 		return status;
 
 	BEntry entry;
@@ -71,10 +72,10 @@ BPrinterRoster::GetNextPrinter(BPrinter* printer)
 		if (status == B_OK) {
 			printer->SetTo(entry);
 			next = !printer->IsValid();
-		} else {
+		} else
 			printer->Unset();
-		}
 	}
+
 	return status;
 }
 
@@ -82,12 +83,12 @@ BPrinterRoster::GetNextPrinter(BPrinter* printer)
 status_t
 BPrinterRoster::GetDefaultPrinter(BPrinter* printer)
 {
-	if (!printer)
+	if (printer == NULL)
 		return B_BAD_VALUE;
 
 	BDirectory dir(&fUserPrintersNodRef);
 	status_t status = dir.InitCheck();
-	if (!status == B_OK)
+	if (status != B_OK)
 		return status;
 
 	BEntry entry;
@@ -99,6 +100,7 @@ BPrinterRoster::GetDefaultPrinter(BPrinter* printer)
 		if (printer->IsValid() && printer->IsDefault())
 			return B_OK;
 	}
+
 	printer->Unset();
 	return B_ERROR;
 }
@@ -107,12 +109,12 @@ BPrinterRoster::GetDefaultPrinter(BPrinter* printer)
 status_t
 BPrinterRoster::FindPrinter(const BString& name, BPrinter* printer)
 {
-	if (name.Length() <= 0 || !printer)
+	if (name.Length() <= 0 || printer == NULL)
 		return B_BAD_VALUE;
 
 	BDirectory dir(&fUserPrintersNodRef);
 	status_t status = dir.InitCheck();
-	if (!status == B_OK)
+	if (status != B_OK)
 		return status;
 
 	BEntry entry;
@@ -124,6 +126,7 @@ BPrinterRoster::FindPrinter(const BString& name, BPrinter* printer)
 		if (printer->IsValid() && printer->Name() == name)
 			return B_OK;
 	}
+
 	printer->Unset();
 	return B_ERROR;
 
@@ -146,7 +149,7 @@ BPrinterRoster::StartWatching(const BMessenger& listener)
 		return B_BAD_VALUE;
 
 	fListener = new(std::nothrow) BMessenger(listener);
-	if (!fListener)
+	if (fListener == NULL)
 		return B_NO_MEMORY;
 
 	return watch_node(&fUserPrintersNodRef, B_WATCH_DIRECTORY, *fListener);
@@ -156,7 +159,7 @@ BPrinterRoster::StartWatching(const BMessenger& listener)
 void
 BPrinterRoster::StopWatching()
 {
-	if (fListener) {
+	if (fListener != NULL) {
 		stop_watching(*fListener);
 		delete fListener;
 		fListener = NULL;

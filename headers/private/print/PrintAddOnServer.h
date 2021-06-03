@@ -18,8 +18,7 @@
 #include <SupportDefs.h>
 
 
-class PrintAddOnServer
-{
+class PrintAddOnServer {
 public:
 						PrintAddOnServer(const char* driver);
 	virtual				~PrintAddOnServer();
@@ -52,11 +51,10 @@ private:
 			status_t	GetResultAndUpdateSettings(BMessage& reply,
 							BMessage* settings);
 
+private:
 	BString		fDriver;
 	status_t	fLaunchStatus;
 	BMessenger	fMessenger;
 };
-
-
 
 #endif

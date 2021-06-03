@@ -1,13 +1,13 @@
 /*
- * Copyright 2001-2010, Haiku, Inc. All rights reserved.
+ * Copyright 2001-2010 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Ithamar R. Adema
  *		Michael Pfeiffer
  */
-#ifndef PRINTER_DRIVER_ADD_ON_H
-#define PRINTER_DRIVER_ADD_ON_H
+#ifndef _PRINTER_DRIVER_ADD_ON_H
+#define _PRINTER_DRIVER_ADD_ON_H
 
 
 #include <Directory.h>
@@ -17,8 +17,7 @@
 #include <SupportDefs.h>
 
 
-class PrinterDriverAddOn
-{
+class PrinterDriverAddOn {
 public:
 						PrinterDriverAddOn(const char* driver);
 						~PrinterDriverAddOn();
@@ -40,7 +39,8 @@ private:
 			status_t	CopyValidSettings(BMessage* settings,
 							BMessage* newSettings);
 
-	image_id	fAddOnID;
+private:
+			image_id	fAddOnID;
 };
 
 

@@ -5,8 +5,8 @@
  * Authors:
  *		Julun, <host.haiku@gmx.de
  */
-#ifndef _PRINT_PANEL_H_
-#define _PRINT_PANEL_H_
+#ifndef _PRINT_PANEL_H
+#define _PRINT_PANEL_H
 
 
 #include <MessageFilter.h>
@@ -51,7 +51,8 @@ public:
 
 	virtual	void			Quit();
 	virtual	bool			QuitRequested();
-	virtual void			DispatchMessage(BMessage* message, BHandler* handler);
+	virtual void			DispatchMessage(BMessage* message,
+								BHandler* handler);
 
 protected:
 	virtual status_t		ShowPanel();
@@ -90,4 +91,4 @@ private:
 }	// namespace BPrivate
 
 
-#endif	// _PRINT_PANEL_H_
+#endif	// _PRINT_PANEL_H

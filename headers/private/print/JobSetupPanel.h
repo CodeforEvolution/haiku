@@ -3,7 +3,7 @@
  * Distributed under the terms of the MIT License.
  *
  * Authors:
- *		Julun, <host.haiku@gmx.de
+ *		Julun, <host.haiku@gmx.de>
  */
 #ifndef _JOB_SETUP_PANEL_H_
 #define _JOB_SETUP_PANEL_H_
@@ -59,7 +59,8 @@ public:
 	virtual	status_t			Go();
 
 			BPrinter*			Printer() const;
-			void				SetPrinter(BPrinter* printer, bool keepSettings);
+			void				SetPrinter(BPrinter* printer,
+									bool keepSettings);
 
 			print_range			PrintRange() const;
 			void				SetPrintRange(print_range range);
@@ -99,8 +100,6 @@ private:
 			BCheckBox*			fColor;
 			BCheckBox*			fDuplex;
 };
-
-
 	}	// namespace Print
 }	// namespace BPrivate
 

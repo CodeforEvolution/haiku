@@ -6,7 +6,10 @@
  *		Julun, <host.haiku@gmx.de>
  */
 
+
 #include <JobSetupPanel.h>
+
+#include <stdlib.h>
 
 #include <Box.h>
 #include <Button.h>
@@ -24,19 +27,17 @@
 #include <TextControl.h>
 
 
-#include <stdlib.h>
-
-
 namespace BPrivate {
 	namespace Print {
 
 
 BJobSetupPanel::BJobSetupPanel(BPrinter* printer)
-	: BPrintPanel("Print document")
-	, fPrinter(printer)
-	, fPrinterRoster(NULL)
-	, fPrintRange(B_ALL_PAGES)
-	, fJobPanelFlags(B_NO_OPTIONS)
+	:
+	BPrintPanel("Print document"),
+	fPrinter(printer),
+	fPrinterRoster(NULL),
+	fPrintRange(B_ALL_PAGES),
+	fJobPanelFlags(B_NO_OPTIONS)
 {
 	_InitObject();
 	_SetupInterface();
@@ -44,11 +45,12 @@ BJobSetupPanel::BJobSetupPanel(BPrinter* printer)
 
 
 BJobSetupPanel::BJobSetupPanel(BPrinter* printer, uint32 flags)
-	: BPrintPanel("Print document")
-	, fPrinter(printer)
-	, fPrinterRoster(NULL)
-	, fPrintRange(B_ALL_PAGES)
-	, fJobPanelFlags(flags)
+	:
+	BPrintPanel("Print document"),
+	fPrinter(printer),
+	fPrinterRoster(NULL),
+	fPrintRange(B_ALL_PAGES),
+	fJobPanelFlags(flags)
 {
 	_InitObject();
 	_SetupInterface();
@@ -62,7 +64,8 @@ BJobSetupPanel::~BJobSetupPanel()
 
 
 BJobSetupPanel::BJobSetupPanel(BMessage* data)
-	: BPrintPanel(data)
+	:
+	BPrintPanel(data)
 {
 	// TODO: implement
 }
@@ -87,7 +90,6 @@ BJobSetupPanel::Archive(BMessage* data, bool deep) const
 void
 BJobSetupPanel::MessageReceived(BMessage* message)
 {
-
 	BPrintPanel::MessageReceived(message);
 }
 
@@ -134,22 +136,31 @@ void
 BJobSetupPanel::SetPrintRange(print_range range)
 {
 	switch (range) {
-		case B_ALL_PAGES: {
+		case B_ALL_PAGES:
+		{
 			fPrintRange = range;
 			fPrintAll->SetValue(B_CONTROL_ON);
-		}	break;
 
-		case B_SELECTION: {
+			break;
+		}
+
+		case B_SELECTION:
+		{
 			fPrintRange = range;
 			SetOptionFlags(OptionFlags() | B_PRINT_SELECTION);
 			fSelection->SetValue(B_CONTROL_ON);
-		}	break;
 
-		case B_PAGE_RANGE: {
+			break;
+		}
+
+		case B_PAGE_RANGE:
+		{
 			fPrintRange = range;
 			SetOptionFlags(OptionFlags() | B_PRINT_PAGE_RANGE);
 			fPagesFrom->SetValue(B_CONTROL_ON);
-		}	break;
+
+			break;
+		}
 	}
 }
 
@@ -230,6 +241,7 @@ void
 BJobSetupPanel::_InitObject()
 {
 	fPrinterRoster = new BPrinterRoster();
+
 	fPrinterRoster->StartWatching(this);
 
 	if (!fPrinter->IsValid()) {
@@ -267,7 +279,8 @@ BJobSetupPanel::_SetupInterface()
 	if (fPrinterPopUp->FindMarked() == NULL)
 		pdf->SetMarked(true);
 
-	fProperties = new BButton("Properties" B_UTF8_ELLIPSIS , new BMessage('prop'));
+	fProperties = new BButton("Properties" B_UTF8_ELLIPSIS,
+		new BMessage('prop'));
 	fPrinterInfo = new BStringView("label", "");
 	fPrinterInfo->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 	BBox* divider = new BBox(B_FANCY_BORDER, NULL);
@@ -285,7 +298,7 @@ BJobSetupPanel::_SetupInterface()
 		.Add(fPrintToFile)
 		.SetInsets(10.0, 5.0, 10.0, 5.0);
 
-	BBox *box = new BBox(B_FANCY_BORDER, view);
+	BBox* box = new BBox(B_FANCY_BORDER, view);
 	box->SetLabel(BGroupLayoutBuilder()
 		.Add(new BStringView("", "Printer"))
 		.SetInsets(2.0, 0.0, 2.0, 0.0));

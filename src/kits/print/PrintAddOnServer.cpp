@@ -1,3 +1,12 @@
+/*
+ * Copyright 2010 Haiku, Inc. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Michael Pfeiffer
+ */
+
+
 #include "PrintAddOnServer.h"
 
 #include <Entry.h>
@@ -5,6 +14,7 @@
 
 #include "PrinterDriverAddOn.h"
 #include "PrintAddOnServerProtocol.h"
+
 
 static const bigtime_t kSeconds = 1000000L;
 static const bigtime_t kDeliveryTimeout = 30 * kSeconds;
@@ -96,8 +106,7 @@ PrintAddOnServer::DefaultSettings(BDirectory* spoolFolder,
 
 
 status_t
-PrintAddOnServer::TakeJob(const char* spoolFile,
-				BDirectory* spoolFolder)
+PrintAddOnServer::TakeJob(const char* spoolFile, BDirectory* spoolFolder)
 {
 	BMessage message(kMessageTakeJob);
 	message.AddString(kPrinterDriverAttribute, Driver());
@@ -131,14 +140,14 @@ status_t
 PrintAddOnServer::Launch(BMessenger& messenger)
 {
 	team_id team;
-	status_t result =
-		be_roster->Launch(kPrintAddOnServerApplicationSignature,
-			(BMessage*)NULL, &team);
-	if (result != B_OK) {
+	status_t result = be_roster->Launch(kPrintAddOnServerApplicationSignature,
+		(BMessage*)NULL, &team);
+
+	if (result != B_OK)
 		return result;
-	}
 
 	fMessenger = BMessenger(kPrintAddOnServerApplicationSignature, team);
+
 	return result;
 }
 
@@ -206,14 +215,17 @@ PrintAddOnServer::GetResult(BMessage& reply)
 	int32 status;
 	status_t result = reply.FindInt32(kPrintAddOnServerStatusAttribute,
 		&status);
+
 	if (result != B_OK)
 		return result;
+
 	return static_cast<status_t>(status);
 }
 
 
 status_t
-PrintAddOnServer::GetResultAndUpdateSettings(BMessage& reply, BMessage* settings)
+PrintAddOnServer::GetResultAndUpdateSettings(BMessage& reply,
+	BMessage* settings)
 {
 	BMessage newSettings;
 	if (reply.FindMessage(kPrintSettingsAttribute, &newSettings) == B_OK)
