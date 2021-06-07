@@ -1,6 +1,9 @@
 // Sun, 18 Jun 2000
 // Y.Takagi
 
+
+#include "IppSetupDlg.h"
+
 #include <string.h>
 #include <strings.h>
 
@@ -12,11 +15,11 @@
 #include <View.h>
 #include <Url.h>
 
-#include "IppContent.h"
-#include "IppURLConnection.h"
-#include "IppSetupDlg.h"
-#include "IppDefs.h"
 #include "DbgMsg.h"
+#include "IppContent.h"
+#include "IppDefs.h"
+#include "IppURLConnection.h"
+
 
 #define	DLG_WIDTH		350
 #define DLG_HEIGHT		80
@@ -65,33 +68,41 @@ enum MSGS {
 
 class IppSetupView : public BView {
 public:
-	IppSetupView(BRect, BDirectory *);
+	IppSetupView(BRect frame, BDirectory* directory);
 	~IppSetupView() {}
+
 	virtual void AttachedToWindow();
+
 	bool UpdateViewData();
 
 private:
-	BTextControl *url;
-	BDirectory *dir;
+	BTextControl* fUrlTextControl;
+	BDirectory* fDirectory;
 };
 
-IppSetupView::IppSetupView(BRect frame, BDirectory *d)
-	: BView(frame, "", B_FOLLOW_ALL, B_WILL_DRAW), dir(d)
+
+IppSetupView::IppSetupView(BRect frame, BDirectory* directory)
+	:
+	BView(frame, "", B_FOLLOW_ALL, B_WILL_DRAW),
+	fDirectory(directory)
 {
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 }
 
-void IppSetupView::AttachedToWindow()
+
+void
+IppSetupView::AttachedToWindow()
 {
 	/* url box */
 
-	url = new BTextControl(URL_RECT, "", URL_TEXT, "", NULL);
-	AddChild(url);
-	url->SetDivider(StringWidth(URL_TEXT) + 10);
+	fUrlTextControl = new BTextControl(URL_RECT, "", URL_TEXT, "", NULL);
+	AddChild(fUrlTextControl);
+	fUrlTextControl->SetDivider(StringWidth(URL_TEXT) + 10);
 
 	/* cancel */
 
-	BButton *button = new BButton(CANCEL_RECT, "", CANCEL_TEXT, new BMessage(M_CANCEL));
+	BButton* button = new BButton(CANCEL_RECT, "", CANCEL_TEXT,
+		new BMessage(M_CANCEL));
 	AddChild(button);
 
 	/* ok */
@@ -101,110 +112,127 @@ void IppSetupView::AttachedToWindow()
 	button->MakeDefault(true);
 }
 
-bool IppSetupView::UpdateViewData()
-{
-	string error_msg;
 
-	if (*url->Text()) {
-		IppContent *request = new IppContent;
+bool
+IppSetupView::UpdateViewData()
+{
+	BString errorMsg = B_EMPTY_STRING;
+
+	if (fUrlTextControl->Text() != NULL) {
+		IppContent* request = new IppContent();
 		request->setOperationId(IPP_GET_PRINTER_ATTRIBUTES);
 		request->setDelimiter(IPP_OPERATION_ATTRIBUTES_TAG);
 		request->setCharset("attributes-charset", "utf-8");
 		request->setNaturalLanguage("attributes-natural-language", "en-us");
-		request->setURI("printer-uri", url->Text());
+		request->setURI("printer-uri", fUrlTextControl->Text());
 		request->setDelimiter(IPP_END_OF_ATTRIBUTES_TAG);
 
-		IppURLConnection conn(BUrl(url->Text()));
+
+
+		IppURLConnection conn(BUrl(fUrlTextControl->Text()));
 		conn.setIppRequest(request);
 		conn.setRequestProperty("Connection", "close");
 
 		HTTP_RESPONSECODE response_code = conn.getResponseCode();
 		if (response_code == HTTP_OK) {
-			const char *content_type = conn.getContentType();
+			const char* content_type = conn.getContentType();
 			if (content_type == NULL
 				|| strncasecmp(content_type, "application/ipp", 15) == 0) {
-				const IppContent *ipp_response = conn.getIppResponse();
+				const IppContent* ipp_response = conn.getIppResponse();
 				if (ipp_response->good()) {
-					dir->WriteAttr(IPP_URL, B_STRING_TYPE, 0, url->Text(),
-						strlen(url->Text()) + 1);
+					dir->WriteAttrString(IPP_URL, url->Text());
 					return true;
-				} else {
-					error_msg = ipp_response->getStatusMessage();
-				}
-			} else {
-				error_msg = "cannot get a IPP response.";
-			}
-		} else if (response_code != HTTP_UNKNOWN) {
-			error_msg = conn.getResponseMessage();
-		} else {
-			error_msg = "cannot connect to the IPP server.";
-		}
-	} else {
-		error_msg = "please input the printer URL.";
-	}
+				} else
+					errorMsg = ipp_response->getStatusMessage();
+			} else
+				errorMsg = "cannot get a IPP response.";
+		} else if (response_code != HTTP_UNKNOWN)
+			errorMsg = conn.getResponseMessage();
+		else
+			errorMsg = "cannot connect to the IPP server.";
+	} else
+		errorMsg = "please input the printer URL.";
 
-	BAlert *alert = new BAlert("", error_msg.c_str(), "OK");
+	BAlert* alert = new BAlert("", errorMsg, "OK");
 	alert->SetFlags(alert->Flags() | B_CLOSE_ON_ESCAPE);
 	alert->Go();
+
 	return false;
 }
 
-IppSetupDlg::IppSetupDlg(BDirectory *dir)
-	: BWindow(BRect(100, 100, 100 + DLG_WIDTH, 100 + DLG_HEIGHT),
-		"IPP Setup", B_TITLED_WINDOW_LOOK, B_MODAL_APP_WINDOW_FEEL,
-		B_NOT_RESIZABLE | B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE
-			| B_CLOSE_ON_ESCAPE)
-{
-	result = 0;
 
+IppSetupDlg::IppSetupDlg(BDirectory* directory)
+	:
+	BWindow(BRect(100, 100, 100 + DLG_WIDTH, 100 + DLG_HEIGHT), "IPP Setup",
+	B_TITLED_WINDOW_LOOK, B_MODAL_APP_WINDOW_FEEL, B_NOT_RESIZABLE |
+	B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE | B_CLOSE_ON_ESCAPE),
+	fResult(B_ERROR)
+{
 	Lock();
-	IppSetupView *view = new IppSetupView(Bounds(), dir);
+	IppSetupView* view = new IppSetupView(Bounds(), directory);
 	AddChild(view);
 	Unlock();
 
-	semaphore = create_sem(0, "IppSetupSem");
+	fSemaphore = create_sem(0, "IppSetupSem");
 }
 
-bool IppSetupDlg::QuitRequested()
+
+bool
+IppSetupDlg::QuitRequested()
 {
-	result = B_ERROR;
-	release_sem(semaphore);
+	fResult = B_ERROR;
+	release_sem(fSemaphore);
+
 	return true;
 }
 
-void IppSetupDlg::MessageReceived(BMessage *msg)
+
+void
+IppSetupDlg::MessageReceived(BMessage* msg)
 {
-	bool success;
+	bool success = false;
 
 	switch (msg->what) {
-	case M_OK:
-		Lock();
-		success = ((IppSetupView *)ChildAt(0))->UpdateViewData();
-		Unlock();
-		if (success) {
-			result = B_NO_ERROR;
-			release_sem(semaphore);
+		case M_OK:
+		{
+			Lock();
+			success = ((IppSetupView*)ChildAt(0))->UpdateViewData();
+			Unlock();
+
+			if (success) {
+				fResult = B_OK;
+				release_sem(fSemaphore);
+			}
+
+			break;
 		}
-		break;
 
-	case M_CANCEL:
-		result = B_ERROR;
-		release_sem(semaphore);
-		break;
+		case M_CANCEL:
+		{
+			fResult = B_ERROR;
+			release_sem(fSemaphore);
 
-	default:
-		BWindow::MessageReceived(msg);
-		break;
+			break;
+		}
+
+		default:
+			BWindow::MessageReceived(msg);
+			break;
 	}
 }
 
-int IppSetupDlg::Go()
+
+int
+IppSetupDlg::Go()
 {
 	Show();
-	acquire_sem(semaphore);
-	delete_sem(semaphore);
-	int value = result;
+
+	acquire_sem(fSemaphore);
+	delete_sem(fSemaphore);
+	int value = fResult;
+
 	Lock();
 	Quit();
+
 	return value;
 }

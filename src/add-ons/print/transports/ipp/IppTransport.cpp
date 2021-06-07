@@ -1,6 +1,9 @@
 // Sun, 18 Jun 2000
 // Y.Takagi
 
+
+#include "IppTransport.h"
+
 #include <Alert.h>
 #include <DataIO.h>
 #include <Directory.h>
@@ -16,18 +19,17 @@
 #include "IppContent.h"
 #include "IppURLConnection.h"
 #include "IppSetupDlg.h"
-#include "IppTransport.h"
+
 #include "IppDefs.h"
 #include "DbgMsg.h"
 
-#if (!__MWERKS__)
-using namespace std;
-#else 
-#define std
-#endif
 
-IppTransport::IppTransport(BMessage *msg)
-	: BDataIO()
+using namespace std;
+
+
+IppTransport::IppTransport(BMessage* msg)
+	:
+	BDataIO()
 {
 	__url[0]  = '\0';
 	__user[0] = '\0';
@@ -42,7 +44,7 @@ IppTransport::IppTransport(BMessage *msg)
 		BDirectory dir(spool_path);
 		DUMP_BDIRECTORY(&dir);
 
-		dir.ReadAttr(IPP_URL, B_STRING_TYPE, 0, __url, sizeof(__url));
+		dir.ReadAttrString(IPP_URL, __url);
 		if (__url[0] == '\0') {
 			IppSetupDlg *dlg = new IppSetupDlg(&dir);
 			if (dlg->Go() == B_ERROR) {
@@ -51,19 +53,21 @@ IppTransport::IppTransport(BMessage *msg)
 			}
 		}
 
-		dir.ReadAttr(IPP_URL,    B_STRING_TYPE, 0, __url,    sizeof(__url));
+		dir.ReadAttrString(IPP_URL, __url);
+
 		dir.ReadAttr(IPP_JOB_ID, B_INT32_TYPE,  0, &__jobid, sizeof(__jobid));
+
 		__jobid++;
-		if (__jobid > 255) {
+		if (__jobid > 255)
 			__jobid = 1;
-		}
+
 		dir.WriteAttr(IPP_JOB_ID, B_INT32_TYPE, 0, &__jobid, sizeof(__jobid));
 
-		struct passwd *pwd = getpwuid(geteuid());
+		struct passwd* pwd = getpwuid(geteuid());
 		if (pwd != NULL && pwd->pw_name != NULL && pwd->pw_name[0])
 			strcpy(__user, pwd->pw_name);
 		else
-			strcpy(__user, "baron");
+			strcpy(__user, "shredder");
 
 		sprintf(__file, "%s/%s@ipp.%" B_PRId32, spool_path, __user, __jobid);
 
@@ -76,13 +80,14 @@ IppTransport::IppTransport(BMessage *msg)
 	__error = true;
 }
 
+
 IppTransport::~IppTransport()
 {
 	string error_msg;
 
 	if (!__error && __fs.good()) {
 		DBGMSG(("create IppContent\n"));
-		IppContent *request = new IppContent;
+		IppContent* request = new IppContent();
 		request->setOperationId(IPP_PRINT_JOB);
 		request->setDelimiter(IPP_OPERATION_ATTRIBUTES_TAG);
 		request->setCharset("attributes-charset", "utf-8");

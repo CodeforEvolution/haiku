@@ -1,126 +1,158 @@
 // Sun, 18 Jun 2000
 // Y.Takagi
 
-#if defined(__HAIKU__) || defined(HAIKU_TARGET_PLATFORM_BONE)
-#	include <sys/socket.h>
-#	include <netinet/in.h>
-#else
-#	include <net/socket.h>
-#endif
-
-#include <fstream>
-#include <list>
-#include <cstring>
 
 #include "IppContent.h"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#include <cstring>
+#include <fstream>
+#include <list>
+
+
 /*----------------------------------------------------------------------*/
 
-short readLength(istream &is)
+
+short
+readLength(istream& is)
 {
 	short len = 0;
-	is.read((char *)&len, sizeof(short));
+	is.read((char*)&len, sizeof(short));
 	len = ntohs(len);
 	return len;
 }
 
-void writeLength(ostream &os, short len)
+
+void
+writeLength(ostream& os, short len)
 {
 	len = htons(len);
-	os.write((char *)&len, sizeof(short));
+	os.write((char*)&len, sizeof(short));
 }
 
+
 /*----------------------------------------------------------------------*/
+
 
 DATETIME::DATETIME()
 {
 	memset(this, 0, sizeof(DATETIME));
 }
 
+
 DATETIME::DATETIME(const DATETIME &dt)
 {
 	memcpy(this, &dt.datetime, sizeof(DATETIME));
 }
 
-DATETIME & DATETIME::operator = (const DATETIME &dt)
+
+DATETIME&
+DATETIME::operator = (const DATETIME& dt)
 {
 	memcpy(this, &dt.datetime, sizeof(DATETIME));
 	return *this;
 }
 
-istream& operator >> (istream &is, DATETIME &attr)
+
+istream&
+operator >> (istream& is, DATETIME& attr)
 {
 	return is;
 }
 
-ostream& operator << (ostream &os, const DATETIME &attr)
+
+ostream&
+operator << (ostream& os, const DATETIME& attr)
 {
 	return os;
 }
 
 
 /*----------------------------------------------------------------------*/
+
 
 IppAttribute::IppAttribute(IPP_TAG t)
 	: tag(t)
 {
 }
 
-int IppAttribute::length() const
+
+int
+IppAttribute::length() const
 {
 	return 1;
 }
 
-istream &IppAttribute::input(istream &is)
+
+istream&
+IppAttribute::input(istream& is)
 {
 	return is;
 }
 
-ostream &IppAttribute::output(ostream &os) const
+
+ostream&
+IppAttribute::output(ostream& os) const
 {
 	os << (unsigned char)tag;
 	return os;
 }
 
-ostream &IppAttribute::print(ostream &os) const
+
+ostream&
+IppAttribute::print(ostream& os) const
 {
 	os << "Tag: " << hex << (int)tag << '\n';
 	return os;
 }
 
+
 /*----------------------------------------------------------------------*/
 
+
 IppNamedAttribute::IppNamedAttribute(IPP_TAG t)
-	: IppAttribute(t)
+	:
+	IppAttribute(t)
 {
 }
 
-IppNamedAttribute::IppNamedAttribute(IPP_TAG t, const char *s)
-	: IppAttribute(t), name(s ? s : "")
+
+IppNamedAttribute::IppNamedAttribute(IPP_TAG t, const char* s)
+	:
+	IppAttribute(t),
+	name(s != NULL ? s : "")
 {
 }
 
-int IppNamedAttribute::length() const
+
+int
+IppNamedAttribute::length() const
 {
 	return IppAttribute::length() + 2 + name.length();
 }
 
-istream &IppNamedAttribute::input(istream &is)
+
+istream&
+IppNamedAttribute::input(istream& is)
 {
 	short len = readLength(is);
 
 	if (0 < len) {
-		char *buffer = new char[len + 1];
+		char* buffer = new char[len + 1];
 		is.read(buffer, len);
 		buffer[len] = '\0';
 		name = buffer;
-		delete [] buffer;
+		delete[] buffer;
 	}
 
 	return is;
 }
 
-ostream &IppNamedAttribute::output(ostream &os) const
+
+ostream&
+IppNamedAttribute::output(ostream& os) const
 {
 	IppAttribute::output(os);
 
@@ -130,44 +162,56 @@ ostream &IppNamedAttribute::output(ostream &os) const
 	return os;
 }
 
-ostream &IppNamedAttribute::print(ostream &os) const
+
+ostream&
+IppNamedAttribute::print(ostream& os) const
 {
 	IppAttribute::print(os);
 	os << '\t' << "Name: " << name << '\n';
 	return os;
 }
 
+
 /*----------------------------------------------------------------------*/
 
+
 IppNoValueAttribute::IppNoValueAttribute(IPP_TAG t)
-	: IppNamedAttribute(t)
+	:
+	IppNamedAttribute(t)
 {
 }
 
-IppNoValueAttribute::IppNoValueAttribute(IPP_TAG t, const char *n)
-	: IppNamedAttribute(t, n)
+
+IppNoValueAttribute::IppNoValueAttribute(IPP_TAG t, const char* n)
+	:
+	IppNamedAttribute(t, n)
 {
 }
 
-int IppNoValueAttribute::length() const
+
+int
+IppNoValueAttribute::length() const
 {
 	return IppAttribute::length() + 2;
 }
 
-istream &IppNoValueAttribute::input(istream &is)
+
+istream&
+IppNoValueAttribute::input(istream& is)
 {
 	IppNamedAttribute::input(is);
 
 	short len = readLength(is);
 
-	if (0 < len) {
+	if (0 < len)
 		is.seekg(len, ios::cur);
-	}
 
 	return is;
 }
 
-ostream &IppNoValueAttribute::output(ostream &os) const
+
+ostream&
+IppNoValueAttribute::output(ostream& os) const
 {
 	IppAttribute::output(os);
 
@@ -176,45 +220,59 @@ ostream &IppNoValueAttribute::output(ostream &os) const
 	return os;
 }
 
-ostream &IppNoValueAttribute::print(ostream &os) const
+
+ostream&
+IppNoValueAttribute::print(ostream& os) const
 {
 	return IppNamedAttribute::print(os);
 }
 
+
 /*----------------------------------------------------------------------*/
 
+
 IppIntegerAttribute::IppIntegerAttribute(IPP_TAG t)
-	: IppNamedAttribute(t), value(0)
+	:
+	IppNamedAttribute(t),
+	value(0)
 {
 }
 
-IppIntegerAttribute::IppIntegerAttribute(IPP_TAG t, const char *n, int v)
-	: IppNamedAttribute(t, n), value(v)
+
+IppIntegerAttribute::IppIntegerAttribute(IPP_TAG t, const char* n, int v)
+	:
+	IppNamedAttribute(t, n),
+	value(v)
 {
 }
 
-int IppIntegerAttribute::length() const
+
+int
+IppIntegerAttribute::length() const
 {
 	return IppNamedAttribute::length() + 2 + 4;
 }
 
-istream &IppIntegerAttribute::input(istream &is)
+
+istream&
+IppIntegerAttribute::input(istream& is)
 {
 	IppNamedAttribute::input(is);
 
 	short len = readLength(is);
 
 	if (0 < len && len <= 4) {
-		is.read((char *)&value, sizeof(value));
+		is.read((char*)&value, sizeof(value));
 		value = ntohl(value);
-	} else {
+	} else
 		is.seekg(len, ios::cur);
-	}
 
 	return is;
 }
 
-ostream &IppIntegerAttribute::output(ostream &os) const
+
+ostream&
+IppIntegerAttribute::output(ostream& os) const
 {
 	IppNamedAttribute::output(os);
 
@@ -224,14 +282,18 @@ ostream &IppIntegerAttribute::output(ostream &os) const
 	return os;
 }
 
-ostream &IppIntegerAttribute::print(ostream &os) const
+
+ostream&
+IppIntegerAttribute::print(ostream& os) const
 {
 	IppNamedAttribute::print(os);
 	os << '\t' << "Value: " << dec << value << '\n';
 	return os;
 }
 
+
 /*----------------------------------------------------------------------*/
+
 
 IppBooleanAttribute::IppBooleanAttribute(IPP_TAG t)
 	: IppNamedAttribute(t), value(false)
