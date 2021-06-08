@@ -58,7 +58,7 @@ Job::Job(const BEntry& job, Folder* folder)
 	fName = name;
 
 	// Search for last '@' in file name
-	char* p = NULL
+	char* p = NULL;
 	char* c = name;
 	while ((c = strchr(c, '@')) != NULL) {
 		p = c;
@@ -93,10 +93,10 @@ void
 Job::UpdateStatusAttribute(const char* status)
 {
 	BNode node(&fEntry);
-	if (node.InitCheck() == B_OK)
-		node.WriteAttrString(PSRV_SPOOL_ATTR_STATUS, status);
-
-		// node.WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0, status, strlen(status)+1);
+	if (node.InitCheck() == B_OK) {
+		node.WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0, status,
+			strlen(status) + 1);
+	}
 }
 
 
@@ -121,12 +121,12 @@ Job::IsValidJobFile()
 	// Is the job a spool file?
 	if (info.InitCheck() == B_OK
 		&& info.GetType(mimeType) == B_OK
-		&& strcmp(mimeType, PSRV_SPOOL_FILETYPE) == 0)
+		&& strcmp(mimeType, PSRV_SPOOL_MIMETYPE) == 0
 		&& HasAttribute(&node, PSRV_SPOOL_ATTR_MIMETYPE)
 		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PAGECOUNT)
 		&& HasAttribute(&node, PSRV_SPOOL_ATTR_DESCRIPTION)
 		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PRINTER)
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS)
+		&& HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS))
 		return true;
 
 	return false;

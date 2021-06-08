@@ -11,6 +11,7 @@
 #define _PICTURE_ITERATOR_H
 
 
+#include <Font.h>
 #include <GraphicsDefs.h>
 #include <InterfaceDefs.h>
 #include <Picture.h>

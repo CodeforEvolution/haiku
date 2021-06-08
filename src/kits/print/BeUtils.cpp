@@ -38,7 +38,7 @@ TestForAddonExistence(const char* name, directory_which which,
 		return error;
 
 	outPath.Append(section);
-	outPath.Append(name)
+	outPath.Append(name);
 
 	struct stat buf;
 	error = stat(outPath.Path(), &buf);

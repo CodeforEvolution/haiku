@@ -318,20 +318,14 @@ BPrintJob::CommitJob()
 
 	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PAGECOUNT, B_INT32_TYPE, 0,
 		&fSpoolFileHeader.page_count, sizeof(int32));
-//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_DESCRIPTION, B_STRING_TYPE, 0,
-//		fPrintJobName, strlen(fPrintJobName) + 1);
-//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PRINTER, B_STRING_TYPE, 0,
-//		printerName, strlen(printerName) + 1);
-//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0,
-//		PSRV_JOB_STATUS_WAITING, strlen(PSRV_JOB_STATUS_WAITING) + 1);
-//	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_MIMETYPE, B_STRING_TYPE, 0,
-//		appInfo.signature, strlen(appInfo.signature) + 1);
-
-	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_DESCRIPTION, fPrintJobName);
-	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_PRINTER, printerName);
-	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_STATUS,
-		PSRV_JOB_STATUS_WAITING);
-	fSpoolFile->WriteAttrString(PSRV_SPOOL_ATTR_MIMETYPE, appInfo.signature);
+	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_DESCRIPTION, B_STRING_TYPE, 0,
+		fPrintJobName, strlen(fPrintJobName) + 1);
+	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_PRINTER, B_STRING_TYPE, 0,
+		printerName, strlen(printerName) + 1);
+	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_STATUS, B_STRING_TYPE, 0,
+		PSRV_JOB_STATUS_WAITING, strlen(PSRV_JOB_STATUS_WAITING) + 1);
+	fSpoolFile->WriteAttr(PSRV_SPOOL_ATTR_MIMETYPE, B_STRING_TYPE, 0,
+		appInfo.signature, strlen(appInfo.signature) + 1);
 
 	delete fSpoolFile;
 	fSpoolFile = NULL;

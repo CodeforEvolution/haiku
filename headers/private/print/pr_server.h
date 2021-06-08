@@ -49,12 +49,12 @@
 #define PSRV_JOB_STATUS_COMPLETED 		"Completed"
 
 // printer attributes
-#define PSRV_PRINTER_ATTR_DRV_NAME			"Driver Name"
-#define PSRV_PRINTER_ATTR_PRT_NAME			"Printer Name"
+#define PSRV_PRINTER_ATTR_DRIVER_NAME		"Driver Name"
+#define PSRV_PRINTER_ATTR_PRINTER_NAME		"Printer Name"
 #define PSRV_PRINTER_ATTR_COMMENTS			"Comments"
 #define PSRV_PRINTER_ATTR_STATE				"state"
 #define PSRV_PRINTER_ATTR_TRANSPORT			"transport"
-#define PSRV_PRINTER_ATTR_TRANSPORT_ADDR	"transport_address"
+#define PSRV_PRINTER_ATTR_TRANSPORT_ADDRESS	"transport_address"
 #define PSRV_PRINTER_ATTR_CNX				"connection"
 #define PSRV_PRINTER_ATTR_PNP				"_PNP"
 #define PSRV_PRINTER_ATTR_MDL				"_MDL"
