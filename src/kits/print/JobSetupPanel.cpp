@@ -14,9 +14,8 @@
 #include <Box.h>
 #include <Button.h>
 #include <CheckBox.h>
-#include <GridLayoutBuilder.h>
-#include <GroupLayoutBuilder.h>
 #include <GroupView.h>
+#include <LayoutBuilder.h>
 #include <MenuField.h>
 #include <MenuItem.h>
 #include <PopUpMenu.h>
@@ -181,7 +180,7 @@ BJobSetupPanel::LastPage() const
 {
 	BString text(fLastPage->Text());
 	if (text.Length() <= 0)
-		return LONG_MAX;
+		return INT32_MAX;
 
 	return atoi(text.String());
 }
@@ -211,27 +210,15 @@ BJobSetupPanel::OptionFlags() const
 void
 BJobSetupPanel::SetOptionFlags(uint32 flags)
 {
-	bool value = false;
-	if (flags & B_PRINT_TO_FILE)
-		value = true;
-	fPrintToFile->SetEnabled(value);
+	fPrintToFile->SetEnabled(flags & B_PRINT_TO_FILE);
 
-	value = false;
-	if (flags & B_PRINT_PAGE_RANGE)
-		value = true;
-	fPagesFrom->SetEnabled(value);
-	fFirstPage->SetEnabled(value);
-	fLastPage->SetEnabled(value);
+	fPagesFrom->SetEnabled(flags & B_PRINT_PAGE_RANGE);
+	fFirstPage->SetEnabled(flags & B_PRINT_PAGE_RANGE);
+	fLastPage->SetEnabled(flags & B_PRINT_PAGE_RANGE);
 
-	value = false;
-	if (flags & B_PRINT_SELECTION)
-		value = true;
-	fSelection->SetEnabled(value);
+	fSelection->SetEnabled(flags & B_PRINT_SELECTION);
 
-	value = false;
-	if (flags & B_PRINT_COLLATE_COPIES)
-		value = true;
-	fCollate->SetEnabled(value);
+	fCollate->SetEnabled(flags & B_PRINT_COLLATE_COPIES);
 
 	fJobPanelFlags = flags;
 }
@@ -272,7 +259,7 @@ BJobSetupPanel::_SetupInterface()
 	}
 
 	if (fPrinterRoster->CountPrinters() > 0)
-		fPrinterPopUp->AddItem(new BSeparatorItem);
+		fPrinterPopUp->AddItem(new BSeparatorItem());
 
 	BMenuItem* pdf = new BMenuItem("Save as PDF file" , NULL);
 	fPrinterPopUp->AddItem(pdf);
@@ -287,21 +274,28 @@ BJobSetupPanel::_SetupInterface()
 	divider->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 1));
 	fPrintToFile = new BCheckBox("Print to file");
 
-	BView* view = BGroupLayoutBuilder(B_VERTICAL, 5.0)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 10.0)
+	BView* view = BLayoutBuilder::Group<>(B_VERTICAL, 5.0)
+		.AddGroup(B_HORIZONTAL, 10.0)
 			.Add(fPrinterMenuField->CreateMenuBarLayoutItem())
-			.Add(fProperties))
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL,5.0)
+			.Add(fProperties)
+		.End()
+		.AddGroup(B_HORIZONTAL, 5.0)
 			.Add(new BStringView("label", "Printer info:"))
-			.Add(fPrinterInfo))
+			.Add(fPrinterInfo)
+		.End()
 		.Add(divider)
 		.Add(fPrintToFile)
-		.SetInsets(10.0, 5.0, 10.0, 5.0);
+		.SetInsets(10.0, 5.0, 10.0, 5.0)
+	.View();
 
 	BBox* box = new BBox(B_FANCY_BORDER, view);
-	box->SetLabel(BGroupLayoutBuilder()
+
+	BView* printerLabelView = BLayoutBuilder::Group<>()
 		.Add(new BStringView("", "Printer"))
-		.SetInsets(2.0, 0.0, 2.0, 0.0));
+		.SetInsets(2.0, 0.0, 2.0, 0.0)
+	.View();
+
+	box->SetLabel(printerLabelView);
 	groupView->AddChild(box);
 
 	// page range
@@ -314,21 +308,27 @@ BJobSetupPanel::_SetupInterface()
 	_DisallowChar(fLastPage->TextView());
 	fSelection = new BRadioButton("Print selection", new BMessage('prrg'));
 
-	fFirstPage->CreateLabelLayoutItem();
-	view = BGroupLayoutBuilder(B_VERTICAL, 5.0)
+	view = BLayoutBuilder::Group<>(B_VERTICAL, 5.0)
 		.Add(fPrintAll)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 5.0)
+		.AddGroup(B_HORIZONTAL, 5.0)
 			.Add(fPagesFrom)
+			.Add(fFirstPage->CreateLabelLayoutItem())
 			.Add(fFirstPage->CreateTextViewLayoutItem())
 			.Add(fLastPage->CreateLabelLayoutItem())
-			.Add(fLastPage->CreateTextViewLayoutItem()))
+			.Add(fLastPage->CreateTextViewLayoutItem())
+		.End()
 		.Add(fSelection)
-		.SetInsets(10.0, 5.0, 10.0, 5.0);
+		.SetInsets(10.0, 5.0, 10.0, 5.0)
+	.View();
 
 	box = new BBox(B_FANCY_BORDER, view);
-	box->SetLabel(BGroupLayoutBuilder()
+
+	BView* pageRangeLabelView = BLayoutBuilder::Group<>()
 		.Add(new BStringView("", "Page range"))
-		.SetInsets(2.0, 0.0, 2.0, 0.0));
+		.SetInsets(2.0, 0.0, 2.0, 0.0)
+	.View();
+
+	box->SetLabel(pageRangeLabelView);
 
 	// copies
 	fNumberOfCopies = new BTextControl("Number of copies:", "1", NULL);
@@ -336,20 +336,26 @@ BJobSetupPanel::_SetupInterface()
 	fCollate = new BCheckBox("Collate");
 	fReverse = new BCheckBox("Reverse");
 
-	BView* view2 = BGroupLayoutBuilder(B_VERTICAL, 5.0)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 5.0)
+	BView* view2 = BLayoutBuilder::Group<>(B_VERTICAL, 5.0)
+		.AddGroup(B_HORIZONTAL, 5.0)
 			.Add(fNumberOfCopies->CreateLabelLayoutItem())
-			.Add(fNumberOfCopies->CreateTextViewLayoutItem()))
+			.Add(fNumberOfCopies->CreateTextViewLayoutItem())
+		.End()
 		.Add(fCollate)
 		.Add(fReverse)
-		.SetInsets(10.0, 5.0, 10.0, 5.0);
+		.SetInsets(10.0, 5.0, 10.0, 5.0)
+	.View();
 
 	BBox* box2 = new BBox(B_FANCY_BORDER, view2);
-	box2->SetLabel(BGroupLayoutBuilder()
-		.Add(new BStringView("", "Copies"))
-		.SetInsets(2.0, 0.0, 2.0, 0.0));
 
-	groupView->AddChild(BGroupLayoutBuilder(B_HORIZONTAL, 10.0)
+	BView* copiesLabelView = BLayoutBuilder::Group<>()
+		.Add(new BStringView("", "Copies"))
+		.SetInsets(2.0, 0.0, 2.0, 0.0)
+	.View();
+
+	box2->SetLabel(copiesLabelView);
+
+	groupView->AddChild(BLayoutBuilder::Group<>(B_HORIZONTAL, 10.0)
 		.Add(box)
 		.Add(box2));
 
@@ -357,15 +363,18 @@ BJobSetupPanel::_SetupInterface()
 	fColor = new BCheckBox("Print in color");
 	fDuplex = new BCheckBox("Double side printing");
 
-	view = BGroupLayoutBuilder(B_VERTICAL, 5.0)
+	view = BLayoutBuilder::Group<>(B_VERTICAL, 5.0)
 		.Add(fColor)
 		.Add(fDuplex)
-		.SetInsets(10.0, 5.0, 10.0, 5.0);
+		.SetInsets(10.0, 5.0, 10.0, 5.0)
+	.View();
 
 	box = new BBox(B_FANCY_BORDER, view);
-	box->SetLabel(BGroupLayoutBuilder()
+	box->SetLabel(BLayoutBuilder::Group<>()
 		.Add(new BStringView("", "Other"))
-		.SetInsets(2.0, 0.0, 2.0, 0.0));
+		.SetInsets(2.0, 0.0, 2.0, 0.0)
+	.View());
+
 	groupView->AddChild(box);
 
 	AddPanel(groupView);

@@ -10,8 +10,8 @@
 #include <PrintPanel.h>
 
 #include <Button.h>
-#include <GroupLayoutBuilder.h>
 #include <GroupView.h>
+#include <LayoutBuilder.h>
 
 
 namespace BPrivate {
@@ -50,7 +50,7 @@ BPrintPanel::BPrintPanel(const BString& title)
 	:
 	BWindow(BRect(0, 0, 640, 480), title.String(), B_TITLED_WINDOW_LOOK,
 		B_MODAL_APP_WINDOW_FEEL, B_NOT_ZOOMABLE | B_NOT_RESIZABLE |
-		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS|
+		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS |
 		B_CLOSE_ON_ESCAPE),
 	fPanel(new BGroupView),
 	fPrintPanelSem(-1),
@@ -62,15 +62,16 @@ BPrintPanel::BPrintPanel(const BString& title)
 	BGroupLayout* layout = new BGroupLayout(B_HORIZONTAL);
 	SetLayout(layout);
 
-	AddChild(BGroupLayoutBuilder(B_VERTICAL, 10.0)
+	AddChild(BLayoutBuilder::Group<>(B_VERTICAL, 10.0)
 			.Add(fPanel)
-			.Add(BGroupLayoutBuilder(B_HORIZONTAL, 10.0)
+			.AddGroup(B_HORIZONTAL, 10.0)
 				.AddGlue()
 				.Add(cancel)
 				.Add(ok)
-				.SetInsets(0.0, 0.0, 0.0, 0.0))
+				.SetInsets(0.0, 0.0, 0.0, 0.0)
+			.End()
 			.SetInsets(10.0, 10.0, 10.0, 10.0)
-		);
+	.View());
 
 	ok->MakeDefault(true);
 	AddCommonFilter(new _BPrintPanelFilter_(this));
@@ -243,6 +244,7 @@ BPrintPanel::ShowPanel()
 
 			window->UpdateIfNeeded();
 		}
+	}
 
 	while (acquire_sem(fPrintPanelSem) == B_INTERRUPTED) {};
 

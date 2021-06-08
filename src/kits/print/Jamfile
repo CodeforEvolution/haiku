@@ -14,3 +14,13 @@ StaticLibrary libprintutils.a :
 	PrintAddOnServer.cpp
 	PrintAddOnServerProtocol.cpp
 ;
+
+SharedLibrary libprintneo.so :
+	JobSetupPanel.cpp
+	Printer.cpp
+	PrinterRoster.cpp
+	PrintPanel.cpp
+
+	:
+	be
+;

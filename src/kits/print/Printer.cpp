@@ -158,14 +158,31 @@ BPrinter::IsFree() const
 bool
 BPrinter::IsDefault() const
 {
-	bool isDefault = false;
+//	bool isDefault = false;
+//
+//	BDirectory spoolDir(&fPrinterEntryRef);
+//	if (spoolDir.InitCheck() == B_OK)
+//		spoolDir.ReadAttr(PSRV_PRINTER_ATTR_DEFAULT_PRINTER, B_BOOL_TYPE, 0,
+//			&isDefault, sizeof(bool));
+//
+//	return isDefault;
 
-	BDirectory spoolDir(&fPrinterEntryRef);
-	if (spoolDir.InitCheck() == B_OK)
-		spoolDir.ReadAttr(PSRV_PRINTER_ATTR_DEFAULT_PRINTER, B_BOOL_TYPE, 0,
-			&isDefault, sizeof(bool));
+	BMessenger messenger = BMessenger(PSRV_SIGNATURE_TYPE);
+	if (!messenger.IsValid())
+		return false;
 
-	return isDefault;
+	const char* printerName = NULL;
+
+	BMessage reply;
+	BMessage message(PSRV_GET_ACTIVE_PRINTER);
+
+	if (messenger.SendMessage(&message, &reply) == B_OK)
+		reply.FindString("printer_name", &printerName);
+
+	if (printerName == NULL)
+		return false;
+
+	return (Name() == printerName);
 }
 
 
@@ -410,7 +427,7 @@ BPrinter::_DriverPath() const
 
 	BPath path;
 	driverName.Prepend("Print/");
-	for (int32 i = 0; i < sizeof(directories) / sizeof(directories[0]); ++i) {
+	for (uint32 i = 0; i < B_COUNT_OF(directories); ++i) {
 		if (find_directory(directories[i], &path) == B_OK) {
 			path.Append(driverName.String());
 
