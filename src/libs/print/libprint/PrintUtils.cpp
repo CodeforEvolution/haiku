@@ -1,37 +1,15 @@
 /*
+ * Copyright 2001-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Philippe Houdoin
+ *		Simon Gauvin
+ *		Michael Pfeiffer
+ */
 
-Preview printer driver.
-
-Copyright (c) 2001, 2002 OpenBeOS.
-Copyright (c) 2005 - 2008 Haiku.
-
-Authors:
-	Philippe Houdoin
-	Simon Gauvin
-	Michael Pfeiffer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-*/
 
 #include "PrintUtils.h"
-
 
 #include <Message.h>
 #include <Window.h>
@@ -52,64 +30,59 @@ ScaleRect(const BRect& rect, float scale)
 
 
 void
-SetBool(BMessage* msg, const char* name, bool value)
+SetBool(BMessage* message, const char* name, bool value)
 {
-	if (msg->HasBool(name)) {
-		msg->ReplaceBool(name, value);
-	} else {
-		msg->AddBool(name, value);
-	}
+	if (message->HasBool(name))
+		message->ReplaceBool(name, value);
+	else
+		message->AddBool(name, value);
 }
 
 
 void
-SetFloat(BMessage* msg, const char* name, float value)
+SetFloat(BMessage* message, const char* name, float value)
 {
-	if (msg->HasFloat(name)) {
-		msg->ReplaceFloat(name, value);
-	} else {
-		msg->AddFloat(name, value);
-	}
+	if (message->HasFloat(name))
+		message->ReplaceFloat(name, value);
+	else
+		message->AddFloat(name, value);
 }
 
 
 void
-SetInt32(BMessage* msg, const char* name, int32 value)
+SetInt32(BMessage* message, const char* name, int32 value)
 {
-	if (msg->HasInt32(name)) {
-		msg->ReplaceInt32(name, value);
-	} else {
-		msg->AddInt32(name, value);
-	}
+	if (message->HasInt32(name))
+		message->ReplaceInt32(name, value);
+	else
+		message->AddInt32(name, value);
 }
 
 
 void
-SetString(BMessage* msg, const char* name, const char* value)
+SetString(BMessage* message, const char* name, const char* value)
 {
-	if (msg->HasString(name, 0)) {
-		msg->ReplaceString(name, value);
-	} else {
-		msg->AddString(name, value);
-	}
+	if (message->HasString(name, 0))
+		message->ReplaceString(name, value);
+	else
+		message->AddString(name, value);
 }
 
 
 void
-SetRect(BMessage* msg, const char* name, const BRect& rect)
+SetRect(BMessage* message, const char* name, const BRect& rect)
 {
-	if (msg->HasRect(name)) {
-		msg->ReplaceRect(name, rect);
-	} else {
-		msg->AddRect(name, rect);
-	}
+	if (message->HasRect(name))
+		message->ReplaceRect(name, rect);
+	else
+		message->AddRect(name, rect);
 }
 
 
 void
-SetString(BMessage* msg, const char* name, const BString& value)
+SetString(BMessage* message, const char* name, const BString& value)
 {
-	SetString(msg, name, value.String());
+	SetString(message, name, value.String());
 }
 
 
@@ -120,6 +93,7 @@ bool InList(const char* list[], const char* name)
 		if (strcmp(list[i], name) == 0)
 			return true;
 	}
+
 	return false;
 }
 
@@ -130,6 +104,7 @@ AddFields(BMessage* to, const BMessage* from, const char* excludeList[],
 {
 	if (to == from)
 		return;
+
 	char* name;
 	type_code type;
 	int32 count;
@@ -151,15 +126,14 @@ AddFields(BMessage* to, const BMessage* from, const char* excludeList[],
 
 		for (int32 j = 0; j < count; ++j) {
 			if (from->FindData(name, type, j, &data, &size) == B_OK) {
-				if (type == B_STRING_TYPE) {
+				if (type == B_STRING_TYPE)
 					to->AddString(name, (const char*)data);
-				} else if (type == B_MESSAGE_TYPE) {
-					BMessage m;
-					from->FindMessage(name, j, &m);
-					to->AddMessage(name, &m);
-				} else {
+				else if (type == B_MESSAGE_TYPE) {
+					BMessage message;
+					from->FindMessage(name, j, &message);
+					to->AddMessage(name, &message);
+				} else
 					to->AddData(name, type, data, size);
-				}
 			}
 		}
 	}

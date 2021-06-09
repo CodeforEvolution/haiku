@@ -1,76 +1,79 @@
 /*
- * PrinterData.h
- * Copyright 1999-2000 Y.Takagi All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+#ifndef _PRINTER_DATA_H
+#define _PRINTER_DATA_H
 
-#ifndef __PRINTERDATA_H
-#define __PRINTERDATA_H
 
-#include <string>
 #include <SerialPort.h>
+#include <String.h>
+
 
 using namespace std;
 
+
 class BNode;
+
 
 class PrinterData {
 public:
-						PrinterData(BNode* node = NULL);
-	virtual				~PrinterData();
+								PrinterData(BNode* node = NULL);
+	virtual						~PrinterData();
 
-	virtual	void		Load();
-	virtual	void		Save();
+	virtual	void				Load();
+	virtual	void				Save();
 
-			const string&	GetDriverName() const;
-			const string&	GetPrinterName() const;
-			const string&	GetComments() const;
-			const string&	GetTransport() const;
-			int				GetProtocolClass() const;
+	const	BString&			GetDriverName() const;
+	const	BString&			GetPrinterName() const;
+	const	BString&			GetComments() const;
+	const	BString&			GetTransport() const;
+			int					GetProtocolClass() const;
 
-			void			SetPrinterName(const char* printerName);
-			void			SetComments(const char* comments);
-			void			SetProtocolClass(int protocolClass);
+			void				SetPrinterName(const char* printerName);
+			void				SetComments(const char* comments);
+			void				SetProtocolClass(int protocolClass);
 
-			bool			GetPath(string& path) const;
+			bool				GetPath(BString& path) const;
 
 protected:
-						PrinterData(const PrinterData &printer_data);
+							PrinterData(const PrinterData& printer_data);
 
-			PrinterData&	operator=(const PrinterData &printer_data);
+			PrinterData&	operator=(const PrinterData& printer_data);
 
-	BNode*	fNode;
+			BNode*			fNode;
 
 private:
-	string	fDriverName;
-	string	fPrinterName;
-	string	fComments;
-	string	fTransport;
-	int		fProtocolClass;
+			BString			fDriverName;
+			BString			fPrinterName;
+			BString			fComments;
+			BString			fTransport;
+			int				fProtocolClass;
 };
 
 
-inline const string&
+inline const BString&
 PrinterData::GetDriverName() const
 {
 	return fDriverName;
 }
 
 
-inline const string&
+inline const BString&
 PrinterData::GetPrinterName() const
 {
 	return fPrinterName;
 }
 
 
-inline const string&
+inline const BString&
 PrinterData::GetComments() const
 {
 	return fComments;
 }
 
 
-inline const string&
+inline const BString&
 PrinterData::GetTransport() const
 {
 	return fTransport;

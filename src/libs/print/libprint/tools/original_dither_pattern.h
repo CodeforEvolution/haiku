@@ -1,6 +1,12 @@
 /*
- * These patterns are defined referring to Japanese Monthly C Magazine (May 2000 Vol.12 No.5).
+ * Copyright 2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+
+
+// These patterns are defined referring to
+// Japanese Monthly C Magazine (May 2000 Vol.12 No.5).
+
 
 const unsigned char pattern4x4_type1[MAX_ELEMENT] =  {
 	 0,  8,  2, 10,

@@ -1,16 +1,19 @@
 /*
- * AboutBox.h
- * Copyright 1999-2000 Y.Takagi. All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+#ifndef _ABOUT_BOX_H
+#define _ABOUT_BOX_H
 
-#ifndef __ABOUTBOX_H
-#define __ABOUTBOX_H
 
 #include <Application.h>
 
+
 class AboutBox : public BApplication {
 public:
-	AboutBox(const char *signature, const char *driver_name, const char *version, const char *copyright);
+								AboutBox(const char* signature,
+									const char* driverName, const char* version,
+									const char* copyright);
 };
 
-#endif	/* __ABOUTBOX_H */
+#endif	/* _ABOUT_BOX_H */

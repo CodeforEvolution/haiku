@@ -1,17 +1,18 @@
 /*
- * PackBits.cpp
- * Copyright 1999-2000 Y.Takagi. All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
 
-//#define DBG_CON_STREAM
 
+#include "PackBits.h"
+
+// #define DBG_CON_STREAM
 #ifdef DBG_CON_STREAM
 #include <fstream>
 #endif
 
 #include <stdio.h>
 #include <string.h>
-#include "PackBits.h"
 
 
 using namespace std;
@@ -21,12 +22,14 @@ using namespace std;
 #define CONTROL1(i)		-i
 #define CONTROL2(i)		i
 
+
 enum STATUS {
 	INITIAL,
 	UNDECIDED,
 	UNMATCHED,
 	MATCHED
 };
+
 
 #define WRITE_TO_RUN_BUF(byte) \
 	{ \
@@ -42,10 +45,12 @@ enum STATUS {
 			*control = byte; \
 	}
 
+
 template <bool write>
 class PackBits {
 public:
-	static int Run(unsigned char* destination, const unsigned char* source, int n)
+	static int
+	Run(unsigned char* destination, const unsigned char* source, int n)
 	{
 		int i;
 		unsigned char* control;
@@ -53,121 +58,136 @@ public:
 		unsigned char thisbyte;
 		unsigned char runbyte;
 		STATUS status;
-	
+
 		i = 0;
 		status  = INITIAL;
 		control = runbuf = destination;
 		runbyte = *source++;
-	
+
 		while (--n) {
 			thisbyte = *source++;
 			switch (status) {
-			case INITIAL:
-				control   = runbuf++;
-				WRITE_TO_RUN_BUF(runbyte);
-				if (thisbyte == runbyte) {
-					status = UNDECIDED;
-				} else {
-					runbyte = thisbyte;
-					status  = UNMATCHED;
-				}
-				i = 1;
-				break;
-	
-			case UNDECIDED:
-				if (i == MAXINBYTES) {
-					WRITE_CONTROL(CONTROL2(i));
+				case INITIAL:
+				{
+					control = runbuf++;
 					WRITE_TO_RUN_BUF(runbyte);
-					runbyte   = thisbyte;
-					status    = INITIAL;
-				} else if (thisbyte == runbyte) {
-					if (i > 1) {
-						WRITE_CONTROL(CONTROL2(i - 2));
-						control  = runbuf - 1;
-					}
-					i = 2;
-					status = MATCHED;
-				} else {
-					WRITE_TO_RUN_BUF(runbyte);
-					runbyte   = thisbyte;
-					status    = UNMATCHED;
-					i++;
-				}
-				break;
-	
-			case UNMATCHED:
-				if (i == MAXINBYTES) {
-					WRITE_CONTROL(CONTROL2(i));
-					status   = INITIAL;
-				} else {
-					if (thisbyte == runbyte) {
+					if (thisbyte == runbyte)
 						status = UNDECIDED;
+					else {
+						runbyte = thisbyte;
+						status  = UNMATCHED;
 					}
-					i++;
+					i = 1;
+
+					break;
 				}
-				WRITE_TO_RUN_BUF(runbyte);
-				runbyte   = thisbyte;
-				break;
-	
-			case MATCHED:
-				if ((thisbyte != runbyte) || (i == MAXINBYTES)) {
-					runbuf    = control;
-					WRITE_TO_RUN_BUF(CONTROL1(i));
+
+				case UNDECIDED:
+				{
+					if (i == MAXINBYTES) {
+						WRITE_CONTROL(CONTROL2(i));
+						WRITE_TO_RUN_BUF(runbyte);
+						runbyte   = thisbyte;
+						status    = INITIAL;
+					} else if (thisbyte == runbyte) {
+						if (i > 1) {
+							WRITE_CONTROL(CONTROL2(i - 2));
+							control  = runbuf - 1;
+						}
+						i = 2;
+						status = MATCHED;
+					} else {
+						WRITE_TO_RUN_BUF(runbyte);
+						runbyte   = thisbyte;
+						status    = UNMATCHED;
+						i++;
+					}
+
+					break;
+				}
+
+				case UNMATCHED:
+				{
+					if (i == MAXINBYTES) {
+						WRITE_CONTROL(CONTROL2(i));
+						status = INITIAL;
+					} else {
+						if (thisbyte == runbyte)
+							status = UNDECIDED;
+						i++;
+					}
 					WRITE_TO_RUN_BUF(runbyte);
-					runbyte   = thisbyte;
-					status    = INITIAL;
-				} else {
-					i++;
+					runbyte = thisbyte;
+					break;
 				}
-				break;
+
+				case MATCHED:
+				{
+					if ((thisbyte != runbyte) || (i == MAXINBYTES)) {
+						runbuf = control;
+						WRITE_TO_RUN_BUF(CONTROL1(i));
+						WRITE_TO_RUN_BUF(runbyte);
+						runbyte   = thisbyte;
+						status    = INITIAL;
+					} else
+						i++;
+
+					break;
+				}
 			}
 		}
-	
+
 		switch (status) {
-		case INITIAL:
-			WRITE_TO_RUN_BUF(CONTROL2(1));
-			break;
-		case UNDECIDED:
-		case UNMATCHED:
-			WRITE_CONTROL(CONTROL2(i));
-			break;
-		case MATCHED:
-			runbuf    = control;
-			WRITE_TO_RUN_BUF(CONTROL1(i));
-			break;
+			case INITIAL:
+				WRITE_TO_RUN_BUF(CONTROL2(1));
+				break;
+
+			case UNDECIDED:
+			case UNMATCHED:
+				WRITE_CONTROL(CONTROL2(i));
+				break;
+
+			case MATCHED:
+				runbuf = control;
+				WRITE_TO_RUN_BUF(CONTROL1(i));
+				break;
 		}
+
 		WRITE_TO_RUN_BUF(runbyte);
-	
+
 		return runbuf - destination;
 	}
 };
 
 
-int pack_bits_size(const unsigned char* source, int size)
+int
+pack_bits_size(const unsigned char* source, int size)
 {
 	PackBits<false> compressedSizeCalculator;
 	return compressedSizeCalculator.Run(NULL, source, size);
 }
 
-int pack_bits(unsigned char* destination, const unsigned char* source, int size)
+
+int
+pack_bits(unsigned char* destination, const unsigned char* source, int size)
 {
 	PackBits<true> compressor;
 	return compressor.Run(destination, source, size);
 }
 
+
 #ifdef DBG_CON_STREAM
-int main(int argc, char **argv)
+int
+main(int argc, char** argv)
 {
-	if (argc < 2) {
+	if (argc < 2)
 		return -1;
-	}
 
-	FILE *input = fopen(*++argv, "rb");
-	if (input == NULL) {
+	FILE* input = fopen(*++argv, "rb");
+	if (input == NULL)
 		return -1;
-	}
 
-	FILE *output = fopen("rle.out", "wb");
+	FILE* output = fopen("rle.out", "wb");
 	if (output == NULL) {
 		fclose(input);
 		return -1;
@@ -192,8 +212,8 @@ int main(int argc, char **argv)
 	fclose(input);
 	fclose(output);
 
-	delete [] source;
-	delete [] destination;
+	delete[] source;
+	delete[] destination;
 
 }
 #endif

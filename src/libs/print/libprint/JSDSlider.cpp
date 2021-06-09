@@ -2,28 +2,30 @@
 	JSDSlider.cpp
 	Dr.H.Reh
 	27.11.2004
-	
+
 	Based on source code from Be Inc. RIP
 	Copyright 1995 Be Incorporated, All Rights Reserved.
 */
 
+
 #include "JSDSlider.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
-JSDSlider::JSDSlider(const char* name, const char* label,
-	BMessage* msg, int32 min, int32 max)
-	: BSlider(name, label, msg, min, max, B_HORIZONTAL)
+JSDSlider::JSDSlider(const char* name, const char* label, BMessage* message,
+	int32 min, int32 max)
+	:
+	BSlider(name, label, message, min, max, B_HORIZONTAL)
 {
 }
 
 
 JSDSlider::~JSDSlider()
-{ 
-} 
+{
+}
 
 
 const char*

@@ -1,52 +1,29 @@
 /*
+ * Copyright 2002-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Philippe Houdoin
+ *		Simon Gauvin
+ *		Michael Pfeiffer
+ */
 
-MarginView.cpp
-
-Copyright (c) 2002 OpenBeOS.
-
-Authors:
-	Philippe Houdoin
-	Simon Gauvin
-	Michael Pfeiffer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-	Todo:
-
-	2 Make Strings constants or UI resources
-
-*/
 
 #include "MarginView.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <AppKit.h>
-#include <GridView.h>
 #include <GridLayout.h>
+#include <GridView.h>
 #include <GroupLayout.h>
 #include <GroupLayoutBuilder.h>
 #include <SupportKit.h>
 #include <TextControl.h>
 
 
-#include <stdio.h>
-#include <stdlib.h>
+/* Todo: Make strings constants or UI resources */
 
 
 /*----------------- MarginView Private Constants --------------------*/
@@ -65,7 +42,7 @@ const static float kMinFieldWidth = 100; // pixels
 const static float kMinUnitHeight = 30; // pixels
 
 const static float kUnitFormat[] = { kInchUnits, kCMUnits, kPointUnits };
-const static char *kUnitNames[] = { "inch", "cm", "points", NULL };
+const static char* kUnitNames[] = { "inch", "cm", "points", NULL };
 const static MarginUnit kUnitMsg[] = { kUnitInch, kUnitCM, kUnitPoint };
 
 const pattern kDots = {{ 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55 }};
@@ -77,10 +54,11 @@ const rgb_color kGray 	= { 220,220,220,0 };
 
 
 PageView::PageView()
-: BView("pageView", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE)
-, fPageWidth(0)
-, fPageHeight(0)
-, fMargins(0, 0, 0, 0)
+	:
+	BView("pageView", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
+	fPageWidth(0),
+	fPageHeight(0),
+	fMargins(0, 0, 0, 0)
 {
 
 }
@@ -108,7 +86,7 @@ PageView::Draw(BRect bounds)
 	float totalWidth = frame.Width();
 	float totalHeight = frame.Height();
 
-	// fit page into available space
+	// Fit page into available space
 	// keeping the ratio fPageWidth : fPageHeight
 	float pageWidth = totalWidth;
 	float pageHeight = totalWidth * fPageHeight / fPageWidth;
@@ -117,27 +95,27 @@ PageView::Draw(BRect bounds)
 		pageWidth = totalHeight * fPageWidth / fPageHeight;
 	}
 
-	// center page
+	// Center page
 	BPoint offset(0, 0);
 	offset.x = static_cast<int>((totalWidth - pageWidth) / 2);
 	offset.y = static_cast<int>((totalHeight - pageHeight) / 2);
 
-	// draw the page
+	// Draw the page
 	SetHighColor(kWhite);
-	BRect r = BRect(0, 0, pageWidth, pageHeight);
-	r.OffsetBy(offset);
-	FillRect(r);
+	BRect rect = BRect(0, 0, pageWidth, pageHeight);
+	rect.OffsetBy(offset);
+	FillRect(rect);
 	SetHighColor(kBlack);
-	StrokeRect(r);
+	StrokeRect(rect);
 
-	// draw margin
+	// Draw margin
 	SetHighColor(kRed);
 	SetLowColor(kWhite);
-	r.top += (fMargins.top / fPageHeight) * pageHeight;
-	r.right -= (fMargins.right / fPageWidth) * pageWidth;
-	r.bottom -= (fMargins.bottom / fPageHeight) * pageHeight;
-	r.left += (fMargins.left / fPageWidth) * pageWidth;
-	StrokeRect(r, kDots);
+	rect.top += (fMargins.top / fPageHeight) * pageHeight;
+	rect.right -= (fMargins.right / fPageWidth) * pageWidth;
+	rect.bottom -= (fMargins.bottom / fPageHeight) * pageHeight;
+	rect.left += (fMargins.left / fPageWidth) * pageWidth;
+	StrokeRect(rect, kDots);
 }
 
 
@@ -150,9 +128,10 @@ PageView::Draw(BRect bounds)
  * @param units, unit32 enum for units used in view
  * @return void
  */
-MarginView::MarginView(int32 pageWidth, int32 pageHeight,
-	BRect margins, MarginUnit units)
-	: BBox("marginView")
+MarginView::MarginView(int32 pageWidth, int32 pageHeight, BRect margins,
+	MarginUnit units)
+	:
+	BBox("marginView")
 {
 	fMarginUnit = units;
 	fUnitValue = kUnitFormat[units];
@@ -186,7 +165,7 @@ MarginView::~MarginView()
 void
 MarginView::AttachedToWindow()
 {
-	if (Parent())
+	if (Parent() != NULL)
 		SetViewColor(Parent()->ViewColor());
 
 	_ConstructGUI();
@@ -202,23 +181,29 @@ MarginView::AttachedToWindow()
  * @return void
  */
 void
-MarginView::MessageReceived(BMessage *msg)
+MarginView::MessageReceived(BMessage* message)
 {
-	switch (msg->what) {
-		case CHANGE_PAGE_SIZE: {
-				float w;
-				float h;
-				msg->FindFloat("width", &w);
-				msg->FindFloat("height", &h);
-				SetPageSize(w, h);
-				UpdateView(MARGIN_CHANGED);
-			}	break;
+	switch (message->what) {
+		case CHANGE_PAGE_SIZE:
+		{
+			float w;
+			float h;
+			message->FindFloat("width", &w);
+			message->FindFloat("height", &h);
+			SetPageSize(w, h);
+			UpdateView(MARGIN_CHANGED);
 
-		case FLIP_PAGE: {
-				BPoint p = PageSize();
-				SetPageSize(p.y, p.x);
-				UpdateView(MARGIN_CHANGED);
-			}	break;
+			break;
+		}
+
+		case FLIP_PAGE:
+		{
+			BPoint p = PageSize();
+			SetPageSize(p.y, p.x);
+			UpdateView(MARGIN_CHANGED);
+
+			break;
+		}
 
 		case MARGIN_CHANGED:
 			UpdateView(MARGIN_CHANGED);
@@ -240,15 +225,17 @@ MarginView::MessageReceived(BMessage *msg)
 			UpdateView(BOTTOM_MARGIN_CHANGED);
 			break;
 
-		case MARGIN_UNIT_CHANGED: {
-		 		int32 marginUnit;
-		 		if (msg->FindInt32("marginUnit", &marginUnit) == B_OK)
-					_SetMarginUnit((MarginUnit)marginUnit);
-			}	break;
+		case MARGIN_UNIT_CHANGED:
+		{
+			int32 marginUnit;
+			if (message->FindInt32("marginUnit", &marginUnit) == B_OK)
+				_SetMarginUnit((MarginUnit)marginUnit);
+
+			break;
+		}
 
 		default:
-			BView::MessageReceived(msg);
-			break;
+			BView::MessageReceived(message);
 	}
 }
 
@@ -303,19 +290,27 @@ MarginView::Margin() const
 	// convert to units to points
 	switch (fMarginUnit) {
 		case kUnitInch:
+		{
 			// convert to points
 			top *= kInchUnits;
 			right *= kInchUnits;
 			left *= kInchUnits;
 			bottom *= kInchUnits;
+
 			break;
+		}
+
 		case kUnitCM:
+		{
 			// convert to points
 			top *= kCMUnits;
 			right *= kCMUnits;
 			left *= kCMUnits;
 			bottom *= kCMUnits;
+
 			break;
+		}
+
 		case kUnitPoint:
 			break;
 	}
@@ -348,7 +343,7 @@ MarginView::Unit() const
  * @return void
  */
 void
-MarginView::UpdateView(uint32 msg)
+MarginView::UpdateView(uint32 message)
 {
 	Window()->Lock();
 
@@ -389,9 +384,9 @@ MarginView::_ConstructGUI()
 	fPageSize = new BStringView("pageSize", "?x?");
 
 	BString str;
-	// Create text fields
+		// Create text fields
 
-	// top
+	// Top
 	str << fMargins.top/fUnitValue;
 	fTop = new BTextControl("top", "Top:", str.String(), NULL);
 
@@ -399,7 +394,7 @@ MarginView::_ConstructGUI()
 	fTop->SetTarget(this);
 	_AllowOnlyNumbers(fTop, kNumCount);
 
-	//left
+	// Left
     str = "";
 	str << fMargins.left/fUnitValue;
 	fLeft = new BTextControl("left", "Left:", str.String(), NULL);
@@ -408,7 +403,7 @@ MarginView::_ConstructGUI()
 	fLeft->SetTarget(this);
 	_AllowOnlyNumbers(fLeft, kNumCount);
 
-	//bottom
+	// Bottom
     str = "";
 	str << fMargins.bottom/fUnitValue;
 	fBottom = new BTextControl("bottom", "Bottom:", str.String(), NULL);
@@ -417,7 +412,7 @@ MarginView::_ConstructGUI()
 	fBottom->SetTarget(this);
 	_AllowOnlyNumbers(fBottom, kNumCount);
 
-	//right
+	// Right
     str = "";
 	str << fMargins.right/fUnitValue;
 	fRight = new BTextControl("right", "Right:", str.String(), NULL);
@@ -427,16 +422,15 @@ MarginView::_ConstructGUI()
 	_AllowOnlyNumbers(fRight, kNumCount);
 
 	// Create Units popup
+	BPopUpMenu* menu = new BPopUpMenu("units");
+	BMenuField* units = new BMenuField("units", "Units:", menu);
 
-	BPopUpMenu *menu = new BPopUpMenu("units");
-	BMenuField *units = new BMenuField("units", "Units:", menu);
-
-	BMenuItem *item;
+	BMenuItem* item;
 	// Construct menu items
 	for (int32 i = 0; kUnitNames[i] != NULL; i++) {
-		BMessage *msg = new BMessage(MARGIN_UNIT_CHANGED);
-		msg->AddInt32("marginUnit", kUnitMsg[i]);
-		menu->AddItem(item = new BMenuItem(kUnitNames[i], msg));
+		BMessage* message = new BMessage(MARGIN_UNIT_CHANGED);
+		message->AddInt32("marginUnit", kUnitMsg[i]);
+		menu->AddItem(item = new BMenuItem(kUnitNames[i], message));
 		item->SetTarget(this);
 		if (fMarginUnit == kUnitMsg[i])
 			item->SetMarked(true);
@@ -481,20 +475,20 @@ MarginView::_ConstructGUI()
  * @return void
  */
 void
-MarginView::_AllowOnlyNumbers(BTextControl *textControl, int32 maxNum)
+MarginView::_AllowOnlyNumbers(BTextControl* textControl, int32 maxNum)
 {
-	BTextView *tv = textControl->TextView();
+	BTextView* textView = textControl->TextView();
 
 	for (int32 i = 0; i < 256; i++)
-		tv->DisallowChar(i);
+		textView->DisallowChar(i);
 
 	for (int32 i = '0'; i <= '9'; i++)
-		tv->AllowChar(i);
+		textView->AllowChar(i);
 
-	tv->AllowChar(B_BACKSPACE);
+	textView->AllowChar(B_BACKSPACE);
 	// TODO internationalization; e.g. "." or ","
-	tv->AllowChar('.');
-	tv->SetMaxBytes(maxNum);
+	textView->AllowChar('.');
+	textView->SetMaxBytes(maxNum);
 }
 
 /**
@@ -519,74 +513,87 @@ MarginView::_SetMargin(BRect margin)
 void
 MarginView::_SetMarginUnit(MarginUnit unit)
 {
-	// do nothing if the current units are the same as requested
-	if (unit == fMarginUnit) {
+	// Do nothing if the current units are the same as requested
+	if (unit == fMarginUnit)
 		return;
-	}
 
-	// set the units Format
+	// Set the units Format
 	fUnitValue = kUnitFormat[unit];
 
-	// convert the field text to values
+	// Convert the field text to values
 	float top = atof(fTop->Text());
 	float right = atof(fRight->Text());
 	float left = atof(fLeft->Text());
 	float bottom = atof(fBottom->Text());
 
-	// convert to target units
-	switch (fMarginUnit)
-	{
+	// Convert to target units
+	switch (fMarginUnit) {
 		case kUnitInch:
-			// convert to points
+		{
+			// Convert to points
 			top *= kInchUnits;
 			right *= kInchUnits;
 			left *= kInchUnits;
 			bottom *= kInchUnits;
-			// check for target unit is cm
+
+			// Check for target unit is cm
 			if (unit == kUnitCM) {
 				top /= kCMUnits;
 				right /= kCMUnits;
 				left /= kCMUnits;
 				bottom /= kCMUnits;
 			}
+
 			break;
+		}
+
 		case kUnitCM:
-			// convert to points
+		{
+			// Convert to points
 			top *= kCMUnits;
 			right *= kCMUnits;
 			left *= kCMUnits;
 			bottom *= kCMUnits;
-			// check for target unit is inches
+
+			// Check for target unit is inches
 			if (unit == kUnitInch) {
 				top /= kInchUnits;
 				right /= kInchUnits;
 				left /= kInchUnits;
 				bottom /= kInchUnits;
 			}
+
 			break;
+		}
+
 		case kUnitPoint:
-			// check for target unit is cm
+		{
+			// Check for target unit is cm
 			if (unit == kUnitCM) {
 				top /= kCMUnits;
 				right /= kCMUnits;
 				left /= kCMUnits;
 				bottom /= kCMUnits;
 			}
-			// check for target unit is inches
+
+			// Check for target unit is inches
 			if (unit == kUnitInch) {
 				top /= kInchUnits;
 				right /= kInchUnits;
 				left /= kInchUnits;
 				bottom /= kInchUnits;
 			}
+
 			break;
+		}
 	}
+
 	fMarginUnit = unit;
 
-	// lock Window since these changes are from another thread
+	// Lock Window since these changes are from another thread
 	Window()->Lock();
 
-	// set the fields to new units
+	// Set the fields to new units
 	BString str;
 	str << top;
 	fTop->SetText(str.String());
@@ -603,9 +610,8 @@ MarginView::_SetMarginUnit(MarginUnit unit)
 	str << bottom;
 	fBottom->SetText(str.String());
 
-	// update UI
+	// Update UI
 	Invalidate();
 
 	Window()->Unlock();
 }
-

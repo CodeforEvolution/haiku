@@ -1,32 +1,21 @@
 /*
+ * Copyright 2002-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Philippe Houdoin
+ *		Simon Gauvin
+ *		Michael Pfeiffer
+ */
+#ifndef _MARGIN_VIEW_H
+#define _MARGIN_VIEW_H
 
-MarginView.h
 
-Copyright (c) 2002 OpenBeOS.
+#include <InterfaceKit.h>
+#include <Looper.h>
 
-Authors:
-	Philippe Houdoin
-	Simon Gauvin
-	Michael Pfeiffer
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
+/*
 	Documentation:
 
 	The MarginView is designed to be a self contained component that manages
@@ -118,14 +107,10 @@ THE SOFTWARE.
 				kUnitPoint, 1 point/point
 */
 
-#ifndef _MARGIN_VIEW_H
-#define _MARGIN_VIEW_H
-
-#include <InterfaceKit.h>
-#include <Looper.h>
 
 class BTextControl;
 class MarginManager;
+
 
 // Messages that the MarginManager accepts
 const uint32 TOP_MARGIN_CHANGED    = 'tchg';
@@ -137,94 +122,96 @@ const uint32 CHANGE_PAGE_SIZE      = 'chps';
 const uint32 FLIP_PAGE             = 'flip';
 const uint32 MARGIN_UNIT_CHANGED   = 'mucg';
 
+
 enum MarginUnit {
 	kUnitInch = 0,
 	kUnitCM,
 	kUnitPoint
 };
 
-class PageView : public BView
-{
+
+class PageView : public BView {
 public:
-					PageView();
+								PageView();
 
-	void			SetPageSize(float pageWidth, float pageHeight);
-	void			SetMargins(BRect margins);
+			void				SetPageSize(float pageWidth, float pageHeight);
+			void				SetMargins(BRect margins);
 
-	virtual	void	Draw(BRect bounds);
+	virtual	void				Draw(BRect bounds);
 
 
 private:
-	float	fPageWidth;
-	float	fPageHeight;
+			float				fPageWidth;
+			float				fPageHeight;
 
-	BRect	fMargins;
+			BRect				fMargins;
 };
+
 
 /**
  * Class MarginView
  */
-class MarginView : public BBox
-{
+class MarginView : public BBox {
 friend class MarginManager;
 
 public:
-							MarginView(int32 pageWidth = 0,
-								int32 pageHeight = 0,
-								BRect margins = BRect(1, 1, 1, 1), // 1 inch
-								MarginUnit unit = kUnitInch);
+								MarginView(int32 pageWidth = 0,
+									int32 pageHeight = 0,
+									BRect margins = BRect(1, 1, 1, 1), // 1 inch
+									MarginUnit unit = kUnitInch);
 
-	virtual					~MarginView();
+	virtual						~MarginView();
 
-	virtual	void			AttachedToWindow();
-	virtual	void			MessageReceived(BMessage *msg);
+	virtual	void				AttachedToWindow();
+	virtual	void				MessageReceived(BMessage* message);
 
 			// point.x = width, point.y = height
-			BPoint			PageSize() const;
-			void			SetPageSize(float pageWidth, float pageHeight);
+			BPoint				PageSize() const;
+			void				SetPageSize(float pageWidth, float pageHeight);
 
-			// margin
-			BRect			Margin() const;
+			// Margin
+			BRect				Margin() const;
 
-			// units
-			MarginUnit		Unit() const;
+			// Units
+			MarginUnit			Unit() const;
 
-			// will cause a recalc and redraw
-			void			UpdateView(uint32 msg);
-
-private:
-			// all the GUI construction code
-			void			_ConstructGUI();
-
-			// utility method
-			void			_AllowOnlyNumbers(BTextControl *textControl,
-								int32 maxNum);
-
-			// performed internally using text fields
-			void			_SetMargin(BRect margin);
-
-			// performed internally using the supplied popup
-			void			_SetMarginUnit(MarginUnit unit);
+			// Will cause a recalc and redraw
+			void				UpdateView(uint32 message);
 
 private:
-			BTextControl*	fTop;
-			BTextControl*	fBottom;
-			BTextControl*	fLeft;
-			BTextControl*	fRight;
+			// All the GUI construction code
+			void				_ConstructGUI();
 
-			// the actual size of the page in points
-			float			fPageHeight;
-			float			fPageWidth;
+			// Utility method
+			void				_AllowOnlyNumbers(BTextControl* textControl,
+									int32 maxNum);
 
-			// rect that holds the margins for the page as a set of point offsets
-			BRect			fMargins;
+			// Performed internally using text fields
+			void				_SetMargin(BRect margin);
 
-			// the units used to calculate the page size
-			MarginUnit		fMarginUnit;
-			float			fUnitValue;
+			// Performed internally using the supplied popup
+			void				_SetMarginUnit(MarginUnit unit);
 
-			PageView*		fPage;
-			BStringView*	fPageSize;
+private:
+			BTextControl*		fTop;
+			BTextControl*		fBottom;
+			BTextControl*		fLeft;
+			BTextControl*		fRight;
+
+			// The actual size of the page in points
+			float				fPageHeight;
+			float				fPageWidth;
+
+			// Rect that holds the margins for the page as a set of point
+			// offsets
+			BRect				fMargins;
+
+			// The units used to calculate the page size
+			MarginUnit			fMarginUnit;
+			float				fUnitValue;
+
+			PageView*			fPage;
+			BStringView*		fPageSize;
 };
 
-#endif // _MARGIN_VIEW_H
+#endif /* _MARGIN_VIEW_H */

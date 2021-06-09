@@ -8,37 +8,37 @@
  *		julun <host.haiku@gmx.de>
  */
 
+
 #include "Preview.h"
-
-#include "GraphicsDriver.h"
-#include "PrintUtils.h"
-
 
 #include <math.h>
 #include <stdlib.h>
-
 
 #include <Application.h>
 #include <Button.h>
 #include <Debug.h>
 #include <Region.h>
 #include <Screen.h>
-#include <String.h>
 #include <ScrollView.h>
+#include <String.h>
 #include <StringView.h>
 #include <TextControl.h>
+
+#include "GraphicsDriver.h"
+#include "PrintUtils.h"
 
 
 // #pragma mark - PreviewPage
 
 
 PreviewPage::PreviewPage(int32 page, PrintJobPage* pjp)
-	: fPage(page)
-	, fStatus(B_ERROR)
-	, fNumberOfPictures(0)
-	, fRects(NULL)
-	, fPoints(NULL)
-	, fPictures(NULL)
+	:
+	fPage(page),
+	fStatus(B_ERROR),
+	fNumberOfPictures(0),
+	fRects(NULL),
+	fPoints(NULL),
+	fPictures(NULL)
 {
 	fNumberOfPictures = pjp->NumberOfPictures();
 
@@ -56,9 +56,9 @@ PreviewPage::PreviewPage(int32 page, PrintJobPage* pjp)
 
 PreviewPage::~PreviewPage()
  {
-	delete [] fRects;
-	delete [] fPoints;
-	delete [] fPictures;
+	delete[] fRects;
+	delete[] fPoints;
+	delete[] fPictures;
 }
 
 
@@ -83,6 +83,7 @@ PreviewPage::Draw(BView* view, const BRect& printRect)
 
 namespace {
 
+
 const float kPreviewTopMargin		= 10.0;
 const float kPreviewBottomMargin	= 30.0;
 const float kPreviewLeftMargin		= 10.0;
@@ -90,22 +91,24 @@ const float kPreviewRightMargin		= 30.0;
 
 
 // TODO share constant with JobData
-const char *kJDOrientation		= "orientation";
-const char *kJDNup				= "JJJJ_nup";
-const char *kJDReverse			= "JJJJ_reverse";
+const char*	kJDOrientation		= "orientation";
+const char*	kJDNup				= "JJJJ_nup";
+const char*	kJDReverse			= "JJJJ_reverse";
 const char* kJDPageSelection	= "JJJJ_page_selection";
 
 
 const uint8 ZOOM_IN[] = { 16, 1, 6, 6, 0, 0, 15, 128, 48, 96, 32, 32, 66, 16,
 	66, 16, 79, 144, 66, 16, 66, 16, 32, 32, 48, 112, 15, 184, 0, 28, 0, 14, 0,
 	6, 0, 0, 15, 128, 63, 224, 127, 240, 127, 240, 255, 248, 255, 248, 255, 248,
-	255, 248, 255, 248, 127, 248, 127, 248, 63, 252, 15, 254, 0, 31, 0, 15, 0, 7 };
+	255, 248, 255, 248, 127, 248, 127, 248, 63, 252, 15, 254, 0, 31, 0, 15, 0, 7
+};
 
 
 const uint8 ZOOM_OUT[] = { 16, 1, 6, 6, 0, 0, 15, 128, 48, 96, 32, 32, 64, 16,
 	64, 16, 79, 144, 64, 16, 64, 16, 32, 32, 48, 112, 15, 184, 0, 28, 0, 14, 0,
 	6, 0, 0, 15, 128, 63, 224, 127, 240, 127, 240, 255, 248, 255, 248, 255, 248,
-	255, 248, 255, 248, 127, 248, 127, 248, 63, 252, 15, 254, 0, 31, 0, 15, 0, 7 };
+	255, 248, 255, 248, 127, 248, 127, 248, 63, 252, 15, 254, 0, 31, 0, 15, 0, 7
+};
 
 
 BRect
@@ -138,16 +141,20 @@ CalulateOffset(int32 numberOfPagesPerPage, int32 index,
 	float height = printableRect.Height();
 
 	switch (numberOfPagesPerPage) {
-		case 2: {
+		case 2:
+		{
 			if (index == 1) {
 				if (JobData::kPortrait == orientation)
 					offset.x = width;
 				else
 					offset.y = height;
 			}
-		}	break;
 
-		case 8: {
+			break;
+		}
+
+		case 8:
+		{
 			if (JobData::kPortrait == orientation) {
 				offset.x = width  * (index / 2);
 				offset.y = height * (index % 2);
@@ -155,9 +162,12 @@ CalulateOffset(int32 numberOfPagesPerPage, int32 index,
 				offset.x = width  * (index % 2);
 				offset.y = height * (index / 2);
 			}
-		}	break;
 
-		case 32: {
+			break;
+		}
+
+		case 32:
+		{
 			if (JobData::kPortrait == orientation) {
 				offset.x = width  * (index / 4);
 				offset.y = height * (index % 4);
@@ -165,9 +175,11 @@ CalulateOffset(int32 numberOfPagesPerPage, int32 index,
 				offset.x = width  * (index % 4);
 				offset.y = height * (index / 4);
 			}
-		}	break;
 
-		case 4: {
+			break;
+		}
+
+		case 4:
 		case 9:
 		case 16:
 		case 25:
@@ -177,11 +189,15 @@ CalulateOffset(int32 numberOfPagesPerPage, int32 index,
 		case 81:
 		case 100:
 		case 121:
+		{
 			int32 value = int32(sqrt(double(numberOfPagesPerPage)));
 			offset.x = width  * (index % value);
 			offset.y = height * (index / value);
-		}	break;
+
+			break;
+		}
 	}
+
 	return offset;
 }
 
@@ -189,21 +205,22 @@ CalulateOffset(int32 numberOfPagesPerPage, int32 index,
 
 
 PreviewView::PreviewView(BFile* jobFile, BRect rect)
-	: BView(rect, "PreviewView", B_FOLLOW_ALL, B_WILL_DRAW | B_FRAME_EVENTS)
-	, fPage(0)
-	, fZoom(0)
-	, fReader(jobFile)
-	, fReverse(false)
-	, fPaperRect(BRect())
-	, fPrintableRect(BRect())
-	, fTracking(false)
-	, fInsideView(true)
-	, fScrollStart(0.0, 0.0)
-	, fNumberOfPages(1)
-	, fNumberOfPagesPerPage(1)
-	, fCachedPage(NULL)
-	, fOrientation(JobData::kPortrait)
-	, fPageSelection(JobData::kAllPages)
+	:
+	BView(rect, "PreviewView", B_FOLLOW_ALL, B_WILL_DRAW | B_FRAME_EVENTS),
+	fPage(0),
+	fZoom(0),
+	fReader(jobFile),
+	fReverse(false),
+	fPaperRect(BRect()),
+	fPrintableRect(BRect()),
+	fTracking(false),
+	fInsideView(true),
+	fScrollStart(0.0, 0.0),
+	fNumberOfPages(1),
+	fNumberOfPagesPerPage(1),
+	fCachedPage(NULL),
+	fOrientation(JobData::kPortrait),
+	fPageSelection(JobData::kAllPages)
 {
 	int32 value32;
 	if (fReader.JobSettings()->FindInt32(kJDOrientation, &value32) == B_OK)
@@ -233,10 +250,13 @@ PreviewView::PreviewView(BFile* jobFile, BRect rect)
 		case 2:
 		case 8:
 		case 32:
-		case 128: {
+		case 128:
+		{
 			fPaperRect = RotateRect(fPaperRect);
 			fPrintableRect = RotateRect(fPrintableRect);
-		}	break;
+
+			break;
+		}
 	}
 }
 
@@ -286,7 +306,7 @@ void
 PreviewView::MouseDown(BPoint point)
 {
 	MakeFocus(true);
-	BMessage *message = Window()->CurrentMessage();
+	BMessage* message = Window()->CurrentMessage();
 
 	int32 button;
 	if (message && message->FindInt32("buttons", &button) == B_OK) {
@@ -320,37 +340,50 @@ PreviewView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 		point = fScrollStart - ConvertToScreen(point);
 
 		float hMin, hMax;
-		BScrollBar *hBar = ScrollBar(B_HORIZONTAL);
+		BScrollBar* hBar = ScrollBar(B_HORIZONTAL);
 		hBar->GetRange(&hMin, &hMax);
 
 		float vMin, vMax;
-		BScrollBar *vBar = ScrollBar(B_VERTICAL);
+		BScrollBar* vBar = ScrollBar(B_VERTICAL);
 		vBar->GetRange(&vMin, &vMax);
 
-		if (point.x < 0.0) point.x = 0.0;
-		if (point.y < 0.0) point.y = 0.0;
-		if (point.x > hMax) point.x = hMax;
-		if (point.y > vMax) point.y = vMax;
+		if (point.x < 0.0)
+			point.x = 0.0;
+		if (point.y < 0.0)
+			point.y = 0.0;
+		if (point.x > hMax)
+			point.x = hMax;
+		if (point.y > vMax)
+			point.y = vMax;
 
 		ScrollTo(point);
 	} else {
 		switch (transit) {
-			case B_ENTERED_VIEW: {
+			case B_ENTERED_VIEW:
+			{
 				fInsideView = true;
 				be_app->SetCursor(ZOOM_IN);
-			}	break;
 
-			case B_EXITED_VIEW: {
+				break;
+			}
+
+			case B_EXITED_VIEW:
+			{
 				fInsideView = false;
 				be_app->SetCursor(B_HAND_CURSOR);
-			}	break;
 
-			default: {
+				break;
+			}
+
+			default:
+			{
 				if (modifiers() & B_SHIFT_KEY)
 					be_app->SetCursor(ZOOM_OUT);
 				else
 					be_app->SetCursor(ZOOM_IN);
-			}	break;
+
+				break;
+			}
 		}
 	}
 }
@@ -360,8 +393,10 @@ void
 PreviewView::MouseUp(BPoint point)
 {
 	(void)point;
+
 	fTracking = false;
 	fScrollStart.Set(0.0, 0.0);
+
 	if (fInsideView && ((modifiers() & B_SHIFT_KEY) == 0))
 		be_app->SetCursor(ZOOM_IN);
 }
@@ -372,19 +407,24 @@ PreviewView::KeyDown(const char* bytes, int32 numBytes)
 {
 	MakeFocus(true);
 	switch (bytes[0]) {
-		case '-': {
+		case '-':
+		{
 			if (modifiers() & B_CONTROL_KEY)
 				ZoomOut();
-		}	break;
 
-		case '+' : {
+			break;
+		}
+
+		case '+' :
+		{
 			if (modifiers() & B_CONTROL_KEY)
 				ZoomIn();
-		}	break;
 
-		default: {
+			break;
+		}
+
+		default:
 			BView::KeyDown(bytes, numBytes);
-		}	break;
 	}
 }
 
@@ -423,7 +463,7 @@ void
 PreviewView::ShowLastPage()
 {
 	if (!ShowsLastPage()) {
-		fPage = NumberOfPages()-1;
+		fPage = NumberOfPages() - 1;
 		Invalidate();
 	}
 }
@@ -448,11 +488,10 @@ PreviewView::ShowFindPage(int32 page)
 {
 	page--;
 
-	if (page < 0) {
+	if (page < 0)
 		page = 0;
-	} else if (page > (NumberOfPages()-1)) {
-		page = NumberOfPages()-1;
-	}
+	else if (page > (NumberOfPages() - 1))
+		page = NumberOfPages() - 1;
 
 	fPage = page;
 	Invalidate();
@@ -498,8 +537,10 @@ PreviewView::CanZoomOut() const
 void
 PreviewView::FixScrollbars()
 {
-	float width = _PaperRect().Width() + kPreviewLeftMargin + kPreviewRightMargin;
-	float height = _PaperRect().Height() + kPreviewTopMargin + kPreviewBottomMargin;
+	float width = _PaperRect().Width() + kPreviewLeftMargin +
+		kPreviewRightMargin;
+	float height = _PaperRect().Height() + kPreviewTopMargin +
+		kPreviewBottomMargin;
 
 	BRect frame(Bounds());
 	float x = width - frame.Width();
@@ -510,7 +551,7 @@ PreviewView::FixScrollbars()
 	if (y < 0.0)
 		y = 0.0;
 
-	BScrollBar * scroll = ScrollBar(B_HORIZONTAL);
+	BScrollBar* scroll = ScrollBar(B_HORIZONTAL);
 	scroll->SetRange(0.0, x);
 	scroll->SetProportion((width - x) / width);
 	float bigStep = frame.Width() - 2;
@@ -529,10 +570,11 @@ PreviewView::FixScrollbars()
 BRect
 PreviewView::ViewRect() const
 {
-	BRect r(_PaperRect());
-	r.right += kPreviewLeftMargin + kPreviewRightMargin;
-	r.bottom += kPreviewTopMargin + kPreviewBottomMargin;
-	return r;
+	BRect rect(_PaperRect());
+	rect.right += kPreviewLeftMargin + kPreviewRightMargin;
+	rect.bottom += kPreviewTopMargin + kPreviewBottomMargin;
+
+	return rect;
 }
 
 
@@ -562,12 +604,13 @@ PreviewView::_ZoomFactor() const
 {
 	const int32 b = 4;
 	int32 zoom;
-	if (fZoom > 0) {
+	if (fZoom > 0)
 		zoom = (1 << b) << fZoom;
-	} else {
+	else
 		zoom = (1 << b) >> -fZoom;
-	}
+
 	float factor = zoom / (float)(1 << b);
+
 	return factor * fReader.GetScale() / 100.0;
 }
 
@@ -628,6 +671,7 @@ PreviewView::_ContentRect() const
 	}
 
 	paperRect.OffsetTo(offsetX, offsetY);
+
 	return paperRect;
 }
 
@@ -638,49 +682,51 @@ PreviewView::_DrawPageFrame(BRect rect)
 	const float kShadowIndent = 3;
 	const float kShadowWidth = 3;
 
-	const rgb_color frameColor = { 0, 0, 0, 0 };
-	const rgb_color shadowColor = { 90, 90, 90, 0 };
+	const rgb_color frameColor = make_color(0, 0, 0, 0);
+	const rgb_color shadowColor = make_color(90, 90, 90, 0);
 
 	PushState();
 
-	// draw page border around page
-	BRect r(_ContentRect().InsetByCopy(-1, -1));
+	// Draw page border around page
+	BRect contentRect(_ContentRect().InsetByCopy(-1, -1));
 
 	SetHighColor(frameColor);
-	StrokeRect(r);
+	StrokeRect(contentRect);
 
-	// draw page shadow
+	// Draw page shadow
 	SetHighColor(shadowColor);
 
-	float x = r.right + 1;
+	float x = contentRect.right + 1;
 	float right = x + kShadowWidth;
-	float bottom = r.bottom + 1 + kShadowWidth;
-	float y = r.top + kShadowIndent;
+	float bottom = contentRect.bottom + 1 + kShadowWidth;
+	float y = contentRect.top + kShadowIndent;
 	FillRect(BRect(x, y, right, bottom));
 
-	x = r.left + kShadowIndent;
-	y = r.bottom  + 1;
-	FillRect(BRect(x, y, r.right, bottom));
+	x = contentRect.left + kShadowIndent;
+	y = contentRect.bottom  + 1;
+	FillRect(BRect(x, y, rect.right, bottom));
 
 	PopState();
 }
 
 
-
 void PreviewView::_DrawPage(BRect rect)
 {
 	BRect printRect(_PrintableRect());
+
 	switch (fNumberOfPagesPerPage) {
 		case 2:
 		case 8:
 		case 32:
-		case 128: {
+		case 128:
 			printRect = RotateRect(printRect);
-		}	break;
+			break;
 	}
+
 	printRect.OffsetBy(_ContentRect().LeftTop());
 
-	BPoint scalingXY = GraphicsDriver::GetScale(fNumberOfPagesPerPage, printRect, 100.0);
+	BPoint scalingXY = GraphicsDriver::GetScale(fNumberOfPagesPerPage,
+		printRect, 100.0);
 	float scaling = min_c(scalingXY.x, scalingXY.y);
 
 	printRect = ScaleDown(printRect, _ZoomFactor() * scaling);
@@ -728,18 +774,18 @@ PreviewView::_DrawMarginFrame(BRect rect)
 	printRect.OffsetBy(paperRect.LeftTop());
 
 	const rgb_color highColor = HighColor();
-	const rgb_color white = { 255, 255, 255, 255 };
+	const rgb_color white = make_color(255, 255, 255, 255);
 
 	SetHighColor(white);
 
-	FillRect(BRect(paperRect.left, paperRect.top, printRect.left
-		, paperRect.bottom));
-	FillRect(BRect(paperRect.left, paperRect.top, paperRect.right
-		, printRect.top));
-	FillRect(BRect(printRect.right, paperRect.top, paperRect.right
-		, paperRect.bottom));
-	FillRect(BRect(paperRect.left, printRect.bottom, paperRect.right
-		, paperRect.bottom));
+	FillRect(BRect(paperRect.left, paperRect.top, printRect.left,
+		paperRect.bottom));
+	FillRect(BRect(paperRect.left, paperRect.top, paperRect.right,
+		printRect.top));
+	FillRect(BRect(printRect.right, paperRect.top, paperRect.right,
+		paperRect.bottom));
+	FillRect(BRect(paperRect.left, printRect.bottom, paperRect.right,
+		paperRect.bottom));
 
 	SetHighColor(highColor);
 
@@ -760,7 +806,8 @@ PreviewView::_DrawMarginFrame(BRect rect)
 
 
 
-int32 PreviewView::_GetPageNumber(int32 index) const
+int32
+PreviewView::_GetPageNumber(int32 index) const
 {
 	int32 page = fPage;
 	if (fReverse)
@@ -777,11 +824,11 @@ int32 PreviewView::_GetPageNumber(int32 index) const
 
 // #pragma mark - PreviewWindow
 
-
 PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
-	: BlockingWindow(BRect(20, 24, 400, 600), "Preview", B_TITLED_WINDOW,
-		B_ASYNCHRONOUS_CONTROLS)
-	, fButtonBarHeight(0.0)
+	:
+	BlockingWindow(BRect(20, 24, 400, 600), "Preview", B_TITLED_WINDOW,
+		B_ASYNCHRONOUS_CONTROLS),
+	fButtonBarHeight(0.0)
 {
 	BRect bounds(Bounds());
 
@@ -792,22 +839,26 @@ PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
 
 	bounds.OffsetBy(10.0, 10.0);
 
-	fFirst = new BButton(bounds, "first", "First page", new BMessage(MSG_FIRST_PAGE));
+	fFirst = new BButton(bounds, "first", "First page",
+		new BMessage(MSG_FIRST_PAGE));
 	panel->AddChild(fFirst);
 	fFirst->ResizeToPreferred();
 
 	bounds.OffsetBy(fFirst->Bounds().Width() + 10.0, 0.0);
-	fPrev = new BButton(bounds, "previous", "Previous page", new BMessage(MSG_PREV_PAGE));
+	fPrev = new BButton(bounds, "previous", "Previous page",
+		new BMessage(MSG_PREV_PAGE));
 	panel->AddChild(fPrev);
 	fPrev->ResizeToPreferred();
 
 	bounds.OffsetBy(fPrev->Bounds().Width() + 10.0, 0.0);
-	fNext = new BButton(bounds, "next", "Next page", new BMessage(MSG_NEXT_PAGE));
+	fNext = new BButton(bounds, "next", "Next page",
+		new BMessage(MSG_NEXT_PAGE));
 	panel->AddChild(fNext);
 	fNext->ResizeToPreferred();
 
 	bounds.OffsetBy(fNext->Bounds().Width() + 10.0, 0.0);
-	fLast = new BButton(bounds, "last", "Last page", new BMessage(MSG_LAST_PAGE));
+	fLast = new BButton(bounds, "last", "Last page",
+		new BMessage(MSG_LAST_PAGE));
 	panel->AddChild(fLast);
 	fLast->ResizeToPreferred();
 
@@ -827,6 +878,7 @@ PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
 
 	for (num = 0; num <= 9; num++)
 		fPageNumber->TextView()->AllowChar('0' + num);
+
 	fPageNumber->TextView()-> SetMaxBytes(5);
 
 	bounds.OffsetBy(fPageNumber->Bounds().Width() + 5.0, 0.0);
@@ -836,12 +888,14 @@ PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
 		fFirst->Bounds().Height());
 
 	bounds.OffsetBy(fPageText->Bounds().Width() + 10.0, 0.0);
-	fZoomIn = new BButton(bounds, "zoomIn", "Zoom in", new BMessage(MSG_ZOOM_IN));
+	fZoomIn = new BButton(bounds, "zoomIn", "Zoom in",
+		new BMessage(MSG_ZOOM_IN));
 	panel->AddChild(fZoomIn);
 	fZoomIn->ResizeToPreferred();
 
 	bounds.OffsetBy(fZoomIn->Bounds().Width() + 10.0, 0.0);
-	fZoomOut = new BButton(bounds, "ZoomOut", "Zoom out", new BMessage(MSG_ZOOM_OUT));
+	fZoomOut = new BButton(bounds, "ZoomOut", "Zoom out",
+		new BMessage(MSG_ZOOM_OUT));
 	panel->AddChild(fZoomOut);
 	fZoomOut->ResizeToPreferred();
 
@@ -859,14 +913,14 @@ PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
 		// cancel printing if user closes the preview window
 		SetUserQuitResult(B_ERROR);
 
-		BButton *printJob = new BButton(BRect(), "printJob", "Print",
+		BButton* printJob = new BButton(BRect(), "printJob", "Print",
 			new BMessage(MSG_PRINT_JOB), B_FOLLOW_RIGHT | B_FOLLOW_BOTTOM);
 		panel->AddChild(printJob);
 		printJob->ResizeToPreferred();
 		printJob->MoveTo(bounds.right - (printJob->Bounds().Width() + 10.0),
 			bounds.bottom + 10.0);
 
-		BButton *cancelJob = new BButton(BRect(), "cancelJob", "Cancel",
+		BButton* cancelJob = new BButton(BRect(), "cancelJob", "Cancel",
 			new BMessage(MSG_CANCEL_JOB), B_FOLLOW_RIGHT | B_FOLLOW_BOTTOM);
 		panel->AddChild(cancelJob);
 		cancelJob->ResizeToPreferred();
@@ -895,9 +949,9 @@ PreviewWindow::PreviewWindow(BFile* jobFile, bool showOkAndCancelButtons)
 
 
 void
-PreviewWindow::MessageReceived(BMessage* m)
+PreviewWindow::MessageReceived(BMessage* message)
 {
-	switch (m->what) {
+	switch (message->what) {
 		case MSG_FIRST_PAGE:
 			fPreview->ShowFirstPage();
 			break;
@@ -927,7 +981,7 @@ PreviewWindow::MessageReceived(BMessage* m)
 			break;
 
 		case B_MODIFIERS_CHANGED:
-			fPreview->MouseMoved(BPoint(), B_INSIDE_VIEW, m);
+			fPreview->MouseMoved(BPoint(), B_INSIDE_VIEW, message);
 			break;
 
 		case MSG_CANCEL_JOB:
@@ -939,9 +993,10 @@ PreviewWindow::MessageReceived(BMessage* m)
 			break;
 
 		default:
-			BlockingWindow::MessageReceived(m);
+			BlockingWindow::MessageReceived(message);
 			return;
 	}
+
 	_UpdateControls();
 }
 
@@ -949,13 +1004,14 @@ PreviewWindow::MessageReceived(BMessage* m)
 status_t
 PreviewWindow::Go()
 {
-	status_t st = InitCheck();
-	if (st == B_OK)
+	status_t status = InitCheck();
+	if (status == B_OK)
 		return BlockingWindow::Go();
 
 	be_app->SetCursor(B_HAND_CURSOR);
 	Quit();
-	return st;
+
+	return status;
 }
 
 
@@ -981,9 +1037,12 @@ PreviewWindow::_ResizeToPage()
 	// width so that all buttons are visible
 	float minWidth = fZoomOut->Frame().right + 10;
 
-	if (width < minWidth) width = minWidth;
-	if (width > maxWidth) width = maxWidth;
-	if (height > maxHeight) height = maxHeight;
+	if (width < minWidth)
+		width = minWidth;
+	if (width > maxWidth)
+		width = maxWidth;
+	if (height > maxHeight)
+		height = maxHeight;
 
 	ResizeTo(width, height);
 }

@@ -1,31 +1,32 @@
 /*
- * SpoolMetaData.h
- * Copyright 2003 Michael Pfeiffer. All Rights Reserved.
+ * Copyright 2003-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Michael Pfeiffer
  */
+#ifndef _SPOOL_METADATA_H
+#define _SPOOL_METADATA_H
 
-#ifndef __SPOOLMETADATA_H
-#define __SPOOLMETADATA_H
 
-#include <SupportDefs.h>
 #include <File.h>
-#include <string>
+#include <String.h>
+#include <SupportDefs.h>
 
-using namespace std;
 
 class SpoolMetaData {
 public:
-						SpoolMetaData(BFile* spool_file);
-						~SpoolMetaData();
+								SpoolMetaData(BFile* spoolFile);
+								~SpoolMetaData();
 
-	const string&		GetDescription() const;
-	const string&		GetMimeType() const;
-	const string&		GetCreationTime() const;
+	const	BString&			GetDescription() const;
+	const	BString&			GetMimeType() const;
+	const	BString&			GetCreationTime() const;
 
 private:
-	string fDescription;
-	string fMimeType;
-	string fCreationTime;
+			BString				fDescription;
+			BString				fMimeType;
+			BString				fCreationTime;
 };
 
-
-#endif	/* __SpoolMetaData_H */
+#endif	/* _SPOOL_METADATA_H */

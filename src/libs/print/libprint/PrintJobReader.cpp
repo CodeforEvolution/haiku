@@ -1,37 +1,15 @@
 /*
+ * Copyright 2002-2021, Haiku. All rights reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		Michael Pfeiffer
+ */
 
-PrintJobReader
-
-Copyright (c) 2002 OpenBeOS.
-
-Author:
-	Michael Pfeiffer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-*/
 
 #include "PrintJobReader.h"
 
-
 #include <stdio.h>
-
 
 #include <Picture.h>
 #include <PrintJob.h>
@@ -39,27 +17,29 @@ THE SOFTWARE.
 
 // #pragma mark --- PrintJobPage
 
-
 PrintJobPage::PrintJobPage()
-	: fNextPicture(-1)
-	, fNumberOfPictures(0)
-	, fPicture(0)
-	, fStatus(B_ERROR)
+	:
+	fNextPicture(-1),
+	fNumberOfPictures(0),
+	fPicture(0),
+	fStatus(B_ERROR)
 {
 }
 
 
 PrintJobPage::PrintJobPage(const PrintJobPage& copy)
-	: fJobFile(copy.fJobFile)
-	, fNextPicture(copy.fNextPicture)
-	, fNumberOfPictures(copy.fNumberOfPictures)
-	, fPicture(copy.fPicture)
-	, fStatus(copy.fStatus)
+	:
+	fJobFile(copy.fJobFile),
+	fNextPicture(copy.fNextPicture),
+	fNumberOfPictures(copy.fNumberOfPictures),
+	fPicture(copy.fPicture),
+	fStatus(copy.fStatus)
 {
 }
 
 
-PrintJobPage& PrintJobPage::operator=(const PrintJobPage& copy)
+PrintJobPage&
+PrintJobPage::operator=(const PrintJobPage& copy)
 {
 	if (this != &copy) {
 		fJobFile = copy.fJobFile;
@@ -68,14 +48,16 @@ PrintJobPage& PrintJobPage::operator=(const PrintJobPage& copy)
 		fPicture = copy.fPicture;
 		fStatus = copy.fStatus;
 	}
+
 	return *this;
 }
 
 
 PrintJobPage::PrintJobPage(BFile* jobFile, off_t start)
-	: fJobFile(*jobFile)
-	, fPicture(0)
-	, fStatus(B_ERROR)
+	:
+	fJobFile(*jobFile),
+	fPicture(0),
+	fStatus(B_ERROR)
 {
 	off_t size;
 	if (fJobFile.GetSize(&size) != B_OK || start > size)
@@ -93,13 +75,15 @@ PrintJobPage::PrintJobPage(BFile* jobFile, off_t start)
 }
 
 
-status_t PrintJobPage::InitCheck() const
+status_t
+PrintJobPage::InitCheck() const
 {
 	return fStatus;
 }
 
 
-status_t PrintJobPage::NextPicture(BPicture& picture, BPoint& point, BRect& rect)
+status_t
+PrintJobPage::NextPicture(BPicture& picture, BPoint& point, BRect& rect)
 {
 	if (fPicture >= fNumberOfPictures)
 		return B_ERROR;
@@ -122,9 +106,10 @@ status_t PrintJobPage::NextPicture(BPicture& picture, BPoint& point, BRect& rect
 
 
 PrintJobReader::PrintJobReader(BFile* jobFile)
-	: fJobFile(*jobFile)
-	, fNumberOfPages(-1)
-	, fPageIndex(NULL)
+	:
+	fJobFile(*jobFile),
+	fNumberOfPages(-1),
+	fPageIndex(NULL)
 {
 	print_file_header header;
 	fJobFile.Seek(0, SEEK_SET);
@@ -145,13 +130,15 @@ PrintJobReader::~PrintJobReader()
 }
 
 
-status_t PrintJobReader::InitCheck() const
+status_t
+PrintJobReader::InitCheck() const
 {
 	return fNumberOfPages > 0 ? B_OK : B_ERROR;
 }
 
 
-void PrintJobReader::_BuildPageIndex()
+void
+PrintJobReader::_BuildPageIndex()
 {
 	off_t next_page;
 	int32 number_of_pictures;
@@ -171,7 +158,8 @@ void PrintJobReader::_BuildPageIndex()
 }
 
 
-status_t PrintJobReader::GetPage(int32 page, PrintJobPage& pjp)
+status_t
+PrintJobReader::GetPage(int32 page, PrintJobPage& pjp)
 {
 	if (0 <= page && page < fNumberOfPages) {
 		PrintJobPage p(&fJobFile, fPageIndex[page]);
@@ -180,52 +168,64 @@ status_t PrintJobReader::GetPage(int32 page, PrintJobPage& pjp)
 			return B_OK;
 		}
 	}
+
 	return B_ERROR;
 }
 
 
-int32 PrintJobReader::FirstPage() const
+int32
+PrintJobReader::FirstPage() const
 {
 	int32 firstPage = -1;
 	fJobSettings.FindInt32("first_page", &firstPage);
+
 	return firstPage;
 }
 
 
-int32 PrintJobReader::LastPage() const
+int32
+PrintJobReader::LastPage() const
 {
 	int32 lastPage = -1;
 	fJobSettings.FindInt32("last_page", &lastPage);
+
 	return lastPage;
 }
 
 
-BRect PrintJobReader::PaperRect() const
+BRect
+PrintJobReader::PaperRect() const
 {
-	BRect r;
-	fJobSettings.FindRect("paper_rect", &r);
-	return r;
+	BRect rect;
+	fJobSettings.FindRect("paper_rect", &rect);
+
+	return rect;
 }
 
 
-BRect PrintJobReader::PrintableRect() const
+BRect
+PrintJobReader::PrintableRect() const
 {
-	BRect r;
-	fJobSettings.FindRect("printable_rect", &r);
-	return r;
+	BRect rect;
+	fJobSettings.FindRect("printable_rect", &rect);
+
+	return rect;
 }
 
 
-void PrintJobReader::GetResolution(int32 *xdpi, int32 *ydpi) const
+void
+PrintJobReader::GetResolution(int32* xdpi, int32* ydpi) const
 {
 	fJobSettings.FindInt32("xres", xdpi);
 	fJobSettings.FindInt32("yres", ydpi);
 }
 
 
-float PrintJobReader::GetScale() const
+float
+PrintJobReader::GetScale() const
 {
 	float scale = 1.0;
 	fJobSettings.FindFloat("scale", &scale);
+
 	return scale;
 }

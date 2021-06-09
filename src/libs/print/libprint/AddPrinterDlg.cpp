@@ -1,6 +1,12 @@
+/*
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
+ */
+
+
 #include "AddPrinterDlg.h"
 
-#include <GroupLayoutBuilder.h>
+#include <LayoutBuilder.h>
 
 #include "PrinterCap.h"
 #include "PrinterData.h"
@@ -14,8 +20,9 @@ enum MSGS {
 
 
 ProtocolClassItem::ProtocolClassItem(const ProtocolClassCap* cap)
-	: BStringItem(cap->fLabel.c_str())
-	, fProtocolClassCap(cap)
+	:
+	BStringItem(cap->fLabel.String()),
+	fProtocolClassCap(cap)
 {
 }
 
@@ -26,17 +33,18 @@ ProtocolClassItem::GetProtocolClass() const
 	return fProtocolClassCap->fProtocolClass;
 }
 
-const char *
+
+const char*
 ProtocolClassItem::GetDescription() const
 {
-	return fProtocolClassCap->fDescription.c_str();
+	return fProtocolClassCap->fDescription.String();
 }
 
 
 AddPrinterView::AddPrinterView(PrinterData* printerData,
 	const PrinterCap* printerCap)
 	:
-	BView("addPrinter", B_WILL_DRAW),
+	BView("AddPrinterView", B_WILL_DRAW),
 	fPrinterData(printerData),
 	fPrinterCap(printerCap)
 {
@@ -51,19 +59,16 @@ AddPrinterView::~AddPrinterView()
 void
 AddPrinterView::AttachedToWindow()
 {
-	// protocol class box
-	BBox* protocolClassBox = new BBox("protocolClass");
+	// Protocol class box
+	BBox* protocolClassBox = new BBox("protocolClassBox");
 	protocolClassBox->SetLabel("Protocol classes:");
 
-	// protocol class
-	fProtocolClassList = new BListView("protocolClassList");
+	// Protocol class
+	fProtocolClassList = new BListView("protocolClassListView");
 	fProtocolClassList->SetExplicitMinSize(BSize(500, 200));
+
 	BScrollView* protocolClassScroller = new BScrollView(
-		"protocolClassListScroller",
-		fProtocolClassList,
-		0,
-		false,
-		true,
+		"protocolClassListScroller", fProtocolClassList, 0, false, true,
 		B_NO_BORDER);
 	fProtocolClassList->SetSelectionMessage(
 		new BMessage(kMsgProtocolClassChanged));
@@ -72,98 +77,92 @@ AddPrinterView::AttachedToWindow()
 	protocolClassBox->AddChild(protocolClassScroller);
 
 	int count = fPrinterCap->CountCap(PrinterCap::kProtocolClass);
-	ProtocolClassCap **protocolClasses =
-		(ProtocolClassCap **)fPrinterCap->GetCaps(PrinterCap::kProtocolClass);
+	ProtocolClassCap** protocolClasses =
+		(ProtocolClassCap**)fPrinterCap->GetCaps(PrinterCap::kProtocolClass);
 	while (count--) {
-		const ProtocolClassCap *protocolClass = *protocolClasses;
+		const ProtocolClassCap* protocolClass = *protocolClasses;
 
 		BStringItem* item = new ProtocolClassItem(protocolClass);
 		fProtocolClassList->AddItem(item);
+
 		if (protocolClass->fIsDefault) {
 			int index = fProtocolClassList->IndexOf(item);
 			fProtocolClassList->Select(index);
 		}
-		protocolClasses ++;
+
+		protocolClasses++;
 	}
 
-	// description of protocol class box
+	// Description of protocol class box
 	BBox* descriptionBox = new BBox("descriptionBox");
 	descriptionBox->SetLabel("Description:");
 
-	// description of protocol class
+	// Description of protocol class
 	fDescription = new BTextView("description");
 	fDescription->SetExplicitMinSize(BSize(200, 200));
 	fDescription->SetViewColor(descriptionBox->ViewColor());
+
 	BScrollView* descriptionScroller = new BScrollView("descriptionScroller",
-			fDescription,
-			0,
-			false,
-			true,
-			B_NO_BORDER);
+		fDescription, 0, false, true, B_NO_BORDER);
 	fDescription->MakeEditable(false);
 
 	descriptionBox->AddChild(descriptionScroller);
 
-	// separator line
-	BBox *separator = new BBox("separator");
+	// Separator line
+	BBox* separator = new BBox("separator");
 	separator->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, 1));
 
-	// buttons
-	BButton* cancel = new BButton("cancel", "Cancel",
+	// Buttons
+	BButton* cancelButton = new BButton("cancelButton", "Cancel",
 		new BMessage(kMsgCancel));
-	BButton* ok = new BButton("ok", "OK", new BMessage(kMsgOK));
-	ok->MakeDefault(true);
+	BButton* okButton = new BButton("okButton", "OK", new BMessage(kMsgOK));
+	okButton->MakeDefault(true);
 
-	SetLayout(new BGroupLayout(B_VERTICAL));
-	AddChild(BGroupLayoutBuilder(B_VERTICAL, 0)
+	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.Add(protocolClassBox)
 		.Add(descriptionBox)
 		.AddGlue()
 		.Add(separator)
 		.AddGroup(B_HORIZONTAL, 10, 1.0f)
 			.AddGlue()
-			.Add(cancel)
-			.Add(ok)
+			.Add(cancelButton)
+			.Add(okButton)
 		.End()
-		.SetInsets(0, 0, 0, 0)
-	);
+		.SetInsets(0, 0, 0, 0);
 
-
-	// update description
+	// Update description
 	BMessage updateDescription(kMsgProtocolClassChanged);
 	MessageReceived(&updateDescription);
 }
 
 
 ProtocolClassItem*
-AddPrinterView::CurrentSelection()
+AddPrinterView::_CurrentSelection()
 {
 	int selected = fProtocolClassList->CurrentSelection();
-	if (selected >= 0) {
+	if (selected >= 0)
 		return (ProtocolClassItem*)fProtocolClassList->ItemAt(selected);
-	}
+
 	return NULL;
 }
 
 
 void
-AddPrinterView::MessageReceived(BMessage* msg)
+AddPrinterView::MessageReceived(BMessage* message)
 {
-	if (msg->what == kMsgProtocolClassChanged) {
-		ProtocolClassItem *item = CurrentSelection();
-		if (item != NULL) {
+	if (message->what == kMsgProtocolClassChanged) {
+		ProtocolClassItem* item = _CurrentSelection();
+		if (item != NULL)
 			fDescription->SetText(item->GetDescription());
-		}
-	} else {
-		BView::MessageReceived(msg);
-	}
+	} else
+		BView::MessageReceived(message);
 }
 
 
 void
 AddPrinterView::Save()
 {
-	ProtocolClassItem* item = CurrentSelection();
+	ProtocolClassItem* item = _CurrentSelection();
 	if (item != NULL) {
 		fPrinterData->SetProtocolClass(item->GetProtocolClass());
 		fPrinterData->Save();
@@ -172,40 +171,39 @@ AddPrinterView::Save()
 
 
 AddPrinterDlg::AddPrinterDlg(PrinterData* printerData,
-	const PrinterCap *printerCap)
+	const PrinterCap* printerCap)
 	:
-	DialogWindow(BRect(100, 100, 120, 120),
-		"Add printer", B_TITLED_WINDOW_LOOK, B_MODAL_APP_WINDOW_FEEL,
-		B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE | B_ASYNCHRONOUS_CONTROLS
-			| B_AUTO_UPDATE_SIZE_LIMITS)
+	DialogWindow(BRect(100, 100, 120, 120), "Add Printer", B_TITLED_WINDOW_LOOK,
+		B_MODAL_APP_WINDOW_FEEL, B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE |
+		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS)
 {
 	SetResult(B_ERROR);
 
 	fAddPrinterView = new AddPrinterView(printerData, printerCap);
-	SetLayout(new BGroupLayout(B_VERTICAL));
-	AddChild(BGroupLayoutBuilder(B_VERTICAL, 0)
+
+	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
 		.Add(fAddPrinterView)
-		.SetInsets(10, 10, 10, 10)
-	);
+		.SetInsets(10, 10, 10, 10);
 }
 
 
 void
-AddPrinterDlg::MessageReceived(BMessage* msg)
+AddPrinterDlg::MessageReceived(BMessage* message)
 {
-	switch (msg->what) {
+	switch (message->what) {
 		case kMsgOK:
+		{
 			fAddPrinterView->Save();
 			SetResult(B_NO_ERROR);
 			PostMessage(B_QUIT_REQUESTED);
 			break;
+		}
 
 		case kMsgCancel:
 			PostMessage(B_QUIT_REQUESTED);
 			break;
 
 		default:
-			DialogWindow::MessageReceived(msg);
-			break;
+			DialogWindow::MessageReceived(message);
 	}
 }

@@ -1,10 +1,12 @@
 /*
- * UIDriver.h
- * Copyright 1999-2000 Y.Takagi. All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+#ifndef	_UI_DRIVER_H
+#define	_UI_DRIVER_H
 
-#ifndef	__UIDRIVER_H
-#define	__UIDRIVER_H
+
+#include <SupportDefs.h>
 
 
 class BMessage;
@@ -15,26 +17,29 @@ class JobData;
 
 class UIDriver {
 public:
-						UIDriver(BMessage* message, PrinterData* printerData,
-							const PrinterCap* printerCap);
-	virtual				~UIDriver();
-			BMessage*	ConfigPage();
-			BMessage*	ConfigJob();
+								UIDriver(BMessage* message, PrinterData*
+									printerData, const PrinterCap* printerCap);
+	virtual						~UIDriver();
+
+			BMessage*			ConfigPage();
+			BMessage*			ConfigJob();
 
 protected:
-						UIDriver(const UIDriver &);
+								UIDriver(const UIDriver&);
 
-			UIDriver&	operator=(const UIDriver &);
+			UIDriver&			operator=(const UIDriver&);
 
-	virtual	status_t	PageSetup(JobData* jobData, PrinterData* printerData,
-							const PrinterCap* printerCap);
-	virtual	status_t	JobSetup(JobData* jobData, PrinterData* printerData,
-							const PrinterCap* printerCap);
+	virtual	status_t			PageSetup(JobData* jobData,
+									PrinterData* printerData,
+									const PrinterCap* printerCap);
+	virtual	status_t			JobSetup(JobData* jobData,
+									PrinterData* printerData,
+									const PrinterCap* printerCap);
 
 private:
-	BMessage*			fMsg;
-	PrinterData*		fPrinterData;
-	const PrinterCap*	fPrinterCap;
+			BMessage*			fMessage;
+			PrinterData*		fPrinterData;
+	const	PrinterCap*			fPrinterCap;
 };
 
-#endif	/* __UIDRIVER_H */
+#endif	/* _UI_DRIVER_H */

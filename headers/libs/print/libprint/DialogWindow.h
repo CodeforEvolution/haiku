@@ -1,42 +1,40 @@
 /*
- * DialogWindow.h
- * Copyright 2004 Michael Pfeiffer. All Rights Reserved.
+ * Copyright 2004 Michael Pfeiffer
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
- 
-#ifndef __DIALOG_WINDOW_H
-#define __DIALOG_WINDOW_H
+#ifndef _DIALOG_WINDOW_H
+#define _DIALOG_WINDOW_H
+
 
 #include <OS.h>
 #include <Window.h>
 
+
 class DialogWindow : public BWindow {
 public:
-	DialogWindow(BRect frame,
-			const char *title, 
-			window_type type,
-			uint32 flags,
-			uint32 workspace = B_CURRENT_WORKSPACE);
-	
-	DialogWindow(BRect frame,
-			const char *title, 
-			window_look look,
-			window_feel feel,
-			uint32 flags,
-			uint32 workspace = B_CURRENT_WORKSPACE);
-			
-	status_t Go();
-	
-	void SetResult(status_t result);
+								DialogWindow(BRect frame, const char* title,
+									window_type type, uint32 flags,
+									uint32 workspace = B_CURRENT_WORKSPACE);
+								DialogWindow(BRect frame, const char* title,
+									window_look look, window_feel feel,
+									uint32 flags,
+									uint32 workspace = B_CURRENT_WORKSPACE);
 
-	void MessageReceived(BMessage* msg);
-	
-	enum {
-		kGetThreadId = 'dwti' // request thread id from window
-	};
-		
+			status_t			Go();
+
+			void				SetResult(status_t result);
+
+			void				MessageReceived(BMessage* message);
+
+			enum {
+				kGetThreadId = 'dwti' // request thread id from window
+			};
+
 private:
-	status_t           fPreviousResult; // holds the result as long as fResult == NULL
-	volatile status_t *fResult;
+			status_t           fPreviousResult;
+
+	volatile status_t*			fResult;
+				// Holds the result as long as fResult == NULL
 };
 
-#endif
+#endif /* _DIALOG_WINDOW_H */

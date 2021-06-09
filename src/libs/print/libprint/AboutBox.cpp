@@ -1,19 +1,14 @@
 /*
- * AboutBox.cpp
- * Copyright 1999-2000 Y.Takagi. All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
 
-#include <cstdio>
-#include <string>
-
-#include <Window.h>
-#include <View.h>
-#include <Button.h>
 
 #include "AboutBox.h"
 
-
-using namespace std;
+#include <Button.h>
+#include <View.h>
+#include <Window.h>
 
 
 enum {
@@ -23,87 +18,116 @@ enum {
 
 class AboutBoxView : public BView {
 public:
-	AboutBoxView(BRect frame, const char *driver_name, const char *version, const char *copyright);
-	virtual void Draw(BRect);
-	virtual void AttachedToWindow();
+								AboutBoxView(BRect frame,
+									const char* driverName, const char* version,
+									const char* copyright);
+
+	virtual void				Draw(BRect updateRect);
+	virtual void				AttachedToWindow();
 
 private:
-	string fDriverName;
-	string fVersion;
-	string fCopyright;
+			BString				fDriverName;
+			BString				fVersion;
+			BString				fCopyright;
 };
 
-AboutBoxView::AboutBoxView(BRect rect, const char *driver_name, const char *version, const char *copyright)
-	: BView(rect, "", B_FOLLOW_ALL, B_WILL_DRAW)
+
+AboutBoxView::AboutBoxView(BRect rect, const char* driverName,
+	const char* version, const char* copyright)
+	:
+	BView(rect, "", B_FOLLOW_ALL, B_WILL_DRAW),
+	fDriverName(driverName),
+	fVersion(version),
+	fCopyright(copyright)
 {
-	fDriverName = driver_name;
-	fVersion     = version;
-	fCopyright   = copyright;
 	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 	SetDrawingMode(B_OP_SELECT);
 }
 
-void AboutBoxView::Draw(BRect)
+
+void
+AboutBoxView::Draw(BRect updateRect)
 {
 	SetHighColor(0, 0, 0);
-	DrawString(fDriverName.c_str(), BPoint(10.0f, 16.0f));
+	DrawString(fDriverName, BPoint(10.0f, 16.0f));
 	DrawString(" Driver for ");
+
 	SetHighColor(0, 0, 0xff);
 	DrawString("B");
+
 	SetHighColor(0xff, 0, 0);
 	DrawString("e");
+
 	SetHighColor(0, 0, 0);
 	DrawString("OS  Version ");
-	DrawString(fVersion.c_str());
-	DrawString(fCopyright.c_str(), BPoint(10.0f, 30.0f));
+	DrawString(fVersion);
+	DrawString(fCopyright, BPoint(10.0f, 30.0f));
 }
 
-void AboutBoxView::AttachedToWindow()
+
+void
+AboutBoxView::AttachedToWindow()
 {
-	BRect rect;
-	rect.Set(110, 50, 175, 55);
-	BButton *button = new BButton(rect, "", "OK", new BMessage(kMsgOK));
+	BButton* button = new BButton(BRect(110, 50, 175, 55), "", "OK",
+		new BMessage(kMsgOK));
 	AddChild(button);
 	button->MakeDefault(true);
 }
 
+
 class AboutBoxWindow : public BWindow {
 public:
-	AboutBoxWindow(BRect frame, const char *driver_name, const char *version, const char *copyright); 
-	virtual void MessageReceived(BMessage *msg);
+	AboutBoxWindow(BRect frame, const char* driverName, const char* version,
+		const char* copyright);
+
+	virtual void MessageReceived(BMessage* message);
 	virtual	bool QuitRequested();
 };
 
-AboutBoxWindow::AboutBoxWindow(BRect frame, const char *driver_name, const char *version, const char *copyright)
-	: BWindow(frame, "", B_TITLED_WINDOW,
-		B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_CLOSE_ON_ESCAPE)
+
+AboutBoxWindow::AboutBoxWindow(BRect frame, const char* driverName,
+	const char* version, const char* copyright)
+	:
+	BWindow(frame, "", B_TITLED_WINDOW, B_NOT_RESIZABLE | B_NOT_ZOOMABLE |
+		B_CLOSE_ON_ESCAPE)
 {
-	char title[256];
-	sprintf(title, "About %s Driver", driver_name);
+	BString title;
+	title.SetToFormat("About %s Driver", driverName);
+
 	SetTitle(title);
-	AddChild(new AboutBoxView(Bounds(), driver_name, version, copyright));
+
+	AddChild(new AboutBoxView(Bounds(), driverName, version, copyright));
 }
 
-void AboutBoxWindow::MessageReceived(BMessage *msg)
+
+void
+AboutBoxWindow::MessageReceived(BMessage* message)
 {
-	switch (msg->what) {
-	case kMsgOK:
-		be_app->PostMessage(B_QUIT_REQUESTED);
-		break;
+	switch (message->what) {
+		case kMsgOK:
+			be_app->PostMessage(B_QUIT_REQUESTED);
+			break;
+
+		default:
+			BWindow::MessageReceived(message);
 	}
 }
 
-bool AboutBoxWindow::QuitRequested()
+
+bool
+AboutBoxWindow::QuitRequested()
 {
 	be_app->PostMessage(B_QUIT_REQUESTED);
 	return true;
 }
 
-AboutBox::AboutBox(const char *signature, const char *driver_name, const char *version, const char *copyright)
-	: BApplication(signature)
+
+AboutBox::AboutBox(const char* signature, const char* driverName,
+	const char* version, const char* copyright)
+	:
+	BApplication(signature)
 {
-	BRect rect;
-	rect.Set(100, 80, 400, 170);
-	AboutBoxWindow *window = new AboutBoxWindow(rect, driver_name, version, copyright);
+	AboutBoxWindow* window = new AboutBoxWindow(BRect(100, 80, 400, 170),
+		driverName, version, copyright);
 	window->Show();
 }

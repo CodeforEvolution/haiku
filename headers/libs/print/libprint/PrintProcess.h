@@ -1,17 +1,17 @@
 /*
- * PrintProcess.h
- * Copyright 1999-2000 Y.Takagi. All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+#ifndef _PRINT_PROCESS_H
+#define _PRINT_PROCESS_H
 
-#ifndef __PRINTPROCESS_H
-#define __PRINTPROCESS_H
 
-#include <vector>
 #include <list>
 #include <memory>
+#include <vector>
 
-#include <Rect.h>
 #include <Point.h>
+#include <Rect.h>
 
 
 using namespace std;
@@ -20,43 +20,52 @@ using namespace std;
 class BFile;
 class BPicture;
 
+
 class PictureData {
 public:
-	PictureData(BFile *file);
-	~PictureData();
-	BPoint   point;
-	BRect    rect;
-	BPicture *picture;
+								PictureData(BFile* file);
+								~PictureData();
+
+public:
+			BPoint				point;
+			BRect				rect;
+			BPicture*			picture;
 };
+
 
 class PageData {
 public:
-	PageData();
-	PageData(BFile *file, bool reverse);
-	bool startEnum();
-	bool enumObject(PictureData **);
+								PageData();
+								PageData(BFile* file, bool reverse);
+
+			bool				StartEnum();
+			bool				EnumObject(PictureData** picture_data);
 
 private:
-	BFile *fFile;
-	bool  fReverse;
-	int32 fPictureCount;
-	int32 fRest;
-	off_t fOffset;
-	bool  fHollow;
+			BFile*				fFile;
+			bool				fReverse;
+			int32				fPictureCount;
+			int32				fRest;
+			off_t				fOffset;
+			bool				fHollow;
 };
 
-typedef list<PageData *>	PageDataList;
+
+typedef list<PageData*>	PageDataList;
+
 
 class SpoolData {
 public:
-	SpoolData(BFile *file, int32 page_count, int32 nup, bool reverse);
-	~SpoolData();
-	bool startEnum();
-	bool enumObject(PageData **);
+								SpoolData(BFile* file, int32 page_count,
+									int32 nup, bool reverse);
+								~SpoolData();
+
+			bool				StartEnum();
+			bool				EnumObject(PageData** page_data);
 
 private:
-	PageDataList fPages;
-	PageDataList::iterator fIt;
+			PageDataList		fPages;
+			PageDataList::iterator	fIt;
 };
 
-#endif	/* __PRINTPROCESS_H */
+#endif	/* _PRINT_PROCESS_H */

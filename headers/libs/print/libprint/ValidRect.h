@@ -1,24 +1,21 @@
 /*
- * ValidRect.h
- * Copyright 1999-2000 Y.Takagi All Rights Reserved.
+ * Copyright 1999-2000 Y.Takagi
+ * All rights reserved. Distributed under the terms of the MIT License.
  */
+#ifndef _VALID_RECT_H
+#define _VALID_RECT_H
 
-#ifndef __VALIDRECT_H
-#define __VALIDRECT_H
 
 #include <GraphicsDefs.h>
+#include <Rect.h>
+#include <Region.h>
+
 
 class BBitmap;
 
-struct RECT {
-	int left;
-	int top;
-	int right;
-	int bottom;
-};
 
-bool get_valid_rect(BBitmap *bitmap, RECT *rc);
+bool get_valid_rect(BBitmap* bitmap, clipping_rect* rect);
 
 int color_space2pixel_depth(color_space cs);
 
-#endif	// __VALIDRECT_H
+#endif	// _VALID_RECT_H
