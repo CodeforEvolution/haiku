@@ -94,7 +94,7 @@ PCL5Driver::NextBand(BBitmap* bitmap, BPoint* offset)
 	try {
 		BRect bounds = bitmap->Bounds();
 
-		RECT rc;
+		clipping_rect rc;
 		rc.left = (int)bounds.left;
 		rc.top = (int)bounds.top;
 		rc.right = (int)bounds.right;

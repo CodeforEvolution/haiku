@@ -210,7 +210,7 @@ PSDriver::NextBand(BBitmap* bitmap, BPoint* offset)
 	try {
 		BRect bounds = bitmap->Bounds();
 
-		RECT rc;
+		clipping_rect rc;
 		rc.left = (int)bounds.left;
 		rc.top = (int)bounds.top;
 		rc.right = (int)bounds.right;
@@ -350,11 +350,11 @@ PSDriver::_JobStart()
 	_WritePSString("%%!PS-Adobe-3.0\n");
 	_WritePSString("%%%%LanguageLevel: 1\n");
 	_WritePSString("%%%%Title: %s\n",
-		GetSpoolMetaData()->GetDescription().c_str());
+		GetSpoolMetaData()->GetDescription().String());
 	_WritePSString("%%%%Creator: %s\n",
-		GetSpoolMetaData()->GetMimeType().c_str());
+		GetSpoolMetaData()->GetMimeType().String());
 	_WritePSString("%%%%CreationDate: %s",
-		GetSpoolMetaData()->GetCreationTime().c_str());
+		GetSpoolMetaData()->GetCreationTime().String());
 	_WritePSString("%%%%DocumentMedia: Plain %d %d white 0 ( )\n",
 		GetJobData()->GetPaperRect().IntegerWidth(),
 		GetJobData()->GetPaperRect().IntegerHeight());

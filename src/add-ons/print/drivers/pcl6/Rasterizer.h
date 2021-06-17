@@ -43,10 +43,10 @@ public:
 							return fHalftone;
 						}
 	// The bounds of the bitmap to be rasterized
-			RECT		GetBounds()
-						{
-							return fBounds;
-						}
+			clipping_rect	GetBounds()
+							{
+								return fBounds;
+							}
 	// The width (in pixels) of the bounds passed to Rasterized()
 			int			GetWidth()
 						{
@@ -86,7 +86,7 @@ public:
 private:
 			Halftone*	fHalftone;
 
-			RECT		fBounds;
+			clipping_rect	fBounds;
 			int			fWidth;
 			int			fHeight;
 			int			fX;

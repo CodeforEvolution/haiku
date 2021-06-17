@@ -108,7 +108,7 @@ GPDriver::SetDriverSpecificSettings()
 		}
 
 		PrinterCap::CapID id = static_cast<PrinterCap::CapID>(capability->ID());
-		const char* key = capability->fKey.c_str();
+		const char* key = capability->fKey.String();
 		switch (capability->fType) {
 			case DriverSpecificCap::kList:
 				AddDriverSpecificSetting(id, key);
@@ -233,7 +233,7 @@ GPDriver::NextBand(BBitmap* bitmap, BPoint* offset)
 	try {
 		BRect bounds = bitmap->Bounds();
 
-		RECT rc;
+		clipping_rect rc;
 		rc.left = (int)bounds.left;
 		rc.top = (int)bounds.top;
 		rc.right = (int)bounds.right;
