@@ -19,52 +19,60 @@
 
 class FolderListener {
 public:
-	virtual ~FolderListener() {};
-		// entry created or moved into folder
-	virtual void EntryCreated(node_ref* node, entry_ref* entry) {};
-		// entry removed from folder (or moved to another folder)
-	virtual void EntryRemoved(node_ref* node) {};
-		// attribute of an entry has changed
-	virtual void AttributeChanged(node_ref* node) {};
+	virtual						~FolderListener() {};
+	// Entry created or moved into folder
+	virtual	void				EntryCreated(node_ref* node,
+									entry_ref* entry) {};
+	// Entry removed from folder (or moved to another folder)
+	virtual	void				EntryRemoved(node_ref* node) {};
+	// Attribute of an entry has changed
+	virtual	void				AttributeChanged(node_ref* node) {};
+
 };
 
 
 // Watches creation, deletion of files in a directory, and optionally watches
 // attribute changes of files in the directory.
 class FolderWatcher : public BHandler {
-	typedef BHandler inherited;
-
 public:
-	FolderWatcher(BLooper* looper, const BDirectory& folder,
-		bool watchAttrChanges = false);
-		// Start node watching (optionally watch attribute changes)
-	virtual ~FolderWatcher();
-		// Stop node watching
 
-	void MessageReceived(BMessage* msg);
+								FolderWatcher(BLooper* looper,
+									const BDirectory& folder,
+									bool watchAttrChanges = false);
+									// Start node watching
+									// (optionally watch attribute changes)
 
-	BDirectory* Folder() { return &fFolder; }
-		// The directory
+	virtual						~FolderWatcher();
+									// Stop node watching
 
-	void SetListener(FolderListener* listener);
-		// Set listener that is notified of changes in the directory
+			void				MessageReceived(BMessage* message);
 
-	// Start/stop watching of attribute changes
-	status_t StartAttrWatching(node_ref* node);
-	status_t StopAttrWatching(node_ref* node);
+			BDirectory*			Folder() { return &fFolder; }
+									// The directory
 
-private:
-	bool BuildEntryRef(BMessage* msg, const char* dirName, entry_ref* entry);
-	bool BuildNodeRef(BMessage* msg, node_ref* node);
+			void				SetListener(FolderListener* listener);
+									// Set listener that is notified of changes
+									// in the directory
 
-	void HandleCreatedEntry(BMessage* msg, const char* dirName);
-	void HandleRemovedEntry(BMessage* msg);
-	void HandleChangedAttr(BMessage* msg);
+			// Start/stop watching of attribute changes
+			status_t			StartAttrWatching(node_ref* node);
+			status_t			StopAttrWatching(node_ref* node);
 
 private:
-	BDirectory fFolder;
-	FolderListener* fListener;
-	bool fWatchAttrChanges;
+			bool				_BuildEntryRef(BMessage* message,
+									const char* dirName, entry_ref* entry);
+			bool				_BuildNodeRef(BMessage* message,
+									node_ref* node);
+
+			void				_HandleCreatedEntry(BMessage* message,
+									const char* dirName);
+			void				_HandleRemovedEntry(BMessage* message);
+			void				_HandleChangedAttr(BMessage* message);
+
+private:
+			BDirectory			fFolder;
+			FolderListener*		fListener;
+			bool				fWatchAttrChanges;
 };
 
-#endif
+#endif /* _FOLDER_WATCHER_H */

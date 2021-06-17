@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Haiku Inc. All rights reserved.
+ * Copyright 2008-2021 Haiku Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -253,21 +253,21 @@ BPrintPanel::ShowPanel()
 
 
 void
-BPrintPanel::AddChild(BView* child, BView* before)
+BPrintPanel::_AddChild(BView* child, BView* before)
 {
 	BWindow::AddChild(child, before);
 }
 
 
 bool
-BPrintPanel::RemoveChild(BView* child)
+BPrintPanel::_RemoveChild(BView* child)
 {
 	return BWindow::RemoveChild(child);
 }
 
 
 BView*
-BPrintPanel::ChildAt(int32 index) const
+BPrintPanel::_ChildAt(int32 index) const
 {
 	return BWindow::ChildAt(index);
 }

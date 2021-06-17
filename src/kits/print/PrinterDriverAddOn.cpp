@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku, Inc. All rights reserved.
+ * Copyright 2001-2021, Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -40,7 +40,7 @@ PrinterDriverAddOn::PrinterDriverAddOn(const char* driver)
 
 PrinterDriverAddOn::~PrinterDriverAddOn()
 {
-	if (IsLoaded()) {
+	if (_IsLoaded()) {
 		unload_add_on(fAddOnID);
 		fAddOnID = -1;
 	}
@@ -50,7 +50,7 @@ PrinterDriverAddOn::~PrinterDriverAddOn()
 status_t
 PrinterDriverAddOn::AddPrinter(const char* spoolFolderName)
 {
-	if (!IsLoaded())
+	if (!_IsLoaded())
 		return B_ERROR;
 
 	add_printer_func_t func;
@@ -69,7 +69,7 @@ PrinterDriverAddOn::AddPrinter(const char* spoolFolderName)
 status_t
 PrinterDriverAddOn::ConfigPage(BDirectory* spoolFolder, BMessage* settings)
 {
-	if (!IsLoaded())
+	if (!_IsLoaded())
 		return B_ERROR;
 
 	config_func_t func;
@@ -79,7 +79,7 @@ PrinterDriverAddOn::ConfigPage(BDirectory* spoolFolder, BMessage* settings)
 		return result;
 
 	BMessage* newSettings = (*func)(spoolFolder, settings);
-	result = CopyValidSettings(settings, newSettings);
+	result = _CopyValidSettings(settings, newSettings);
 	delete newSettings;
 
 	return result;
@@ -89,7 +89,7 @@ PrinterDriverAddOn::ConfigPage(BDirectory* spoolFolder, BMessage* settings)
 status_t
 PrinterDriverAddOn::ConfigJob(BDirectory* spoolFolder, BMessage* settings)
 {
-	if (!IsLoaded())
+	if (!_IsLoaded())
 		return B_ERROR;
 
 	config_func_t func;
@@ -99,7 +99,7 @@ PrinterDriverAddOn::ConfigJob(BDirectory* spoolFolder, BMessage* settings)
 		return result;
 
 	BMessage* newSettings = (*func)(spoolFolder, settings);
-	result = CopyValidSettings(settings, newSettings);
+	result = _CopyValidSettings(settings, newSettings);
 	delete newSettings;
 
 	return result;
@@ -109,7 +109,7 @@ PrinterDriverAddOn::ConfigJob(BDirectory* spoolFolder, BMessage* settings)
 status_t
 PrinterDriverAddOn::DefaultSettings(BDirectory* spoolFolder, BMessage* settings)
 {
-	if (!IsLoaded())
+	if (!_IsLoaded())
 		return B_ERROR;
 
 	default_settings_t func;
@@ -134,7 +134,7 @@ PrinterDriverAddOn::DefaultSettings(BDirectory* spoolFolder, BMessage* settings)
 status_t
 PrinterDriverAddOn::TakeJob(const char* spoolFile, BDirectory* spoolFolder)
 {
-	if (!IsLoaded())
+	if (!_IsLoaded())
 		return B_ERROR;
 
 	BFile file(spoolFile, B_READ_WRITE);
@@ -186,18 +186,20 @@ PrinterDriverAddOn::FindPathToDriver(const char* driver, BPath* path)
 
 
 bool
-PrinterDriverAddOn::IsLoaded() const
+PrinterDriverAddOn::_IsLoaded() const
 {
 	return fAddOnID > -1;
 }
 
 
 status_t
-PrinterDriverAddOn::CopyValidSettings(BMessage* settings, BMessage* newSettings)
+PrinterDriverAddOn::_CopyValidSettings(BMessage* settings,
+	BMessage* newSettings)
 {
 	if (newSettings != NULL && newSettings->what != 'baad') {
 		*settings = *newSettings;
 		settings->what = 'okok';
+
 		return B_OK;
 	}
 

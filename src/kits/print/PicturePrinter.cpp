@@ -18,384 +18,787 @@ PicturePrinter::PicturePrinter(int indent)
  {
  }
 
-void PicturePrinter::Print(const char* text) {
+
+void
+PicturePrinter::_Print(const char* text)
+{
 	printf("%s ", text);
 }
 
-void PicturePrinter::Print(BPoint* p) {
+
+void
+PicturePrinter::_Print(BPoint* p)
+{
 	printf("point (%f, %f) ", p->x, p->y);
 }
 
-void PicturePrinter::Print(BRect* r) {
-	printf("rect [l: %f, t: %f, r: %f, b: %f] ", r->left, r->top, r->right, r->bottom);
+
+void
+PicturePrinter::_Print(BRect* r)
+{
+	printf("rect [l: %f, t: %f, r: %f, b: %f] ", r->left, r->top, r->right,
+		r->bottom);
 }
 
-void PicturePrinter::Print(int numPoints, BPoint* points) {
-	for (int i = 0; i < numPoints; i ++) {
-		Indent(1); printf("%d ", i); Print(&points[i]); Cr();
+
+void
+PicturePrinter::_Print(int numPoints, BPoint* points)
+{
+	for (int i = 0; i < numPoints; i++) {
+		_Indent(1);
+		printf("%d ", i);
+		_Print(&points[i]);
+		_Cr();
 	}
 }
 
-void PicturePrinter::Print(int numRects, BRect* rects) {
-	for (int i = 0; i < numRects; i ++) {
-		Indent(1); printf("%d ", i); Print(&rects[i]); Cr();
+
+void
+PicturePrinter::_Print(int numRects, BRect* rects)
+{
+	for (int i = 0; i < numRects; i++) {
+		_Indent(1);
+		printf("%d ", i);
+		_Print(&rects[i]);
+		_Cr();
 	}
 }
 
-void PicturePrinter::Print(BShape* shape) {
+
+void
+PicturePrinter::_Print(BShape* shape)
+{
 	printf("Shape %p\n", shape);
 	ShapePrinter printer(this);
 	printer.Iterate(shape);
 }
 
-void PicturePrinter::Print(const char* text, float f) {
+
+void
+PicturePrinter::_Print(const char* text, float f)
+{
 	printf("%s %f ", text, f);
 }
 
-void PicturePrinter::Print(const char* text, BPoint* point) {
-	Print(text); Print(point);
+
+void
+PicturePrinter::_Print(const char* text, BPoint* point)
+{
+	_Print(text);
+	_Print(point);
 }
 
-void PicturePrinter::Print(rgb_color color) {
+
+void
+PicturePrinter::_Print(rgb_color color)
+{
 	printf("color r: %d g: %d b: %d", color.red, color.green, color.blue);
 }
 
-void PicturePrinter::Print(float f) {
+
+void
+PicturePrinter::_Print(float f)
+{
 	printf("%f ", f);
 }
 
-void PicturePrinter::Cr() {
+
+void
+PicturePrinter::_Cr()
+{
 	printf("\n");
 }
 
-void PicturePrinter::Indent(int inc) {
-	for (int i = fIndent + inc; i > 0; i --) printf("  ");
-}
 
-void PicturePrinter::IncIndent() {
-	fIndent ++;
-}
-
-void PicturePrinter::DecIndent() {
-	fIndent --;
-}
-
-void PicturePrinter::Op(int number) {
-	Indent(); printf("Unknown operator %d\n", number); Cr();
+void
+PicturePrinter::_Indent(int inc)
+{
+	for (int i = fIndent + inc; i > 0; i--)
+		printf("  ");
 }
 
 
-void PicturePrinter::MovePenBy(BPoint delta) {
-	Indent(); Print("MovePenBy"); Print(&delta); Cr();
+void
+PicturePrinter::_IncIndent()
+{
+	fIndent++;
 }
 
 
-void PicturePrinter::StrokeLine(BPoint start, BPoint end) {
-	Indent(); Print("StrokeLine"); Print(&start); Print(&end); Cr();
+void
+PicturePrinter::_DecIndent()
+{
+	fIndent--;
 }
 
 
-void PicturePrinter::StrokeRect(BRect rect) {
-	Indent(); Print("StrokeRect"); Print(&rect); Cr();
+void
+PicturePrinter::Op(int number)
+{
+	_Indent();
+	printf("Unknown operator %d\n", number);
+	_Cr();
 }
 
 
-void PicturePrinter::FillRect(BRect rect) {
-	Indent(); Print("FillRect"); Print(&rect); Cr();
+void
+PicturePrinter::MovePenBy(BPoint delta)
+{
+	_Indent();
+	_Print("MovePenBy");
+	_Print(&delta);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokeRoundRect(BRect rect, BPoint radii) {
-	Indent(); Print("StrokeRoundRect"); Print(&rect); Print("radii", &radii); Cr();
+void
+PicturePrinter::StrokeLine(BPoint start, BPoint end)
+{
+	_Indent();
+	_Print("StrokeLine");
+	_Print(&start);
+	_Print(&end);
+	_Cr();
 }
 
 
-void PicturePrinter::FillRoundRect(BRect rect, BPoint radii) {
-	Indent(); Print("FillRoundRect"); Print(&rect); Print("radii", &radii); Cr();
+void
+PicturePrinter::StrokeRect(BRect rect)
+{
+	_Indent();
+	_Print("StrokeRect");
+	_Print(&rect);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokeBezier(BPoint *control) {
-	Indent(); Print("StrokeBezier"); Print(4, control); Cr();
+void
+PicturePrinter::FillRect(BRect rect)
+{
+	_Indent();
+	_Print("FillRect");
+	_Print(&rect);
+	_Cr();
 }
 
 
-void PicturePrinter::FillBezier(BPoint *control) {
-	Indent(); Print("FillBezier"); Print(4, control); Cr();
+void
+PicturePrinter::StrokeRoundRect(BRect rect, BPoint radii)
+{
+	_Indent();
+	_Print("StrokeRoundRect");
+	_Print(&rect);
+	_Print("radii", &radii);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokeArc(BPoint center, BPoint radii, float startTheta, float arcTheta) {
-	Indent(); Print("StrokeArc center="); Print(&center); Print("radii="); Print(&radii); Print("arcTheta=", arcTheta); Cr();
+void
+PicturePrinter::FillRoundRect(BRect rect, BPoint radii)
+{
+	_Indent();
+	_Print("FillRoundRect");
+	_Print(&rect);
+	_Print("radii", &radii);
+	_Cr();
 }
 
 
-void PicturePrinter::FillArc(BPoint center, BPoint radii, float startTheta, float arcTheta) {
-	Indent(); Print("FillArc center="); Print(&center); Print("radii="); Print(&radii); Print("arcTheta=", arcTheta); Cr();
+void
+PicturePrinter::StrokeBezier(BPoint* control)
+{
+	_Indent();
+	_Print("StrokeBezier");
+	_Print(4, control);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokeEllipse(BPoint center, BPoint radii) {
-	Indent(); Print("StrokeEllipse center="); Print(&center); Print("radii="); Print(&radii); Cr();
+void
+PicturePrinter::FillBezier(BPoint* control)
+{
+	_Indent();
+	_Print("FillBezier");
+	_Print(4, control);
+	_Cr();
 }
 
 
-void PicturePrinter::FillEllipse(BPoint center, BPoint radii) {
-	Indent(); Print("FillEllipse center="); Print(&center); Print("radii="); Print(&radii); Cr();
+void
+PicturePrinter::StrokeArc(BPoint center, BPoint radii, float startTheta,
+	float arcTheta)
+{
+	_Indent();
+	_Print("StrokeArc center=");
+	_Print(&center);
+	_Print("radii=");
+	_Print(&radii);
+	_Print("arcTheta=", arcTheta);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokePolygon(int32 numPoints, BPoint *points, bool isClosed) {
-	Indent(); Print("StrokePolygon");
-	printf("%s ", isClosed ? "closed" : "open"); Cr();
-	Print(numPoints, points);
+void
+PicturePrinter::FillArc(BPoint center, BPoint radii, float startTheta,
+	float arcTheta)
+{
+	_Indent();
+	_Print("FillArc center=");
+	_Print(&center);
+	_Print("radii=");
+	_Print(&radii);
+	_Print("arcTheta=", arcTheta);
+	_Cr();
 }
 
 
-void PicturePrinter::FillPolygon(int32 numPoints, BPoint *points, bool isClosed) {
-	Indent(); Print("FillPolygon");
-	printf("%s ", isClosed ? "closed" : "open"); Cr();
-	Print(numPoints, points);
+void
+PicturePrinter::StrokeEllipse(BPoint center, BPoint radii)
+{
+	_Indent();
+	_Print("StrokeEllipse center=");
+	_Print(&center);
+	_Print("radii=");
+	_Print(&radii);
+	_Cr();
 }
 
 
-void PicturePrinter::StrokeShape(BShape *shape) {
-	Indent(); Print("StrokeShape"); Print(shape); Cr();
+void
+PicturePrinter::FillEllipse(BPoint center, BPoint radii)
+{
+	_Indent();
+	_Print("FillEllipse center=");
+	_Print(&center);
+	_Print("radii=");
+	_Print(&radii);
+	_Cr();
 }
 
 
-void PicturePrinter::FillShape(BShape *shape) {
-	Indent(); Print("FillShape"); Print(shape); Cr();
+void
+PicturePrinter::StrokePolygon(int32 numPoints, BPoint* points, bool isClosed)
+{
+	_Indent();
+	_Print("StrokePolygon");
+	printf("%s ", isClosed ? "closed" : "open");
+	_Cr();
+	_Print(numPoints, points);
 }
 
 
-void PicturePrinter::DrawString(char *string, float escapement_nospace, float escapement_space) {
-	Indent(); Print("DrawString");
-	Print("escapement_nospace", escapement_nospace);
-	Print("escapement_space", escapement_space);
-	Print("text:"); Print(string); Cr();
+void
+PicturePrinter::FillPolygon(int32 numPoints, BPoint* points, bool isClosed)
+{
+	_Indent();
+	_Print("FillPolygon");
+	printf("%s ", isClosed ? "closed" : "open");
+	_Cr();
+	_Print(numPoints, points);
 }
 
 
-void PicturePrinter::DrawPixels(BRect src, BRect dest, int32 width, int32 height, int32 bytesPerRow, int32 pixelFormat, int32 flags, void *data) {
-	Indent(); Print("DrawPixels"); Cr();
+void
+PicturePrinter::StrokeShape(BShape* shape)
+{
+	_Indent();
+	_Print("StrokeShape");
+	_Print(shape);
+	_Cr();
 }
 
 
-void PicturePrinter::SetClippingRects(BRect *rects, uint32 numRects) {
-	Indent(); Print("SetClippingRects");
-	if (numRects == 0) Print("none");
-	Cr();
-	Print(numRects, rects);
+void
+PicturePrinter::FillShape(BShape* shape)
+{
+	_Indent();
+	_Print("FillShape");
+	_Print(shape);
+	_Cr();
 }
 
 
-void PicturePrinter::ClipToPicture(BPicture *picture, BPoint point, bool clip_to_inverse_picture) {
-	Indent();
-	Print(clip_to_inverse_picture ? "ClipToInversePicture" : "ClipToPicture");
-	Print("point=", &point); Cr();
-	PicturePrinter printer(fIndent+1);
+void
+PicturePrinter::DrawString(char* string, float escapement_nospace,
+	float escapement_space)
+{
+	_Indent();
+	_Print("DrawString");
+	_Print("escapement_nospace", escapement_nospace);
+	_Print("escapement_space", escapement_space);
+	_Print("text:");
+	_Print(string);
+	_Cr();
+}
+
+
+void
+PicturePrinter::DrawPixels(BRect src, BRect dest, int32 width, int32 height,
+	int32 bytesPerRow, int32 pixelFormat, int32 flags, void* data)
+{
+	_Indent();
+	_Print("DrawPixels");
+	_Cr();
+}
+
+
+void
+PicturePrinter::SetClippingRects(BRect* rects, uint32 numRects)
+{
+	_Indent();
+	_Print("SetClippingRects");
+	if (numRects == 0)
+		_Print("none");
+	_Cr();
+	_Print(numRects, rects);
+}
+
+
+void
+PicturePrinter::ClipToPicture(BPicture* picture, BPoint point,
+	bool clip_to_inverse_picture)
+{
+	_Indent();
+	_Print(clip_to_inverse_picture ? "ClipToInversePicture" : "ClipToPicture");
+	_Print("point=", &point);
+	_Cr();
+
+	PicturePrinter printer(fIndent + 1);
 	printer.Iterate(picture);
 }
 
 
-void PicturePrinter::PushState() {
-	Indent(); Print("PushState"); Cr();
-	IncIndent();
+void
+PicturePrinter::PushState()
+{
+	_Indent();
+	_Print("PushState");
+	_Cr();
+
+	_IncIndent();
 }
 
 
-void PicturePrinter::PopState() {
-	DecIndent();
-	Indent(); Print("PopState"); Cr();
+void
+PicturePrinter::PopState()
+{
+	_DecIndent();
+
+	_Indent();
+	_Print("PopState");
+	_Cr();
 }
 
 
-void PicturePrinter::EnterStateChange() {
-	Indent(); Print("EnterStateChange"); Cr();
+void
+PicturePrinter::EnterStateChange()
+{
+	_Indent();
+	_Print("EnterStateChange");
+	_Cr();
 }
 
 
-void PicturePrinter::ExitStateChange() {
-	Indent(); Print("ExitStateChange"); Cr();
+void
+PicturePrinter::ExitStateChange()
+{
+	_Indent();
+	_Print("ExitStateChange");
+	_Cr();
 }
 
 
-void PicturePrinter::EnterFontState() {
-	Indent(); Print("EnterFontState"); Cr();
+void
+PicturePrinter::EnterFontState()
+{
+	_Indent();
+	_Print("EnterFontState");
+	_Cr();
 }
 
 
-void PicturePrinter::ExitFontState() {
-	Indent(); Print("ExitFontState"); Cr();
+void
+PicturePrinter::ExitFontState()
+{
+	_Indent();
+	_Print("ExitFontState");
+	_Cr();
 }
 
 
-void PicturePrinter::SetOrigin(BPoint pt) {
-	Indent(); Print("SetOrigin"); Print(&pt); Cr();
+void
+PicturePrinter::SetOrigin(BPoint pt)
+{
+	_Indent();
+	_Print("SetOrigin");
+	_Print(&pt);
+	_Cr();
 }
 
 
-void PicturePrinter::SetPenLocation(BPoint pt) {
-	Indent(); Print("SetPenLocation"); Print(&pt); Cr();
+void
+PicturePrinter::SetPenLocation(BPoint pt)
+{
+	_Indent();
+	_Print("SetPenLocation");
+	_Print(&pt);
+	_Cr();
 }
 
 
-void PicturePrinter::SetDrawingMode(drawing_mode mode) {
-	Indent(); Print("SetDrawingMode");
+void
+PicturePrinter::SetDrawingMode(drawing_mode mode)
+{
+	_Indent();
+	_Print("SetDrawingMode");
+
 	switch (mode) {
-		case B_OP_COPY: Print("B_OP_COPY"); break;
-		case B_OP_OVER: Print("B_OP_OVER"); break;
-		case B_OP_ERASE: Print("B_OP_ERASE"); break;
-		case B_OP_INVERT: Print("B_OP_INVERT"); break;
-		case B_OP_SELECT: Print("B_OP_SELECT"); break;
-		case B_OP_ALPHA: Print("B_OP_ALPHA"); break;
-		case B_OP_MIN: Print("B_OP_MIN"); break;
-		case B_OP_MAX: Print("B_OP_MAX"); break;
-		case B_OP_ADD: Print("B_OP_ADD"); break;
-		case B_OP_SUBTRACT: Print("B_OP_SUBTRACT"); break;
-		case B_OP_BLEND: Print("B_OP_BLEND"); break;
-		default: Print("Unknown mode: ", (float)mode);
+		case B_OP_COPY:
+			_Print("B_OP_COPY");
+			break;
+
+		case B_OP_OVER:
+			_Print("B_OP_OVER");
+			break;
+
+		case B_OP_ERASE:
+			_Print("B_OP_ERASE");
+			break;
+
+		case B_OP_INVERT:
+			_Print("B_OP_INVERT");
+			break;
+
+		case B_OP_SELECT:
+			_Print("B_OP_SELECT");
+			break;
+
+		case B_OP_ALPHA:
+			_Print("B_OP_ALPHA");
+			break;
+
+		case B_OP_MIN:
+			_Print("B_OP_MIN");
+			break;
+
+		case B_OP_MAX:
+			_Print("B_OP_MAX");
+			break;
+
+		case B_OP_ADD:
+			_Print("B_OP_ADD");
+			break;
+
+		case B_OP_SUBTRACT:
+			_Print("B_OP_SUBTRACT");
+			break;
+
+		case B_OP_BLEND:
+			_Print("B_OP_BLEND");
+			break;
+
+		default:
+			_Print("Unknown mode: ", (float)mode);
 	}
-	Cr();
+
+	_Cr();
 }
 
 
-void PicturePrinter::SetLineMode(cap_mode capMode, join_mode joinMode, float miterLimit) {
-	Indent(); Print("SetLineMode");
+void
+PicturePrinter::SetLineMode(cap_mode capMode, join_mode joinMode,
+	float miterLimit)
+{
+	_Indent();
+	_Print("SetLineMode");
+
 	switch (capMode) {
-		case B_BUTT_CAP:   Print("B_BUTT_CAP"); break;
-		case B_ROUND_CAP:  Print("B_ROUND_CAP"); break;
-		case B_SQUARE_CAP: Print("B_SQUARE_CAP"); break;
+		case B_BUTT_CAP:
+			_Print("B_BUTT_CAP");
+			break;
+
+		case B_ROUND_CAP:
+			_Print("B_ROUND_CAP");
+			break;
+
+		case B_SQUARE_CAP:
+			_Print("B_SQUARE_CAP");
+			break;
 	}
+
 	switch (joinMode) {
-		case B_MITER_JOIN: Print("B_MITER_JOIN"); break;
-		case B_ROUND_JOIN: Print("B_ROUND_JOIN"); break;
-		case B_BUTT_JOIN: Print("B_BUTT_JOIN"); break;
-		case B_SQUARE_JOIN: Print("B_SQUARE_JOIN"); break;
-		case B_BEVEL_JOIN: Print("B_BEVEL_JOIN"); break;
+		case B_MITER_JOIN:
+			_Print("B_MITER_JOIN");
+			break;
+
+		case B_ROUND_JOIN:
+			_Print("B_ROUND_JOIN");
+			break;
+
+		case B_BUTT_JOIN:
+			_Print("B_BUTT_JOIN");
+			break;
+
+		case B_SQUARE_JOIN:
+			_Print("B_SQUARE_JOIN");
+			break;
+
+		case B_BEVEL_JOIN:
+			_Print("B_BEVEL_JOIN");
+			break;
 	}
-	Print("miterLimit", miterLimit);
-	Cr();
+
+	_Print("miterLimit", miterLimit);
+	_Cr();
 }
 
 
-void PicturePrinter::SetPenSize(float size) {
-	Indent(); Print("SetPenSize", size); Cr();
+void
+PicturePrinter::SetPenSize(float size)
+{
+	_Indent();
+	_Print("SetPenSize", size);
+	_Cr();
 }
 
 
-void PicturePrinter::SetForeColor(rgb_color color) {
-	Indent(); Print("SetForeColor"); Print(color); Cr();
+void
+PicturePrinter::SetForeColor(rgb_color color)
+{
+	_Indent();
+	_Print("SetForeColor");
+	_Print(color);
+	_Cr();
 }
 
 
-void PicturePrinter::SetBackColor(rgb_color color) {
-	Indent(); Print("SetBackColor"); Print(color); Cr();
+void
+PicturePrinter::SetBackColor(rgb_color color)
+{
+	_Indent();
+	_Print("SetBackColor");
+	_Print(color);
+	_Cr();
 }
 
-static bool compare(pattern a, pattern b) {
+
+static bool
+compare(pattern a, pattern b)
+{
 	for (int i = 0; i < 8; i ++) {
-		if (a.data[i] != b.data[i]) return false;
+		if (a.data[i] != b.data[i])
+			return false;
 	}
+
 	return true;
 }
 
-void PicturePrinter::SetStipplePattern(pattern p) {
-	Indent(); Print("SetStipplePattern");
-	if (compare(p, B_SOLID_HIGH)) Print("B_SOLID_HIGH");
-	else if (compare(p, B_SOLID_LOW)) Print("B_SOLID_LOW");
-	else if (compare(p, B_MIXED_COLORS)) Print("B_MIXED_COLORS");
+
+void
+PicturePrinter::SetStipplePattern(pattern p)
+{
+	_Indent();
+	_Print("SetStipplePattern");
+
+	if (compare(p, B_SOLID_HIGH))
+		_Print("B_SOLID_HIGH");
+	else if (compare(p, B_SOLID_LOW))
+		_Print("B_SOLID_LOW");
+	else if (compare(p, B_MIXED_COLORS))
+		_Print("B_MIXED_COLORS");
 	else {
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 8; i++)
 			printf("%2.2x ", (unsigned int)p.data[i]);
-		}
 	}
-	Cr();
+
+	_Cr();
 }
 
 
-void PicturePrinter::SetScale(float scale) {
-	Indent(); Print("SetScale", scale); Cr();
+void
+PicturePrinter::SetScale(float scale)
+{
+	_Indent();
+	_Print("SetScale", scale);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontFamily(char *family) {
-	Indent(); Print("SetFontFamily"); Print(family); Cr();
+void
+PicturePrinter::SetFontFamily(char* family)
+{
+	_Indent();
+	_Print("SetFontFamily");
+	_Print(family);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontStyle(char *style) {
-	Indent(); Print("SetFontStyle"); Print(style); Cr();
+void
+PicturePrinter::SetFontStyle(char* style)
+{
+	_Indent();
+	_Print("SetFontStyle");
+	_Print(style);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontSpacing(int32 spacing) {
-	Indent(); Print("SetFontSpacing");
+void
+PicturePrinter::SetFontSpacing(int32 spacing)
+{
+	_Indent();
+	_Print("SetFontSpacing");
+
 	switch(spacing) {
-		case B_CHAR_SPACING: Print("B_CHAR_SPACING"); break;
-		case B_STRING_SPACING: Print("B_STRING_SPACING"); break;
-		case B_BITMAP_SPACING: Print("B_BITMAP_SPACING"); break;
-		case B_FIXED_SPACING: Print("B_FIXED_SPACING"); break;
-		default: Print("Unknown: ", (float)spacing);
+		case B_CHAR_SPACING:
+			_Print("B_CHAR_SPACING");
+			break;
+
+		case B_STRING_SPACING:
+			_Print("B_STRING_SPACING");
+			break;
+
+		case B_BITMAP_SPACING:
+			_Print("B_BITMAP_SPACING");
+			break;
+
+		case B_FIXED_SPACING:
+			_Print("B_FIXED_SPACING");
+			break;
+
+		default:
+			_Print("Unknown: ", (float)spacing);
 	}
-	Cr();
+
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontSize(float size) {
-	Indent(); Print("SetFontSize", size); Cr();
+void
+PicturePrinter::SetFontSize(float size)
+{
+	_Indent();
+	_Print("SetFontSize", size);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontRotate(float rotation) {
-	Indent(); Print("SetFontRotation", rotation); Cr();
+void
+PicturePrinter::SetFontRotate(float rotation)
+{
+	_Indent();
+	_Print("SetFontRotation", rotation);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontEncoding(int32 encoding) {
-	Indent(); Print("SetFontEncoding");
+void
+PicturePrinter::SetFontEncoding(int32 encoding)
+{
+	_Indent();
+	_Print("SetFontEncoding");
+
 	switch (encoding) {
-		case B_UNICODE_UTF8: Print("B_UNICODE_UTF8"); break;
-		case B_ISO_8859_1: Print("B_ISO_8859_1"); break;
-		case B_ISO_8859_2: Print("B_ISO_8859_2"); break;
-		case B_ISO_8859_3: Print("B_ISO_8859_3"); break;
-		case B_ISO_8859_4: Print("B_ISO_8859_4"); break;
-		case B_ISO_8859_5: Print("B_ISO_8859_5"); break;
-		case B_ISO_8859_6: Print("B_ISO_8859_6"); break;
-		case B_ISO_8859_7: Print("B_ISO_8859_7"); break;
-		case B_ISO_8859_8: Print("B_ISO_8859_8"); break;
-		case B_ISO_8859_9: Print("B_ISO_8859_9"); break;
-		case B_ISO_8859_10: Print("B_ISO_8859_10"); break;
-		case B_MACINTOSH_ROMAN: Print("B_MACINTOSH_ROMAN"); break;
-		default: Print("Unknown:", (float)encoding);
+		case B_UNICODE_UTF8:
+			_Print("B_UNICODE_UTF8");
+			break;
+
+		case B_ISO_8859_1:
+			_Print("B_ISO_8859_1");
+			break;
+
+		case B_ISO_8859_2:
+			_Print("B_ISO_8859_2");
+			break;
+
+		case B_ISO_8859_3:
+			_Print("B_ISO_8859_3");
+			break;
+
+		case B_ISO_8859_4:
+			_Print("B_ISO_8859_4");
+			break;
+
+		case B_ISO_8859_5:
+			_Print("B_ISO_8859_5");
+			break;
+
+		case B_ISO_8859_6:
+			_Print("B_ISO_8859_6");
+			break;
+
+		case B_ISO_8859_7:
+			_Print("B_ISO_8859_7");
+			break;
+
+		case B_ISO_8859_8:
+			_Print("B_ISO_8859_8");
+			break;
+
+		case B_ISO_8859_9:
+			_Print("B_ISO_8859_9");
+			break;
+
+		case B_ISO_8859_10:
+			_Print("B_ISO_8859_10");
+			break;
+
+		case B_MACINTOSH_ROMAN:
+			_Print("B_MACINTOSH_ROMAN");
+			break;
+
+		default:
+			_Print("Unknown:", (float)encoding);
 	}
-	Cr();
+
+	_Cr();
 }
+
 
 #define PRINT_FLAG(flag) \
-  if (flags & flag) { f |= flag; Print(#flag); }
+  if (flags & flag) { f |= flag; _Print(#flag); }
 
-void PicturePrinter::SetFontFlags(int32 flags) {
-	Indent(); Print("SetFontFlags");
+
+void
+PicturePrinter::SetFontFlags(int32 flags)
+{
+	_Indent();
+	_Print("SetFontFlags");
+
 	int f = 0;
-	if (flags == 0) Print("none set");
+	if (flags == 0)
+		_Print("none set");
+
 	PRINT_FLAG(B_DISABLE_ANTIALIASING);
 	PRINT_FLAG(B_FORCE_ANTIALIASING);
-	if (flags != f) printf("Unknown Additional Flags %" B_PRId32 "", flags & ~f);
-	Cr();
+
+	if (flags != f)
+		printf("Unknown Additional Flags %" B_PRId32 "", flags & ~f);
+
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontShear(float shear) {
-	Indent(); Print("SetFontShear", shear); Cr();
+void
+PicturePrinter::SetFontShear(float shear)
+{
+	_Indent();
+	_Print("SetFontShear", shear);
+	_Cr();
 }
 
 
-void PicturePrinter::SetFontFace(int32 flags) {
-	Indent(); Print("SetFontFace");
+void
+PicturePrinter::SetFontFace(int32 flags)
+{
+	_Indent();
+	_Print("SetFontFace");
+
 	int32 f = 0;
-	if (flags == 0) Print("none set");
+	if (flags == 0)
+		_Print("none set");
+
 	PRINT_FLAG(B_REGULAR_FACE);
 	PRINT_FLAG(B_BOLD_FACE);
 	PRINT_FLAG(B_ITALIC_FACE);
@@ -403,59 +806,86 @@ void PicturePrinter::SetFontFace(int32 flags) {
 	PRINT_FLAG(B_OUTLINED_FACE);
 	PRINT_FLAG(B_UNDERSCORE_FACE);
 	PRINT_FLAG(B_STRIKEOUT_FACE);
-	if (flags != f) printf("Unknown Additional Flags %" B_PRId32 "", flags & ~f);
-	Cr();
+
+	if (flags != f)
+		printf("Unknown Additional Flags %" B_PRId32 "", flags & ~f);
+
+	_Cr();
 }
 
 
 // Implementation of ShapePrinter
 ShapePrinter::ShapePrinter(PicturePrinter* printer)
-	: fPrinter(printer)
+	:
+	fPrinter(printer)
 {
-	fPrinter->IncIndent();
+	fPrinter->_IncIndent();
 }
 
-ShapePrinter::~ShapePrinter() {
-	fPrinter->DecIndent();
+
+ShapePrinter::~ShapePrinter()
+{
+	fPrinter->_DecIndent();
 }
+
 
 status_t
-ShapePrinter::IterateBezierTo(int32 bezierCount, BPoint *control)
+ShapePrinter::IterateBezierTo(int32 bezierCount, BPoint* control)
 {
-	fPrinter->Indent(); fPrinter->Print("BezierTo"); fPrinter->Cr();
+	fPrinter->_Indent();
+	fPrinter->_Print("BezierTo");
+	fPrinter->_Cr();
+
 	for (int32 i = 0; i < bezierCount; i++, control += 3) {
-		fPrinter->Indent(1);
-		fPrinter->Print(i / 3.0);
-		fPrinter->Print(&control[0]);
-		fPrinter->Print(&control[1]);
-		fPrinter->Print(&control[2]);
-		fPrinter->Cr();
+		fPrinter->_Indent(1);
+		fPrinter->_Print(i / 3.0);
+		fPrinter->_Print(&control[0]);
+		fPrinter->_Print(&control[1]);
+		fPrinter->_Print(&control[2]);
+		fPrinter->_Cr();
 	}
+
 	return B_OK;
 }
 
+
 status_t
-ShapePrinter::IterateClose(void)
+ShapePrinter::IterateClose()
 {
-	fPrinter->Indent(); fPrinter->Print("Close"); fPrinter->Cr();
+	fPrinter->_Indent();
+	fPrinter->_Print("Close");
+	fPrinter->_Cr();
+
 	return B_OK;
 }
 
+
 status_t
-ShapePrinter::IterateLineTo(int32 lineCount, BPoint *linePoints)
+ShapePrinter::IterateLineTo(int32 lineCount, BPoint* linePoints)
 {
-	fPrinter->Indent(); fPrinter->Print("LineTo"); fPrinter->Cr();
-	BPoint *p = linePoints;
+	fPrinter->_Indent();
+	fPrinter->_Print("LineTo");
+	fPrinter->_Cr();
+
+	BPoint* p = linePoints;
 	for (int32 i = 0; i < lineCount; i++) {
-		fPrinter->Indent(1); fPrinter->Print(p); fPrinter->Cr();
+		fPrinter->_Indent(1);
+		fPrinter->_Print(p);
+		fPrinter->_Cr();
+
 		p++;
 	}
+
 	return B_OK;
 }
 
+
 status_t
-ShapePrinter::IterateMoveTo(BPoint *point)
+ShapePrinter::IterateMoveTo(BPoint* point)
 {
-	fPrinter->Indent(); fPrinter->Print("MoveTo", point); fPrinter->Cr();
+	fPrinter->_Indent();
+	fPrinter->_Print("MoveTo", point);
+	fPrinter->_Cr();
+
 	return B_OK;
 }

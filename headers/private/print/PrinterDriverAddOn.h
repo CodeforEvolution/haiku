@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010 Haiku, Inc. All rights reserved.
+ * Copyright 2001-2021 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -19,29 +19,29 @@
 
 class PrinterDriverAddOn {
 public:
-						PrinterDriverAddOn(const char* driver);
-						~PrinterDriverAddOn();
+								PrinterDriverAddOn(const char* driver);
+								~PrinterDriverAddOn();
 
-			status_t	AddPrinter(const char* spoolFolderName);
-			status_t	ConfigPage(BDirectory* spoolFolder,
-							BMessage* settings);
-			status_t	ConfigJob(BDirectory* spoolFolder,
-							BMessage* settings);
-			status_t	DefaultSettings(BDirectory* spoolFolder,
-							BMessage* settings);
-			status_t	TakeJob(const char* spoolFile,
-							BDirectory* spoolFolder);
+			status_t			AddPrinter(const char* spoolFolderName);
+			status_t			ConfigPage(BDirectory* spoolFolder,
+									BMessage* settings);
+			status_t			ConfigJob(BDirectory* spoolFolder,
+									BMessage* settings);
+			status_t			DefaultSettings(BDirectory* spoolFolder,
+									BMessage* settings);
+			status_t			TakeJob(const char* spoolFile,
+									BDirectory* spoolFolder);
 
-	static	status_t	FindPathToDriver(const char* driver, BPath* path);
-
-private:
-			bool		IsLoaded() const;
-			status_t	CopyValidSettings(BMessage* settings,
-							BMessage* newSettings);
+	static	status_t			FindPathToDriver(const char* driver,
+									BPath* path);
 
 private:
-			image_id	fAddOnID;
+			bool				_IsLoaded() const;
+			status_t			_CopyValidSettings(BMessage* settings,
+									BMessage* newSettings);
+
+private:
+			image_id			fAddOnID;
 };
 
-
-#endif
+#endif /* _PRINTER_DRIVER_ADD_ON_H */

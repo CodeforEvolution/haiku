@@ -1,12 +1,12 @@
 /*
- * Copyright 2010 Haiku, Inc. All rights reserved.
+ * Copyright 2010-2021 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Michael Pfeiffer
  */
-#ifndef PRINT_ADD_ON_SERVER_PROTOCOL_H
-#define PRINT_ADD_ON_SERVER_PROTOCOL_H
+#ifndef _PRINT_ADD_ON_SERVER_PROTOCOL_H
+#define _PRINT_ADD_ON_SERVER_PROTOCOL_H
 
 
 extern const char* kPrintAddOnServerApplicationSignature;
@@ -64,4 +64,4 @@ enum {
 		// 		int32 kPrintAddOnServerStatusAttribute
 };
 
-#endif
+#endif /* _PRINT_ADD_ON_SERVER_H */

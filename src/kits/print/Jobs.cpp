@@ -34,7 +34,7 @@ Job::Job(const BEntry& job, Folder* folder)
 	job.GetRef(&fEntry);
 	job.GetNodeRef(&fNode);
 
-	fValid = IsValidJobFile();
+	fValid = _IsValidJobFile();
 
 	BNode node(&job);
 	if (node.InitCheck() != B_OK)
@@ -45,7 +45,7 @@ Job::Job(const BEntry& job, Folder* folder)
 	if (node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) != B_OK)
 		status = "";
 
-    UpdateStatus(status.String());
+    _UpdateStatus(status.String());
 
     // Now get file name and creation time from file name
     fTime = 0;
@@ -73,7 +73,7 @@ Job::Job(const BEntry& job, Folder* folder)
 
 // Conversion from string representation of status to JobStatus constant
 void
-Job::UpdateStatus(const char* status)
+Job::_UpdateStatus(const char* status)
 {
 	if (strcmp(status, PSRV_JOB_STATUS_WAITING) == 0)
 		fStatus = kWaiting;
@@ -90,7 +90,7 @@ Job::UpdateStatus(const char* status)
 
 // Write to status attribute of node
 void
-Job::UpdateStatusAttribute(const char* status)
+Job::_UpdateStatusAttribute(const char* status)
 {
 	BNode node(&fEntry);
 	if (node.InitCheck() == B_OK) {
@@ -101,7 +101,7 @@ Job::UpdateStatusAttribute(const char* status)
 
 
 bool
-Job::HasAttribute(BNode* node, const char* name)
+Job::_HasAttribute(BNode* node, const char* name)
 {
 	attr_info info;
 	return node->GetAttrInfo(name, &info) == B_OK;
@@ -109,7 +109,7 @@ Job::HasAttribute(BNode* node, const char* name)
 
 
 bool
-Job::IsValidJobFile()
+Job::_IsValidJobFile()
 {
 	BNode node(&fEntry);
 	if (node.InitCheck() != B_OK)
@@ -122,11 +122,11 @@ Job::IsValidJobFile()
 	if (info.InitCheck() == B_OK
 		&& info.GetType(mimeType) == B_OK
 		&& strcmp(mimeType, PSRV_SPOOL_MIMETYPE) == 0
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_MIMETYPE)
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PAGECOUNT)
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_DESCRIPTION)
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_PRINTER)
-		&& HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS))
+		&& _HasAttribute(&node, PSRV_SPOOL_ATTR_MIMETYPE)
+		&& _HasAttribute(&node, PSRV_SPOOL_ATTR_PAGECOUNT)
+		&& _HasAttribute(&node, PSRV_SPOOL_ATTR_DESCRIPTION)
+		&& _HasAttribute(&node, PSRV_SPOOL_ATTR_PRINTER)
+		&& _HasAttribute(&node, PSRV_SPOOL_ATTR_STATUS))
 		return true;
 
 	return false;
@@ -144,19 +144,19 @@ Job::SetStatus(JobStatus status, bool writeToNode)
 
 	switch (status) {
 		case kWaiting:
-			UpdateStatusAttribute(PSRV_JOB_STATUS_WAITING);
+			_UpdateStatusAttribute(PSRV_JOB_STATUS_WAITING);
 			break;
 
 		case kProcessing:
-			UpdateStatusAttribute(PSRV_JOB_STATUS_PROCESSING);
+			_UpdateStatusAttribute(PSRV_JOB_STATUS_PROCESSING);
 			break;
 
 		case kFailed:
-			UpdateStatusAttribute(PSRV_JOB_STATUS_FAILED);
+			_UpdateStatusAttribute(PSRV_JOB_STATUS_FAILED);
 			break;
 
 		case kCompleted:
-			UpdateStatusAttribute(PSRV_JOB_STATUS_COMPLETED);
+			_UpdateStatusAttribute(PSRV_JOB_STATUS_COMPLETED);
 			break;
 
 		default:
@@ -169,13 +169,13 @@ Job::SetStatus(JobStatus status, bool writeToNode)
 void
 Job::UpdateAttribute()
 {
-	fValid = fValid || IsValidJobFile();
+	fValid = fValid || _IsValidJobFile();
 
 	BNode node(&fEntry);
 	BString status;
 	if (node.InitCheck() == B_OK
 		&& node.ReadAttrString(PSRV_SPOOL_ATTR_STATUS, &status) == B_OK)
-		UpdateStatus(status.String());
+		_UpdateStatus(status.String());
 }
 
 void
@@ -191,14 +191,14 @@ Job::Remove()
 
 // BObjectList CompareFunction
 int
-Folder::AscendingByTime(const Job* a, const Job* b)
+Folder::_AscendingByTime(const Job* a, const Job* b)
 {
 	return a->Time() - b->Time();
 }
 
 
 bool
-Folder::AddJob(BEntry& entry, bool notify)
+Folder::_AddJob(BEntry& entry, bool notify)
 {
 	Job* job = new Job(entry, this);
 	if (job == NULL)
@@ -221,7 +221,7 @@ Folder::AddJob(BEntry& entry, bool notify)
 // Simplified assumption that ino_t identifies job file
 // will probabely not work in all cases with link to a file on another volume???
 Job*
-Folder::Find(node_ref* node)
+Folder::_Find(node_ref* node)
 {
 	if (node == NULL)
 		return NULL;
@@ -237,12 +237,12 @@ Folder::Find(node_ref* node)
 
 
 void
-Folder::EntryCreated(node_ref* node, entry_ref* entry)
+Folder::_EntryCreated(node_ref* node, entry_ref* entry)
 {
 	BEntry job(entry);
 	if (job.InitCheck() == B_OK && Lock()) {
-		if (AddJob(job))
-			fJobs.SortItems(AscendingByTime);
+		if (_AddJob(job))
+			fJobs.SortItems(_AscendingByTime);
 
 		Unlock();
 	}
@@ -250,9 +250,9 @@ Folder::EntryCreated(node_ref* node, entry_ref* entry)
 
 
 void
-Folder::EntryRemoved(node_ref* node)
+Folder::_EntryRemoved(node_ref* node)
 {
-	Job* job = Find(node);
+	Job* job = _Find(node);
 	if (job != NULL && Lock()) {
 		fJobs.RemoveItem(job);
 		Notify(job, kJobRemoved);
@@ -263,9 +263,9 @@ Folder::EntryRemoved(node_ref* node)
 
 
 void
-Folder::AttributeChanged(node_ref* node)
+Folder::_AttributeChanged(node_ref* node)
 {
-	Job* job = Find(node);
+	Job* job = _Find(node);
 	if (job != NULL && Lock()) {
 		job->UpdateAttribute();
 		Notify(job, kJobAttrChanged);
@@ -276,18 +276,18 @@ Folder::AttributeChanged(node_ref* node)
 
 // Initial setup of job list
 void
-Folder::SetupJobList()
+Folder::_SetupJobList()
 {
-	if (inherited::Folder()->InitCheck() != B_OK)
+	if (FolderWatcher::Folder()->InitCheck() != B_OK)
 		return;
 
-	inherited::Folder()->Rewind();
+	FolderWatcher::Folder()->Rewind();
 
 	BEntry entry;
-	while (inherited::Folder()->GetNextEntry(&entry) == B_OK)
-		AddJob(entry, false);
+	while (FolderWatcher::Folder()->GetNextEntry(&entry) == B_OK)
+		_AddJob(entry, false);
 
-	fJobs.SortItems(AscendingByTime);
+	fJobs.SortItems(_AscendingByTime);
 }
 
 
@@ -300,7 +300,7 @@ Folder::Folder(BLocker* locker, BLooper* looper, const BDirectory& spoolDir)
 	SetListener(this);
 
 	if (Lock()) {
-		SetupJobList();
+		_SetupJobList();
 		Unlock();
 	}
 }

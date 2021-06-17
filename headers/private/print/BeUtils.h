@@ -25,23 +25,39 @@
 
 
 status_t TestForAddonExistence(const char* name, directory_which which,
-							   const char* section, BPath& outPath);
+	const char* section, BPath& outPath);
+
 
 // Reference counted object
 class Object {
 public:
 	// After construction reference count is 1
-	Object() : fRefCount(1) { }
+	Object()
+		:
+		fRefCount(1)
+	{
+	}
+
+
 	// dtor should be private, but ie. ObjectList requires a public dtor!
-	virtual ~Object() { };
+	virtual
+	~Object()
+	{
+	}
+
 
 	// thread-safe as long as thread that calls Acquire has already
 	// a reference to the object
-	void Acquire() {
+	void
+	Acquire()
+	{
 		atomic_add(&fRefCount, 1);
 	}
 
-	bool Release() {
+
+	bool
+	Release()
+	{
 		if (atomic_add(&fRefCount, -1) == 1) {
 			delete this;
 			return true;
@@ -50,30 +66,35 @@ public:
 	}
 
 private:
-	int32 fRefCount;
+			int32				fRefCount;
 };
+
 
 // Automatically send a reply to sender on destruction of object
 // and delete sender
 class AutoReply {
 public:
-	AutoReply(BMessage* sender, uint32 what);
-	~AutoReply();
+								AutoReply(BMessage* sender, uint32 what);
+								~AutoReply();
 
-	void SetReply(BMessage* message) { fReply = *message; }
+			void				SetReply(BMessage* message)
+									{ fReply = *message; }
 
 private:
-	BMessage* fSender;
-	BMessage  fReply;
+			BMessage*			fSender;
+			BMessage			fReply;
 };
 
-// mimetype from sender
-bool MimeTypeForSender(BMessage* sender, BString& mime);
-// load bitmap from application resources
-BBitmap* LoadBitmap(const char* name, uint32 type_code = B_TRANSLATOR_BITMAP);
-// convert bitmap to picture; view must be attached to a window!
-// returns NULL if bitmap is NULL
-BPicture *BitmapToPicture(BView* view, BBitmap *bitmap);
-BPicture *BitmapToGrayedPicture(BView* view, BBitmap *bitmap);
 
-#endif
+// Mimetype from sender
+bool MimeTypeForSender(BMessage* sender, BString& mime);
+
+// Load bitmap from application resources
+BBitmap* LoadBitmap(const char* name, uint32 type_code = B_TRANSLATOR_BITMAP);
+
+// Convert bitmap to picture; view must be attached to a window!
+// returns NULL if bitmap is NULL
+BPicture* BitmapToPicture(BView* view, BBitmap* bitmap);
+BPicture* BitmapToGrayedPicture(BView* view, BBitmap* bitmap);
+
+#endif /* _BE_UTILS_H */

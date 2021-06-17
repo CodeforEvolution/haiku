@@ -73,7 +73,7 @@ FolderWatcher::SetListener(FolderListener* listener)
 
 
 bool
-FolderWatcher::BuildEntryRef(BMessage* message, const char* dirName,
+FolderWatcher::_BuildEntryRef(BMessage* message, const char* dirName,
 	entry_ref* entry)
 {
 	const char* name;
@@ -89,7 +89,7 @@ FolderWatcher::BuildEntryRef(BMessage* message, const char* dirName,
 
 
 bool
-FolderWatcher::BuildNodeRef(BMessage* message, node_ref* node)
+FolderWatcher::_BuildNodeRef(BMessage* message, node_ref* node)
 {
 	return (message->FindInt32("device", &node->device) == B_OK
 			&& message->FindInt64("node", &node->node) == B_OK);
@@ -97,12 +97,12 @@ FolderWatcher::BuildNodeRef(BMessage* message, node_ref* node)
 
 
 void
-FolderWatcher::HandleCreatedEntry(BMessage* message, const char* dirName)
+FolderWatcher::_HandleCreatedEntry(BMessage* message, const char* dirName)
 {
 	node_ref node;
 	entry_ref entry;
-	if (BuildEntryRef(message, dirName, &entry)
-		&& BuildNodeRef(message, &node)) {
+	if (_BuildEntryRef(message, dirName, &entry)
+		&& _BuildNodeRef(message, &node)) {
 		if (fWatchAttrChanges)
 			StartAttrWatching(&node);
 
@@ -112,10 +112,10 @@ FolderWatcher::HandleCreatedEntry(BMessage* message, const char* dirName)
 
 
 void
-FolderWatcher::HandleRemovedEntry(BMessage* message)
+FolderWatcher::_HandleRemovedEntry(BMessage* message)
 {
 	node_ref node;
-	if (BuildNodeRef(message, &node)) {
+	if (_BuildNodeRef(message, &node)) {
 		if (fWatchAttrChanges)
 			StopAttrWatching(&node);
 
@@ -125,10 +125,10 @@ FolderWatcher::HandleRemovedEntry(BMessage* message)
 
 
 void
-FolderWatcher::HandleChangedAttr(BMessage* message)
+FolderWatcher::_HandleChangedAttr(BMessage* message)
 {
 	node_ref node;
-	if (BuildNodeRef(message, &node))
+	if (_BuildNodeRef(message, &node))
 		fListener->AttributeChanged(&node);
 }
 
@@ -146,11 +146,11 @@ FolderWatcher::MessageReceived(BMessage* message)
 
 		switch (opcode) {
 			case B_ENTRY_CREATED:
-				HandleCreatedEntry(message, "directory");
+				_HandleCreatedEntry(message, "directory");
 				break;
 
 			case B_ENTRY_REMOVED:
-				HandleRemovedEntry(message);
+				_HandleRemovedEntry(message);
 				break;
 
 			case B_ENTRY_MOVED:
@@ -160,25 +160,25 @@ FolderWatcher::MessageReceived(BMessage* message)
 				if (message->FindInt64("to directory", &dir) == B_OK
 					&& folder.node == dir) {
 					// Entry moved into this folder
-					HandleCreatedEntry(message, "to directory");
+					_HandleCreatedEntry(message, "to directory");
 				} else if (message->FindInt64("from directory", &dir) == B_OK
 						   && folder.node == dir) {
 					// Entry removed from this folder
-					HandleRemovedEntry(message);
+					_HandleRemovedEntry(message);
 				}
 
 				break;
 			}
 
 			case B_ATTR_CHANGED:
-				HandleChangedAttr(message);
+				_HandleChangedAttr(message);
 				break;
 
 			default:
 				break;
 		}
 	} else
-		inherited::MessageReceived(message);
+		BHandler::MessageReceived(message);
 }
 
 

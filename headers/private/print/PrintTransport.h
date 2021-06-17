@@ -19,21 +19,21 @@
 // Utilized by a printer driver.
 class PrintTransport {
 public:
-	PrintTransport();
-	~PrintTransport();
+								PrintTransport();
+								~PrintTransport();
 
-	// opens the transport add-on associated with the printerFolder
-	status_t Open(BNode* printerFolder);
-	// returns the output stream created by the transport add-on
-	BDataIO* GetDataIO();
-	// returns false if the user has canceled the save to file dialog
+	// Opens the transport add-on associated with the printerFolder
+			status_t			Open(BNode* printerFolder);
+	// Returns the output stream created by the transport add-on
+			BDataIO*			GetDataIO();
+	// Returns false if the user has canceled the save to file dialog
 	// of the "Print To File" transport add-on.
-	bool IsPrintToFileCanceled() const;
+			bool				IsPrintToFileCanceled() const;
 
 private:
-	BDataIO*   fDataIO;
-	image_id   fAddOnID;
-	void       (*fExitProc)(void);
+			BDataIO*			fDataIO;
+			image_id			fAddOnID;
+			void				(*fExitProc)(void);
 };
 
-#endif // _PRINT_TRANSPORT_H
+#endif /* _PRINT_TRANSPORT_H */

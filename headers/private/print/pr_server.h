@@ -2,21 +2,20 @@
  * Copyright 2021 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  */
-#ifndef _PR_SERVER_H_
-#define _PR_SERVER_H_
+#ifndef _PR_SERVER_H
+#define _PR_SERVER_H
 
 
-// print_server Background Application Definitions
-//
+// print_server Background Application Definitions:
 // The print_server manages the communication between applications and the
 // printer and transport drivers.
 
 
-// signature mime types
+// Signature mime types
 #define PSRV_SIGNATURE_TYPE			"application/x-vnd.Be-PSRV"
 #define PRNT_SIGNATURE_TYPE			"application/x-vnd.Be-PRNT"
 
-// messages understood by print_server
+// Messages understood by print_server
 #define PSRV_GET_ACTIVE_PRINTER				'pgcp'
 #define PSRV_MAKE_PRINTER_ACTIVE_QUIETLY	'pmaq'
 #define PSRV_MAKE_PRINTER_ACTIVE			'pmac'
@@ -26,14 +25,14 @@
 #define PSRV_PRINT_SPOOLED_JOB				'psns'
 #define PSRV_GET_DEFAULT_SETTINGS			'pdef'
 
-// messages sent to Printers preflet
+// Messages sent to Printers preflet
 #define PRINTERS_ADD_PRINTER				'addp'
 
-// mime file types
+// File mime types
 #define PSRV_PRINTER_MIMETYPE		"application/x-vnd.Be.printer"
 #define PSRV_SPOOL_MIMETYPE			"application/x-vnd.Be.printer-spool"
 
-// spool Attributes
+// Spool Attributes
 #define PSRV_SPOOL_ATTR_MIMETYPE	"_spool/MimeType"
 #define PSRV_SPOOL_ATTR_PAGECOUNT	"_spool/Page Count"
 #define PSRV_SPOOL_ATTR_DESCRIPTION	"_spool/Description"
@@ -41,14 +40,14 @@
 #define PSRV_SPOOL_ATTR_STATUS		"_spool/Status"
 #define PSRV_SPOOL_ATTR_ERRCODE		"_spool/_errorcode"
 
-// spool file status attribute values
+// Spool file status attribute values
 #define PSRV_JOB_STATUS_                ""
 #define PSRV_JOB_STATUS_WAITING         "Waiting"
 #define PSRV_JOB_STATUS_PROCESSING      "Processing"
 #define PSRV_JOB_STATUS_FAILED          "Failed"
 #define PSRV_JOB_STATUS_COMPLETED 		"Completed"
 
-// printer attributes
+// Printer attributes
 #define PSRV_PRINTER_ATTR_DRIVER_NAME		"Driver Name"
 #define PSRV_PRINTER_ATTR_PRINTER_NAME		"Printer Name"
 #define PSRV_PRINTER_ATTR_COMMENTS			"Comments"
@@ -59,23 +58,23 @@
 #define PSRV_PRINTER_ATTR_PNP				"_PNP"
 #define PSRV_PRINTER_ATTR_MDL				"_MDL"
 
-// printer name
+// Printer name
 #define PSRV_FIELD_CURRENT_PRINTER	"current_printer"
 
-// page settings fields
+// Page settings fields
 #define PSRV_FIELD_XRES				"xres"
 #define PSRV_FIELD_YRES				"yres"
 #define PSRV_FIELD_PAPER_RECT		"paper_rect"
 #define PSRV_FIELD_PRINTABLE_RECT	"printable_rect"
 
-// optional page settings field
+// Optional page settings field
 #define PSRV_FIELD_ORIENTATION	"orientation"
 #define PSRV_FIELD_COPIES		"copies"
 #define PSRV_FIELD_SCALE		"scale"
 #define PSRV_FIELD_QUALITY		"quality"
 
-// job settings fields
+// Job settings fields
 #define PSRV_FIELD_FIRST_PAGE	"first_page"
 #define PSRV_FIELD_LAST_PAGE	"last_page"
 
-#endif
+#endif /* _PR_SERVER_H */

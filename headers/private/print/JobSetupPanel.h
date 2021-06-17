@@ -1,12 +1,12 @@
 /*
- * Copyright 2008 Haiku Inc. All rights reserved.
+ * Copyright 2008-2021 Haiku Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Julun, <host.haiku@gmx.de>
  */
-#ifndef _JOB_SETUP_PANEL_H_
-#define _JOB_SETUP_PANEL_H_
+#ifndef _JOB_SETUP_PANEL_H
+#define _JOB_SETUP_PANEL_H
 
 
 #include <PrintPanel.h>
@@ -42,7 +42,6 @@ const uint32 B_PRINT_TO_FILE		= 0x00000001;
 const uint32 B_PRINT_SELECTION		= 0x00000002;
 const uint32 B_PRINT_PAGE_RANGE		= 0x00000004;
 const uint32 B_PRINT_COLLATE_COPIES	= 0x00000008;
-
 
 
 class BJobSetupPanel : public BPrintPanel {
@@ -100,8 +99,9 @@ private:
 			BCheckBox*			fColor;
 			BCheckBox*			fDuplex;
 };
+
 	}	// namespace Print
+
 }	// namespace BPrivate
 
-
-#endif	// _JOB_SETUP_PANEL_H_
+#endif	// _JOB_SETUP_PANEL_H

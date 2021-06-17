@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Haiku, Inc. All rights reserved.
+ * Copyright 2010-2021 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -12,8 +12,8 @@
 #include <Entry.h>
 #include <Roster.h>
 
-#include "PrinterDriverAddOn.h"
 #include "PrintAddOnServerProtocol.h"
+#include "PrinterDriverAddOn.h"
 
 
 static const bigtime_t kSeconds = 1000000L;
@@ -25,14 +25,14 @@ PrintAddOnServer::PrintAddOnServer(const char* driver)
 	:
 	fDriver(driver)
 {
-	fLaunchStatus = Launch(fMessenger);
+	fLaunchStatus = _Launch(fMessenger);
 }
 
 
 PrintAddOnServer::~PrintAddOnServer()
 {
 	if (fLaunchStatus == B_OK)
-		Quit();
+		_Quit();
 }
 
 
@@ -40,15 +40,15 @@ status_t
 PrintAddOnServer::AddPrinter(const char* spoolFolderName)
 {
 	BMessage message(kMessageAddPrinter);
-	message.AddString(kPrinterDriverAttribute, Driver());
+	message.AddString(kPrinterDriverAttribute, _Driver());
 	message.AddString(kPrinterNameAttribute, spoolFolderName);
 
 	BMessage reply;
-	status_t result = SendRequest(message, reply);
+	status_t result = _SendRequest(message, reply);
 	if (result != B_OK)
 		return result;
 
-	return GetResult(reply);
+	return _GetResult(reply);
 }
 
 
@@ -57,16 +57,16 @@ PrintAddOnServer::ConfigPage(BDirectory* spoolFolder,
 	BMessage* settings)
 {
 	BMessage message(kMessageConfigPage);
-	message.AddString(kPrinterDriverAttribute, Driver());
-	AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
+	message.AddString(kPrinterDriverAttribute, _Driver());
+	_AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
 	message.AddMessage(kPrintSettingsAttribute, settings);
 
 	BMessage reply;
-	status_t result = SendRequest(message, reply);
+	status_t result = _SendRequest(message, reply);
 	if (result != B_OK)
 		return result;
 
-	return GetResultAndUpdateSettings(reply, settings);
+	return _GetResultAndUpdateSettings(reply, settings);
 }
 
 
@@ -75,16 +75,16 @@ PrintAddOnServer::ConfigJob(BDirectory* spoolFolder,
 	BMessage* settings)
 {
 	BMessage message(kMessageConfigJob);
-	message.AddString(kPrinterDriverAttribute, Driver());
-	AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
+	message.AddString(kPrinterDriverAttribute, _Driver());
+	_AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
 	message.AddMessage(kPrintSettingsAttribute, settings);
 
 	BMessage reply;
-	status_t result = SendRequest(message, reply);
+	status_t result = _SendRequest(message, reply);
 	if (result != B_OK)
 		return result;
 
-	return GetResultAndUpdateSettings(reply, settings);
+	return _GetResultAndUpdateSettings(reply, settings);
 }
 
 
@@ -93,15 +93,15 @@ PrintAddOnServer::DefaultSettings(BDirectory* spoolFolder,
 	BMessage* settings)
 {
 	BMessage message(kMessageDefaultSettings);
-	message.AddString(kPrinterDriverAttribute, Driver());
-	AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
+	message.AddString(kPrinterDriverAttribute, _Driver());
+	_AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
 
 	BMessage reply;
-	status_t result = SendRequest(message, reply);
+	status_t result = _SendRequest(message, reply);
 	if (result != B_OK)
 		return result;
 
-	return GetResultAndUpdateSettings(reply, settings);
+	return _GetResultAndUpdateSettings(reply, settings);
 }
 
 
@@ -109,16 +109,16 @@ status_t
 PrintAddOnServer::TakeJob(const char* spoolFile, BDirectory* spoolFolder)
 {
 	BMessage message(kMessageTakeJob);
-	message.AddString(kPrinterDriverAttribute, Driver());
+	message.AddString(kPrinterDriverAttribute, _Driver());
 	message.AddString(kPrintJobFileAttribute, spoolFile);
-	AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
+	_AddDirectory(message, kPrinterFolderAttribute, spoolFolder);
 
 	BMessage reply;
-	status_t result = SendRequest(message, reply);
+	status_t result = _SendRequest(message, reply);
 	if (result != B_OK)
 		return result;
 
-	return GetResult(reply);
+	return _GetResult(reply);
 }
 
 
@@ -130,14 +130,14 @@ PrintAddOnServer::FindPathToDriver(const char* driver, BPath* path)
 
 
 const char*
-PrintAddOnServer::Driver() const
+PrintAddOnServer::_Driver() const
 {
 	return fDriver.String();
 }
 
 
 status_t
-PrintAddOnServer::Launch(BMessenger& messenger)
+PrintAddOnServer::_Launch(BMessenger& messenger)
 {
 	team_id team;
 	status_t result = be_roster->Launch(kPrintAddOnServerApplicationSignature,
@@ -153,14 +153,14 @@ PrintAddOnServer::Launch(BMessenger& messenger)
 
 
 bool
-PrintAddOnServer::IsLaunched()
+PrintAddOnServer::_IsLaunched()
 {
 	return fLaunchStatus == B_OK;
 }
 
 
 void
-PrintAddOnServer::Quit()
+PrintAddOnServer::_Quit()
 {
 	if (fLaunchStatus == B_OK) {
 		fMessenger.SendMessage(B_QUIT_REQUESTED);
@@ -170,7 +170,7 @@ PrintAddOnServer::Quit()
 
 
 void
-PrintAddOnServer::AddDirectory(BMessage& message, const char* name,
+PrintAddOnServer::_AddDirectory(BMessage& message, const char* name,
 	BDirectory* directory)
 {
 	BEntry entry;
@@ -187,7 +187,7 @@ PrintAddOnServer::AddDirectory(BMessage& message, const char* name,
 
 
 void
-PrintAddOnServer::AddEntryRef(BMessage& message, const char* name,
+PrintAddOnServer::_AddEntryRef(BMessage& message, const char* name,
 	const entry_ref* entryRef)
 {
 	BPath path(entryRef);
@@ -199,9 +199,9 @@ PrintAddOnServer::AddEntryRef(BMessage& message, const char* name,
 
 
 status_t
-PrintAddOnServer::SendRequest(BMessage& request, BMessage& reply)
+PrintAddOnServer::_SendRequest(BMessage& request, BMessage& reply)
 {
-	if (!IsLaunched())
+	if (!_IsLaunched())
 		return fLaunchStatus;
 
 	return fMessenger.SendMessage(&request, &reply, kDeliveryTimeout,
@@ -210,7 +210,7 @@ PrintAddOnServer::SendRequest(BMessage& request, BMessage& reply)
 
 
 status_t
-PrintAddOnServer::GetResult(BMessage& reply)
+PrintAddOnServer::_GetResult(BMessage& reply)
 {
 	int32 status;
 	status_t result = reply.FindInt32(kPrintAddOnServerStatusAttribute,
@@ -224,7 +224,7 @@ PrintAddOnServer::GetResult(BMessage& reply)
 
 
 status_t
-PrintAddOnServer::GetResultAndUpdateSettings(BMessage& reply,
+PrintAddOnServer::_GetResultAndUpdateSettings(BMessage& reply,
 	BMessage* settings)
 {
 	BMessage newSettings;
@@ -233,5 +233,5 @@ PrintAddOnServer::GetResultAndUpdateSettings(BMessage& reply,
 
 	settings->PrintToStream();
 
-	return GetResult(reply);
+	return _GetResult(reply);
 }
