@@ -1,5 +1,5 @@
 /*
- * Copyright 2011, Haiku.
+ * Copyright 2011-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -33,8 +33,7 @@
 
 // #pragma mark LeafView
 
-
-// path data for the leaf shape
+// Path data for the leaf shape
 static const BPoint kLeafBegin(56.24793f, 15.46287f);
 static BPoint kLeafCurves[][3] = {
 	{ BPoint(61.14, 28.89), BPoint(69.78, 38.25), BPoint(83.48, 44.17) },
@@ -55,7 +54,7 @@ static BPoint kLeafCurves[][3] = {
 	{ BPoint(124.70, 98.79), BPoint(124.11, 103.67), BPoint(124.19, 110.60) },
 	{ BPoint(116.42, 111.81), BPoint(85.82, 99.60), BPoint(83.25, 51.96) },
 	{ BPoint(62.50, 42.57), BPoint(58.12, 33.18), BPoint(50.98, 23.81) } };
-static const int kNumLeafCurves = sizeof(kLeafCurves) / sizeof(kLeafCurves[0]);
+static const int kNumLeafCurves = B_COUNT_OF(kLeafCurves);
 static const float kLeafWidth = 372.f;
 static const float kLeafHeight = 121.f;
 
@@ -91,7 +90,7 @@ LeafView::Draw(BRect updateRect)
 	gradient.AddColor(darkBlue, 0.0);
 	gradient.AddColor(lightBlue, 255.0);
 
-	// build leaf shape
+	// Build leaf shape
 	BShape leafShape;
 	leafShape.MoveTo(transform.Apply(kLeafBegin));
 	for (int i = 0; i < kNumLeafCurves; ++i) {
@@ -103,6 +102,7 @@ LeafView::Draw(BRect updateRect)
 	leafShape.Close();
 
 	PushState();
+
 	SetDrawingMode(B_OP_ALPHA);
 	SetHighColor(0, 0, 0, 50);
 	for (int i = 2; i >= 0; --i) {
@@ -110,6 +110,7 @@ LeafView::Draw(BRect updateRect)
 		SetPenSize(i * 2);
 		StrokeShape(&leafShape);
 	}
+
 	PopState();
 
 	FillShape(&leafShape, gradient);
@@ -117,7 +118,6 @@ LeafView::Draw(BRect updateRect)
 
 
 // #pragma mark -
-
 
 class RadialLinesView : public BView {
 public:
@@ -132,7 +132,8 @@ public:
 
 
 RadialLinesView::RadialLinesView()
-	: BView("radiallinesview", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE)
+	:
+	BView("RadialLinesView", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE)
 {
 	SetViewColor(255, 255, 255);
 }
@@ -142,15 +143,15 @@ void
 RadialLinesView::GetHeightForWidth(float width,
 	float* min, float* max, float* preferred)
 {
-	// Enforce a width/height ratio of 1
+	// TODO: Enforce a width/height ratio of 1
 
-	if (min)
+	if (min != NULL)
 		*min = width;
 
-	if (max)
+	if (max != NULL)
 		*max = width;
 
-	if (preferred)
+	if (preferred != NULL)
 		*preferred = width;
 }
 
@@ -172,8 +173,8 @@ RadialLinesView::Draw(BRect updateRect)
 	BeginLineArray(360 / angleStep);
 	for (int i = 0; i < 360; i += angleStep) {
 		double angle = i * M_PI / 180;
-		BPoint pt(size * cos(angle), size * sin(angle));
-		AddLine(center, center + pt, black);
+		BPoint point(size * cos(angle), size * sin(angle));
+		AddLine(center, center + point, black);
 	}
 	EndLineArray();
 }
@@ -181,10 +182,9 @@ RadialLinesView::Draw(BRect updateRect)
 
 // #pragma mark -
 
-
 static const struct {
 	const char* name;
-	rgb_color	color;
+	rgb_color color;
 } kColorGradients[] = {
 	{ B_TRANSLATE_MARK("Red"), 		{255, 0, 0, 255} },
 	{ B_TRANSLATE_MARK("Green"), 	{0, 255, 0, 255} },
@@ -194,8 +194,8 @@ static const struct {
 	{ B_TRANSLATE_MARK("Cyan"), 	{0, 255, 255, 255} },
 	{ B_TRANSLATE_MARK("Black"), 	{0, 0, 0, 255} }
 };
-static const int kNumColorGradients = sizeof(kColorGradients)
-	/ sizeof(kColorGradients[0]);
+
+static const int kNumColorGradients = B_COUNT_OF(kColorGradients);
 
 
 class ColorGradientView : public BView {
@@ -210,7 +210,7 @@ private:
 
 ColorGradientView::ColorGradientView(rgb_color color)
 	:
-	BView("colorgradientview", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
+	BView("ColorGradientView", B_WILL_DRAW | B_FULL_UPDATE_ON_RESIZE),
 	fColor(color)
 {
 }
@@ -233,9 +233,9 @@ ColorGradientView::Draw(BRect updateRect)
 
 // #pragma mark -
 
-
 TestPageView::TestPageView(BRect frame, PrinterItem* printer)
-	: BView(frame, "testpage", B_FOLLOW_ALL,
+	:
+	BView(frame, "testpage", B_FOLLOW_ALL,
 		B_DRAW_ON_CHILDREN | B_FULL_UPDATE_ON_RESIZE),
 	fPrinter(printer)
 {
@@ -281,8 +281,7 @@ TestPageView::AttachedToWindow()
 	gradients.View()->SetViewColor(B_TRANSPARENT_COLOR);
 
 	for (int i = 0; i < kNumColorGradients; ++i) {
-		BStringView* label = new BStringView(
-			kColorGradients[i].name,
+		BStringView* label = new BStringView(kColorGradients[i].name,
 			B_TRANSLATE(kColorGradients[i].name));
 		// label->SetAlignment(B_ALIGN_RIGHT);
 		gradients.Add(label, 0, i);
@@ -303,7 +302,7 @@ TestPageView::AttachedToWindow()
 		.End()
 	);
 
-	// set layout background color to transparent instead
+	// Set layout background color to transparent instead
 	// of default UI panel color
 	ChildAt(0)->SetViewColor(B_TRANSPARENT_COLOR);
 }
@@ -322,19 +321,19 @@ TestPageView::DrawAfterChildren(BRect updateRect)
 
 	SetPenSize(3.0);
 
-	BPoint pt = Bounds().LeftTop();
-	StrokeLine(pt, BPoint(pt.x + size, pt.y));
-	StrokeLine(pt, BPoint(pt.x, pt.y + size));
+	BPoint point = Bounds().LeftTop();
+	StrokeLine(point, BPoint(point.x + size, point.y));
+	StrokeLine(point, BPoint(point.x, point.y + size));
 
-	pt = Bounds().RightTop();
-	StrokeLine(pt, BPoint(pt.x - size, pt.y));
-	StrokeLine(pt, BPoint(pt.x, pt.y + size));
+	point = Bounds().RightTop();
+	StrokeLine(point, BPoint(point.x - size, point.y));
+	StrokeLine(point, BPoint(point.x, point.y + size));
 
-	pt = Bounds().RightBottom();
-	StrokeLine(pt, BPoint(pt.x - size, pt.y));
-	StrokeLine(pt, BPoint(pt.x, pt.y - size));
+	point = Bounds().RightBottom();
+	StrokeLine(point, BPoint(point.x - size, point.y));
+	StrokeLine(point, BPoint(point.x, point.y - size));
 
-	pt = Bounds().LeftBottom();
-	StrokeLine(pt, BPoint(pt.x + size, pt.y));
-	StrokeLine(pt, BPoint(pt.x, pt.y - size));
+	point = Bounds().LeftBottom();
+	StrokeLine(point, BPoint(point.x + size, point.y));
+	StrokeLine(point, BPoint(point.x, point.y - size));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -11,8 +11,8 @@
 
 #include <Locale.h>
 
-#include "pr_server.h"
 #include "Messages.h"
+#include "pr_server.h"
 #include "PrintersWindow.h"
 #include "ScreenSettings.h"
 
@@ -27,7 +27,8 @@ main()
 
 
 PrintersApp::PrintersApp()
-	: Inherited(PRINTERS_SIGNATURE)
+	:
+	BApplication(PRINTERS_SIGNATURE)
 {
 }
 
@@ -35,36 +36,35 @@ PrintersApp::PrintersApp()
 void
 PrintersApp::ReadyToRun()
 {
-	PrintersWindow* win = new PrintersWindow(new ScreenSettings());
-	win->Show();
+	PrintersWindow* window = new PrintersWindow(new ScreenSettings());
+	window->Show();
 }
 
 
 void
-PrintersApp::MessageReceived(BMessage* msg)
+PrintersApp::MessageReceived(BMessage* message)
 {
-	if (msg->what == B_PRINTER_CHANGED || msg->what == PRINTERS_ADD_PRINTER) {
-			// broadcast message
-		uint32 what = msg->what;
+	if (message->what == B_PRINTER_CHANGED
+		|| message->what == PRINTERS_ADD_PRINTER) {
+		// Broadcast message
+		uint32 what = message->what;
 		if (what == PRINTERS_ADD_PRINTER)
 			what = kMsgAddPrinter;
 
-		BWindow* w;
-		for (int32 i = 0; (w = WindowAt(i)) != NULL; i++) {
-			BMessenger msgr(NULL, w);
-			msgr.SendMessage(what);
+		BWindow* window = NULL;
+		for (int32 index = 0; (window = WindowAt(index)) != NULL; index++) {
+			BMessenger messenger(NULL, window);
+			messenger.SendMessage(what);
 		}
-	} else {
-		BApplication::MessageReceived(msg);
-	}
+	} else
+		BApplication::MessageReceived(message);
 }
 
 
 void
 PrintersApp::ArgvReceived(int32 argc, char** argv)
 {
-	for (int i = 1; i < argc; i++) {
+	for (int index = 1; index < argc; index++) {
 		// TODO: show a pre-filled add printer dialog here
 	}
 }
-

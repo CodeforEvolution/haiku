@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2011, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -25,11 +25,11 @@
 #include <PrintJob.h>
 #include <ScrollView.h>
 
-#include "pr_server.h"
 #include "AddPrinterDialog.h"
 #include "Globals.h"
 #include "JobListView.h"
 #include "Messages.h"
+#include "pr_server.h"
 #include "PrinterListView.h"
 #include "TestPageView.h"
 #include "ScreenSettings.h"
@@ -42,20 +42,22 @@
 
 class TestPageWindow : public BWindow {
 public:
-						TestPageWindow(BPrintJob* job, PrinterItem* printer);
-	virtual				~TestPageWindow();
+								TestPageWindow(BPrintJob* job,
+									PrinterItem* printer);
+	virtual						~TestPageWindow();
 
-			void		MessageReceived(BMessage* message);
+			void				MessageReceived(BMessage* message);
 private:
-			BPrintJob*	fJob;
-			TestPageView*	fTestPage;
+			BPrintJob*			fJob;
+			TestPageView*		fTestPage;
 };
 
 
 TestPageWindow::TestPageWindow(BPrintJob* job, PrinterItem* printer)
-	: BWindow(job->PaperRect().OffsetByCopy(-20000, -20000),
-		B_TRANSLATE("Test page"),
-		B_TITLED_WINDOW, 0), fJob(job)
+	:
+	BWindow(job->PaperRect().OffsetByCopy(-20000, -20000),
+		B_TRANSLATE("Test page"), B_TITLED_WINDOW, 0),
+	fJob(job)
 {
 	fTestPage = new TestPageView(job->PrintableRect(), printer);
 
@@ -94,7 +96,6 @@ TestPageWindow::MessageReceived(BMessage* message)
 
 // #pragma mark PrintersWindow main class
 
-
 PrintersWindow::PrintersWindow(ScreenSettings* settings)
 	:
 	BWindow(settings->WindowFrame(), B_TRANSLATE_SYSTEM_NAME("Printers"),
@@ -118,7 +119,7 @@ PrintersWindow::QuitRequested()
 {
 	fSettings->SetWindowFrame(Frame());
 
-	bool result = Inherited::QuitRequested();
+	bool result = BWindow::QuitRequested();
 	if (result)
 		be_app->PostMessage(B_QUIT_REQUESTED);
 
@@ -127,13 +128,13 @@ PrintersWindow::QuitRequested()
 
 
 void
-PrintersWindow::MessageReceived(BMessage* msg)
+PrintersWindow::MessageReceived(BMessage* message)
 {
-	switch (msg->what) {
+	switch (message->what) {
 		case kMsgPrinterSelected:
 		{
 			fSelectedPrinter = fPrinterListView->SelectedItem();
-			if (fSelectedPrinter) {
+			if (fSelectedPrinter != NULL) {
 				BString text = B_TRANSLATE("Print jobs for %printer_name%");
 				text.ReplaceFirst("%printer_name%", fSelectedPrinter->Name());
 
@@ -149,17 +150,22 @@ PrintersWindow::MessageReceived(BMessage* msg)
 				fSelectedPrinter = NULL;
 				fJobListView->SetSpoolFolder(NULL);
 			}
+
 			_UpdateJobButtons();
 			_UpdatePrinterButtons();
+
 			break;
 		}
 
 		case kMsgAddPrinter:
+		{
 			if (!fAddingPrinter) {
 				fAddingPrinter = true;
 				new AddPrinterDialog(this);
 			}
+
 			break;
+		}
 
 		case kMsgAddPrinterClosed:
 			fAddingPrinter = false;
@@ -168,31 +174,33 @@ PrintersWindow::MessageReceived(BMessage* msg)
 		case kMsgRemovePrinter:
 		{
 			fSelectedPrinter = fPrinterListView->SelectedItem();
-			if (fSelectedPrinter)
+			if (fSelectedPrinter != NULL)
 				fSelectedPrinter->Remove(fPrinterListView);
+
 			break;
 		}
 
 		case kMsgMakeDefaultPrinter:
 		{
 			PrinterItem* printer = fPrinterListView->SelectedItem();
-			if (printer && printer == fPrinterListView->ActivePrinter())
+			if (printer != NULL && printer == fPrinterListView->ActivePrinter())
 				break;
-			BMessenger msgr;
-			if (printer && GetPrinterServerMessenger(msgr) == B_OK) {
+			BMessenger messenger;
+			if (printer && GetPrinterServerMessenger(messenger) == B_OK) {
 				BMessage setActivePrinter(B_SET_PROPERTY);
 				setActivePrinter.AddSpecifier("ActivePrinter");
 				setActivePrinter.AddString("data", printer->Name());
-				msgr.SendMessage(&setActivePrinter);
+				messenger.SendMessage(&setActivePrinter);
 				_UpdatePrinterButtons();
 			}
+
 			break;
 		}
 
 		case kMsgPrintTestPage:
 		{
 			fSelectedPrinter = fPrinterListView->SelectedItem();
-			if (fSelectedPrinter)
+			if (fSelectedPrinter != NULL)
 				PrintTestPage(fSelectedPrinter);
 			break;
 		}
@@ -211,24 +219,28 @@ PrintersWindow::MessageReceived(BMessage* msg)
 
 		case B_PRINTER_CHANGED:
 		{
-			// active printer could have been changed, even outside of prefs
+			// Active printer could have been changed, even outside of prefs
 			BString activePrinterName(ActivePrinterName());
 			PrinterItem* item = fPrinterListView->ActivePrinter();
-			if (item && item->Name() != activePrinterName)
+			if (item != NULL && item->Name() != activePrinterName)
 				fPrinterListView->UpdateItem(item);
 
-			for (int32 i = 0; i < fPrinterListView->CountItems(); ++i) {
-				item = dynamic_cast<PrinterItem*>(fPrinterListView->ItemAt(i));
-				if (item && item->Name() == activePrinterName) {
+			for (int32 index = 0; index < fPrinterListView->CountItems();
+				++index) {
+				item =
+					dynamic_cast<PrinterItem*>(fPrinterListView->ItemAt(index));
+				if (item != NULL && item->Name() == activePrinterName) {
 					fPrinterListView->UpdateItem(item);
 					fPrinterListView->SetActivePrinter(item);
 					break;
 				}
 			}
-		}	break;
+
+			break;
+		}
 
 		default:
-			Inherited::MessageReceived(msg);
+			BWindow::MessageReceived(message);
 	}
 }
 
@@ -247,14 +259,14 @@ PrintersWindow::PrintTestPage(PrinterItem* printer)
 		return;
 	}
 
-	// enforce job config properties
+	// Enforce job config properties
 	settings->AddInt32("copies", 1);
 	settings->AddInt32("first_page", 1);
 	settings->AddInt32("last_page", -1);
 
-	BWindow* win = new TestPageWindow(job, printer);
-	win->Show();
-	win->PostMessage(kMsgPrintTestPage);
+	BWindow* window = new TestPageWindow(job, printer);
+	window->Show();
+	window->PostMessage(kMsgPrintTestPage);
 }
 
 
@@ -263,6 +275,7 @@ PrintersWindow::AddJob(SpoolFolder* folder, Job* job)
 {
 	if (_IsSelected(folder->Item()))
 		fJobListView->AddJob(job);
+
 	fPrinterListView->UpdateItem(folder->Item());
 	_UpdatePrinterButtons();
 }
@@ -273,6 +286,7 @@ PrintersWindow::RemoveJob(SpoolFolder* folder, Job* job)
 {
 	if (_IsSelected(folder->Item()))
 		fJobListView->RemoveJob(job);
+
 	fPrinterListView->UpdateItem(folder->Item());
 	_UpdatePrinterButtons();
 }
@@ -285,13 +299,13 @@ PrintersWindow::UpdateJob(SpoolFolder* folder, Job* job)
 		fJobListView->UpdateJob(job);
 		_UpdateJobButtons();
 	}
+
 	fPrinterListView->UpdateItem(folder->Item());
 	_UpdatePrinterButtons();
 }
 
 
 // #pragma mark -
-
 
 void
 PrintersWindow::_BuildGUI()
@@ -408,7 +422,7 @@ PrintersWindow::_BuildGUI()
 bool
 PrintersWindow::_IsSelected(PrinterItem* printer)
 {
-	return fSelectedPrinter && fSelectedPrinter == printer;
+	return fSelectedPrinter != NULL && fSelectedPrinter == printer;
 }
 
 
@@ -416,9 +430,9 @@ void
 PrintersWindow::_UpdatePrinterButtons()
 {
 	PrinterItem* item = fPrinterListView->SelectedItem();
-	fRemove->SetEnabled(item && !item->HasPendingJobs());
-	fMakeDefault->SetEnabled(item && !item->IsActivePrinter());
-	fPrintTestPage->SetEnabled(item);
+	fRemove->SetEnabled(item != NULL && !item->HasPendingJobs());
+	fMakeDefault->SetEnabled(item != NULL && !item->IsActivePrinter());
+	fPrintTestPage->SetEnabled(item != NULL);
 }
 
 
@@ -435,5 +449,3 @@ PrintersWindow::_UpdateJobButtons()
 		fRestart->SetEnabled(false);
 	}
 }
-
-

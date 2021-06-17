@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -12,15 +12,16 @@
 #include "Jobs.h"
 
 
-class PrintersWindow;
 class PrinterItem;
+class PrintersWindow;
 
 
 class SpoolFolder : public Folder {
 public:
-								SpoolFolder(PrintersWindow* window, 
-									PrinterItem* item, 
+								SpoolFolder(PrintersWindow* window,
+									PrinterItem* item,
 									const BDirectory& spoolDir);
+
 			PrinterItem* 		Item() const { return fItem; }
 
 protected:
@@ -30,5 +31,4 @@ protected:
 			PrinterItem* 		fItem;
 };
 
-
-#endif // _SPOOL_FOLDER_H
+#endif /* _SPOOL_FOLDER_H */

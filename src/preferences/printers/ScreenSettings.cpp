@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2015, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -40,7 +40,7 @@ ScreenSettings::ScreenSettings()
 ScreenSettings::~ScreenSettings()
 {
 	BPath path;
-	if (find_directory(B_USER_SETTINGS_DIRECTORY, &path) < B_OK)
+	if (find_directory(B_USER_SETTINGS_DIRECTORY, &path) != B_OK)
 		return;
 
 	path.Append(kSettingsFileName);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -19,12 +19,12 @@
 
 
 class PrintersApp : public BApplication {
-			typedef BApplication Inherited;
 public:
 								PrintersApp();
+
 			void				ReadyToRun();
-			void				MessageReceived(BMessage* msg);
+			void				MessageReceived(BMessage* message);
 			void				ArgvReceived(int32 argc, char** argv);
 };
 
-#endif // _PRINTERS_H
+#endif /* _PRINTERS_H */

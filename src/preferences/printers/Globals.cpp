@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2016, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -19,15 +19,15 @@
 BString
 ActivePrinterName()
 {
-	BMessenger msgr;
-	if (GetPrinterServerMessenger(msgr) != B_OK)
+	BMessenger messenger;
+	if (GetPrinterServerMessenger(messenger) != B_OK)
 		return BString();
 
 	BMessage getNameOfActivePrinter(B_GET_PROPERTY);
 	getNameOfActivePrinter.AddSpecifier("ActivePrinter");
 
 	BMessage reply;
-	msgr.SendMessage(&getNameOfActivePrinter, &reply);
+	messenger.SendMessage(&getNameOfActivePrinter, &reply);
 
 	BString activePrinterName;
 	reply.FindString("result", &activePrinterName);
@@ -37,8 +37,8 @@ ActivePrinterName()
 
 
 status_t
-GetPrinterServerMessenger(BMessenger& msgr)
+GetPrinterServerMessenger(BMessenger& messenger)
 {
-	msgr = BMessenger(PSRV_SIGNATURE_TYPE);
-	return msgr.IsValid() ? B_OK : B_ERROR;
+	messenger = BMessenger(PSRV_SIGNATURE_TYPE);
+	return messenger.IsValid() ? B_OK : B_ERROR;
 }

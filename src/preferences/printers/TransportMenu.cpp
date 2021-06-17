@@ -1,13 +1,14 @@
 /*
- * Copyright 2002-2010, Haiku.
+ * Copyright 2002-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Michael Pfeiffer
  *		Philippe Houdoin
  */
-#include "TransportMenu.h"
 
+
+#include "TransportMenu.h"
 
 #include <Catalog.h>
 #include <MenuItem.h>
@@ -40,36 +41,36 @@ TransportMenu::AddDynamicItem(add_state state)
 		item = RemoveItem((int32)0);
 	}
 
-	BMessage msg;
-	msg.MakeEmpty();
-	msg.what = B_GET_PROPERTY;
-	msg.AddSpecifier("Ports");
+	BMessage message;
+	message.MakeEmpty();
+	message.what = B_GET_PROPERTY;
+	message.AddSpecifier("Ports");
 	BMessage reply;
-	if (fMessenger.SendMessage(&msg, &reply) != B_OK)
+	if (fMessenger.SendMessage(&message, &reply) != B_OK)
 		return false;
 
 	BString portId;
 	BString portName;
 	if (reply.FindString("port_id", &portId) != B_OK) {
 		// Show error message in submenu
-		BMessage* portMsg = new BMessage(fWhat);
+		BMessage* portMessage = new BMessage(fWhat);
 		AddItem(new BMenuItem(
-			B_TRANSLATE("No printer found!"), portMsg));
+			B_TRANSLATE("No printer found!"), portMessage));
 		return false;
 	}
 
 	// Add ports to submenu
-	for (int32 i = 0; reply.FindString("port_id", i, &portId) == B_OK;
-		i++) {
-		if (reply.FindString("port_name", i, &portName) != B_OK
-			|| !portName.Length())
+	for (int32 index = 0; reply.FindString("port_id", index, &portId) == B_OK;
+		index++) {
+		if (reply.FindString("port_name", index, &portName) != B_OK
+			|| portName.IsEmpty())
 			portName = portId;
 
 		// Create menu item in submenu for port
-		BMessage* portMsg = new BMessage(fWhat);
-		portMsg->AddString("name", fTransportName);
-		portMsg->AddString("path", portId);
-		AddItem(new BMenuItem(portName.String(), portMsg));
+		BMessage* portMessage = new BMessage(fWhat);
+		portMessage->AddString("name", fTransportName);
+		portMessage->AddString("path", portId);
+		AddItem(new BMenuItem(portName.String(), portMessage));
 	}
 
 	return false;

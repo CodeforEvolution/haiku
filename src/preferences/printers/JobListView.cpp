@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -18,10 +18,10 @@
 #include <StringFormat.h>
 #include <Window.h>
 
-#include "pr_server.h"
 #include "Globals.h"
 #include "Jobs.h"
 #include "Messages.h"
+#include "pr_server.h"
 #include "SpoolFolder.h"
 
 
@@ -31,10 +31,9 @@
 
 // #pragma mark -- JobListView
 
-
 JobListView::JobListView(BRect frame)
 	:
-	Inherited(frame, "jobs_list", B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL,
+	BListView(frame, "jobs_list", B_SINGLE_SELECTION_LIST, B_FOLLOW_ALL,
 		B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE | B_FULL_UPDATE_ON_RESIZE)
 {
 }
@@ -50,7 +49,7 @@ JobListView::~JobListView()
 void
 JobListView::AttachedToWindow()
 {
-	Inherited::AttachedToWindow();
+	BListView::AttachedToWindow();
 
 	SetSelectionMessage(new BMessage(kMsgJobSelected));
 	SetTarget(Window());
@@ -60,7 +59,7 @@ JobListView::AttachedToWindow()
 void
 JobListView::SetSpoolFolder(SpoolFolder* folder)
 {
-	// clear list
+	// Clear list
 	while (!IsEmpty())
 		delete RemoveItem((int32)0);
 
@@ -68,18 +67,18 @@ JobListView::SetSpoolFolder(SpoolFolder* folder)
 		return;
 
 	// Find directory containing printer definition nodes
-	for (int32 i = 0; i < folder->CountJobs(); i++)
-		AddJob(folder->JobAt(i));
+	for (int32 index = 0; index < folder->CountJobs(); index++)
+		AddJob(folder->JobAt(index));
 }
 
 
 JobItem*
-JobListView::FindJob(Job* job) const
+JobListView::_FindJob(Job* job) const
 {
-	const int32 n = CountItems();
-	for (int32 i = 0; i < n; i++) {
-		JobItem* item = dynamic_cast<JobItem*>(ItemAt(i));
-		if (item && item->GetJob() == job)
+	const int32 numItems = CountItems();
+	for (int32 index = 0; index < numItems; index++) {
+		JobItem* item = dynamic_cast<JobItem*>(ItemAt(index));
+		if (item != NULL && item->GetJob() == job)
 			return item;
 	}
 	return NULL;
@@ -104,8 +103,8 @@ JobListView::AddJob(Job* job)
 void
 JobListView::RemoveJob(Job* job)
 {
-	JobItem* item = FindJob(job);
-	if (item) {
+	JobItem* item = _FindJob(job);
+	if (item != NULL) {
 		RemoveItem(item);
 		delete item;
 		Invalidate();
@@ -116,8 +115,8 @@ JobListView::RemoveJob(Job* job)
 void
 JobListView::UpdateJob(Job* job)
 {
-	JobItem* item = FindJob(job);
-	if (item) {
+	JobItem* item = _FindJob(job);
+	if (item != NULL) {
 		item->Update();
 		InvalidateItem(IndexOf(item));
 	}
@@ -128,7 +127,7 @@ void
 JobListView::RestartJob()
 {
 	JobItem* item = SelectedItem();
-	if (item && item->GetJob()->Status() == kFailed) {
+	if (item != NULL && item->GetJob()->Status() == kFailed) {
 		// setting the state changes the file attribute and
 		// we will receive a notification from SpoolFolder
 		item->GetJob()->SetStatus(kWaiting);
@@ -140,7 +139,7 @@ void
 JobListView::CancelJob()
 {
 	JobItem* item = SelectedItem();
-	if (item && item->GetJob()->Status() != kProcessing) {
+	if (item != NULL && item->GetJob()->Status() != kProcessing) {
 		item->GetJob()->SetStatus(kFailed);
 		item->GetJob()->Remove();
 	}
@@ -148,7 +147,6 @@ JobListView::CancelJob()
 
 
 // #pragma mark -- JobItem
-
 
 JobItem::JobItem(Job* job)
 	:
@@ -182,17 +180,14 @@ JobItem::Update()
 
 	entry_ref ref;
 	if (fIcon == NULL && be_roster->FindApp(mimeType.String(), &ref) == B_OK) {
-#ifdef HAIKU_TARGET_PLATFORM_HAIKU
 		font_height fontHeight;
 		be_plain_font->GetHeight(&fontHeight);
 		float height = (fontHeight.ascent + fontHeight.descent
 			+ fontHeight.leading) * 2.0;
+
 		BRect rect(0, 0, height, height);
 		fIcon = new BBitmap(rect, B_RGBA32);
-#else
-		BRect rect(0, 0, B_MINI_ICON - 1, B_MINI_ICON - 1);
-		fIcon = new BBitmap(rect, B_CMAP8);
-#endif
+
 		BMimeType type(mimeType.String());
 		if (type.GetIcon(fIcon, B_MINI_ICON) != B_OK) {
 			delete fIcon;
@@ -211,7 +206,7 @@ JobItem::Update()
 		B_INT32_TYPE, 0, &pages, sizeof(pages)) == sizeof(pages)) {
 		format.Format(fPages, pages);
 	} else {
-		// unknown page count, probably the printer is paginating without
+		// Unknown page count, probably the printer is paginating without
 		// software help.
 		format.Format(fPages, -1);
 	}
@@ -250,7 +245,7 @@ JobItem::Update()
 
 
 void
-JobItem::Update(BView *owner, const BFont *font)
+JobItem::Update(BView* owner, const BFont* font)
 {
 	BListItem::Update(owner, font);
 
@@ -262,16 +257,16 @@ JobItem::Update(BView *owner, const BFont *font)
 
 
 void
-JobItem::DrawItem(BView *owner, BRect, bool complete)
+JobItem::DrawItem(BView* owner, BRect itemRect, bool complete)
 {
 	BListView* list = dynamic_cast<BListView*>(owner);
-	if (list) {
+	if (list != NULL) {
 		BFont font;
 		owner->GetFont(&font);
 
 		font_height height;
 		font.GetHeight(&height);
-		float fntheight = height.ascent + height.descent + height.leading;
+		float fontHeight = height.ascent + height.descent + height.leading;
 
 		BRect bounds = list->ItemFrame(list->IndexOf(this));
 
@@ -290,41 +285,39 @@ JobItem::DrawItem(BView *owner, BRect, bool complete)
 		owner->SetLowColor(oldLowColor);
 		owner->SetHighColor(oldHighColor);
 
-		BPoint iconPt(bounds.LeftTop() + BPoint(2.0, 2.0));
+		BPoint iconPoint(bounds.LeftTop() + BPoint(2.0, 2.0));
 		float iconHeight = B_MINI_ICON;
-#ifdef HAIKU_TARGET_PLATFORM_HAIKU
-		if (fIcon)
+
+		if (fIcon != NULL)
 			iconHeight = fIcon->Bounds().Height();
-#endif
+
 		BPoint leftTop(bounds.LeftTop() + BPoint(12.0 + iconHeight, 2.0));
-		BPoint namePt(leftTop + BPoint(0.0, fntheight));
-		BPoint statusPt(leftTop + BPoint(0.0, fntheight * 2.0));
+		BPoint namePoint(leftTop + BPoint(0.0, fontHeight));
+		BPoint statusPoint(leftTop + BPoint(0.0, fontHeight * 2.0));
 
 		float x = owner->StringWidth(fPages.String()) + 32.0;
-		BPoint pagePt(bounds.RightTop() + BPoint(-x, fntheight));
-		BPoint sizePt(bounds.RightTop() + BPoint(-x, fntheight * 2.0));
+		BPoint pagePoint(bounds.RightTop() + BPoint(-x, fontHeight));
+		BPoint sizePoint(bounds.RightTop() + BPoint(-x, fontHeight * 2.0));
 
 		drawing_mode mode = owner->DrawingMode();
-#ifdef HAIKU_TARGET_PLATFORM_HAIKU
-	owner->SetDrawingMode(B_OP_ALPHA);
-#else
-	owner->SetDrawingMode(B_OP_OVER);
-#endif
+		owner->SetDrawingMode(B_OP_ALPHA);
 
-		if (fIcon)
-			owner->DrawBitmap(fIcon, iconPt);
+		if (fIcon != NULL)
+			owner->DrawBitmap(fIcon, iconPoint);
 
-		// left of item
+		// Left of item
 		BString name = fName;
-		owner->TruncateString(&name, B_TRUNCATE_MIDDLE, pagePt.x - namePt.x);
-		owner->DrawString(name.String(), name.Length(), namePt);
+		owner->TruncateString(&name, B_TRUNCATE_MIDDLE,
+			pagePoint.x - namePoint.x);
+		owner->DrawString(name.String(), name.Length(), namePoint);
 		BString status = fStatus;
-		owner->TruncateString(&status, B_TRUNCATE_MIDDLE, sizePt.x - statusPt.x);
-		owner->DrawString(status.String(), status.Length(), statusPt);
+		owner->TruncateString(&status, B_TRUNCATE_MIDDLE,
+			sizePoint.x - statusPoint.x);
+		owner->DrawString(status.String(), status.Length(), statusPoint);
 
-		// right of item
-		owner->DrawString(fPages.String(), fPages.Length(), pagePt);
-		owner->DrawString(fSize.String(), fSize.Length(), sizePt);
+		// Right of item
+		owner->DrawString(fPages.String(), fPages.Length(), pagePoint);
+		owner->DrawString(fSize.String(), fSize.Length(), sizePoint);
 
 		owner->SetDrawingMode(mode);
 	}

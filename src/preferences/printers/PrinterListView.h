@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -11,8 +11,8 @@
 
 #include <Directory.h>
 #include <Entry.h>
-#include <Messenger.h>
 #include <ListView.h>
+#include <Messenger.h>
 #include <String.h>
 
 #include "FolderWatcher.h"
@@ -27,10 +27,9 @@ class PrintersWindow;
 
 struct PrinterListLayoutData
 {
-	float	fLeftColumnMaximumWidth;
-	float	fRightColumnMaximumWidth;
+	float fLeftColumnMaximumWidth;
+	float fRightColumnMaximumWidth;
 };
-
 
 
 class PrinterListView : public BListView, public FolderListener {
@@ -49,9 +48,8 @@ public:
 			void 				SetActivePrinter(PrinterItem* item);
 
 private:
-		typedef BListView Inherited;
-
-			void 				_AddPrinter(BDirectory& printer, bool calculateLayout);
+			void 				_AddPrinter(BDirectory& printer,
+									bool calculateLayout);
 			void				_LayoutPrinterItems();
 			PrinterItem*		_FindItem(node_ref* node) const;
 
@@ -60,6 +58,7 @@ private:
 			void				EntryRemoved(node_ref* node);
 			void				AttributeChanged(node_ref* node);
 
+private:
 			FolderWatcher*		fFolder;
 			PrinterItem*		fActivePrinter;
 			PrinterListLayoutData	fLayoutData;
@@ -86,7 +85,8 @@ public:
 
 			const char* 		Name() const { return fName.String(); }
 			const char*			Driver() const { return fDriverName.String(); }
-			const char*			Transport() const { return fTransport.String(); }
+			const char*			Transport() const
+									{ return fTransport.String(); }
 			const char*			TransportAddress() const
 									{ return fTransportAddress.String(); }
 
@@ -100,6 +100,7 @@ private:
 			BBitmap*			_LoadVectorIcon(const char* resourceName,
 									float iconSize);
 
+private:
 			SpoolFolder*		fFolder;
 			BDirectory			fNode;
 			BString				fComments;
@@ -114,4 +115,4 @@ private:
 	static	BBitmap*			sSelectedIcon;
 };
 
-#endif // _PRINTERS_LISTVIEW_H
+#endif /* _PRINTERS_LISTVIEW_H */

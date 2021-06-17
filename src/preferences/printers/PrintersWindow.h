@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -13,52 +13,52 @@
 #include <Window.h>
 
 
-class PrintersWindow;
-class PrinterListView;
-class JobListView;
 class Job;
-class SpoolFolder;
+class JobListView;
 class PrinterItem;
+class PrinterListView;
+class PrintersWindow;
 class ScreenSettings;
+class SpoolFolder;
 
 
 class PrintersWindow : public BWindow {
 public:
-				PrintersWindow(ScreenSettings *settings);
-	virtual		~PrintersWindow();
+								PrintersWindow(ScreenSettings* settings);
+	virtual						~PrintersWindow();
 
-	void		MessageReceived(BMessage* msg);
-	bool		QuitRequested();
+			void				MessageReceived(BMessage* message);
+			bool				QuitRequested();
 
-	void		PrintTestPage(PrinterItem* printer);
+			void				PrintTestPage(PrinterItem* printer);
 
-	void		AddJob(SpoolFolder* folder, Job* job);
-	void		RemoveJob(SpoolFolder* folder, Job* job);
-	void		UpdateJob(SpoolFolder* folder, Job* job);
+			void				AddJob(SpoolFolder* folder, Job* job);
+			void				RemoveJob(SpoolFolder* folder, Job* job);
+			void				UpdateJob(SpoolFolder* folder, Job* job);
 
 private:
-	ScreenSettings*	fSettings;
-	void		_BuildGUI();
-	bool		_IsSelected(PrinterItem* printer);
-	void		_UpdatePrinterButtons();
-	void		_UpdateJobButtons();
+			void				_BuildGUI();
+			bool				_IsSelected(PrinterItem* printer);
+			void				_UpdatePrinterButtons();
+			void				_UpdateJobButtons();
 
-	typedef BWindow Inherited;
+private:
+			ScreenSettings*		fSettings;
 
-	PrinterListView*	fPrinterListView;
-	BButton*	fMakeDefault;
-	BButton*	fRemove;
-	BButton*	fPrintTestPage;
+			PrinterListView*	fPrinterListView;
+			BButton*			fMakeDefault;
+			BButton*			fRemove;
+			BButton*			fPrintTestPage;
 
-	JobListView*	fJobListView;
-	BButton*	fRestart;
-	BButton*    fCancel;
+			JobListView*		fJobListView;
+			BButton*			fRestart;
+			BButton*			fCancel;
 
-	BBox*		fJobsBox;
+			BBox*				fJobsBox;
 
-	PrinterItem*	fSelectedPrinter;
+			PrinterItem*		fSelectedPrinter;
 
-	bool		fAddingPrinter;
+			bool				fAddingPrinter;
 };
 
-#endif	// _PRINTERS_WINDOW_H
+#endif	/* _PRINTERS_WINDOW_H */

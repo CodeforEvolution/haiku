@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2010, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -21,7 +21,6 @@ class SpoolFolder;
 
 
 class JobListView : public BListView {
-	typedef BListView Inherited;
 public:
 								JobListView(BRect frame);
 								~JobListView();
@@ -39,7 +38,7 @@ public:
 			void				CancelJob();
 
 private:
-			JobItem* 			FindJob(Job* job) const;
+			JobItem* 			_FindJob(Job* job) const;
 };
 
 
@@ -65,4 +64,4 @@ private:
 			BString				fSize;
 };
 
-#endif // _JOB_LISTVIEW_H
+#endif /* _JOB_LISTVIEW_H */
