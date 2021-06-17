@@ -1,9 +1,9 @@
 /*
- * Copyright 2009, Haiku, Inc. All rights reserved.
+ * Copyright 2009-2021, Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  */
-#ifndef	_PRINTSESSION_H
-#define	_PRINTSESSION_H
+#ifndef	_PRINT_JOB_H
+#define	_PRINT_JOB_H
 
 
 #include <Picture.h>
@@ -11,6 +11,7 @@
 
 class BFile;
 class BView;
+
 
 struct print_file_header {
 	int32	version;
@@ -25,11 +26,11 @@ struct _page_header_;
 
 class BPrintJob {
 public:
-	// Values returned by PrinterType()
-	enum {
-		B_BW_PRINTER = 0,
-		B_COLOR_PRINTER
-	};
+			// Values returned by PrinterType()
+			enum {
+				B_BW_PRINTER = 0,
+				B_COLOR_PRINTER
+			};
 
 
 								BPrintJob(const char* name);
@@ -45,13 +46,11 @@ public:
 
 			bool				CanContinue();
 
-	virtual	void				DrawView(BView* view, BRect rect,
-									BPoint where);
+	virtual	void				DrawView(BView* view, BRect rect, BPoint where);
 
 			BMessage*			Settings(); // TODO: const
 			void				SetSettings(BMessage* archive);
-			bool				IsSettingsMessageValid(
-									BMessage* archive) const;
+			bool				IsSettingsMessageValid(BMessage* archive) const;
 
 			BRect				PaperRect();
 			BRect				PrintableRect();
@@ -114,4 +113,4 @@ private:
 			uint32				_reserved[2];
 };
 
-#endif // _PRINTSESSION_H
+#endif /* _PRINT_JOB_H */

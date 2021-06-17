@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2009, Haiku.
+ * Copyright 2001-2021, Haiku.
  * Distributed under the terms of the MIT license.
  *
  * Authors:
@@ -36,7 +36,9 @@
 #include <pr_server.h>
 #include <ViewPrivate.h>
 
+
 using BPrivate::gSystemCatalog;
+
 
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "PrintJob"
@@ -103,7 +105,8 @@ struct _page_header_ {
 static void
 ShowError(const char* message)
 {
-	BAlert* alert = new BAlert(B_TRANSLATE("Error"), message, B_TRANSLATE("OK"));
+	BAlert* alert = new BAlert(B_TRANSLATE("Error"), message,
+		B_TRANSLATE("OK"));
 	alert->SetFlags(alert->Flags() | B_CLOSE_ON_ESCAPE);
 	alert->Go();
 }
@@ -111,35 +114,36 @@ ShowError(const char* message)
 
 // #pragma mark -- PrintServerMessenger
 
-
 namespace BPrivate {
 
 
 class PrintServerMessenger {
 public:
-							PrintServerMessenger(uint32 what, BMessage* input);
-							~PrintServerMessenger();
+								PrintServerMessenger(uint32 what,
+									BMessage* input);
+								~PrintServerMessenger();
 
-			BMessage*		Request();
-			status_t		SendRequest();
+			BMessage*			Request();
+			status_t			SendRequest();
 
-			void			SetResult(BMessage* result);
-			BMessage*		Result() const { return fResult; }
+			void				SetResult(BMessage* result);
+			BMessage*			Result() const { return fResult; }
 
-	static	status_t		GetPrintServerMessenger(BMessenger& messenger);
+	static	status_t			GetPrintServerMessenger(BMessenger& messenger);
 
 private:
-			void			RejectUserInput();
-			void			AllowUserInput();
-			void			DeleteSemaphore();
-	static	status_t		MessengerThread(void* data);
+			void				_RejectUserInput();
+			void				_AllowUserInput();
+			void				_DeleteSemaphore();
+	static	status_t			_MessengerThread(void* data);
 
-			uint32			fWhat;
-			BMessage*		fInput;
-			BMessage*		fRequest;
-			BMessage*		fResult;
-			sem_id			fThreadCompleted;
-			BAlert*			fHiddenApplicationModalWindow;
+private:
+			uint32				fWhat;
+			BMessage*			fInput;
+			BMessage*			fRequest;
+			BMessage*			fResult;
+			sem_id				fThreadCompleted;
+			BAlert*				fHiddenApplicationModalWindow;
 };
 
 
@@ -150,7 +154,6 @@ using namespace BPrivate;
 
 
 // #pragma mark -- BPrintJob
-
 
 BPrintJob::BPrintJob(const char* jobName)
 	:
@@ -223,15 +226,15 @@ BPrintJob::BeginJob()
 {
 	fError = B_ERROR;
 
-	// can not start a new job until it has been commited or cancelled
+	// Can not start a new job until it has been commited or cancelled
 	if (fSpoolFile != NULL || fCurrentPageHeader == NULL)
 		return;
 
-	// TODO show alert, setup message is required
+	// TODO: Show alert, setup message is required
 	if (fSetupMessage == NULL)
 		return;
 
-	// create spool file
+	// Create spool file
 	BPath path;
 	status_t status = find_directory(B_USER_PRINTERS_DIRECTORY, &path);
 	if (status != B_OK)
@@ -262,9 +265,9 @@ BPrintJob::BeginJob()
 		return;
 	}
 
-	// add print_file_header
+	// Add print_file_header
 	// page_count is updated in CommitJob()
-	// on BeOS R5 the offset to the first page was always -1
+	// On BeOS R5 the offset to the first page was always -1
 	fSpoolFileHeader.version = 1 << 16;
 	fSpoolFileHeader.page_count = 0;
 	fSpoolFileHeader.first_page = (off_t)-1;
@@ -275,14 +278,14 @@ BPrintJob::BeginJob()
 		return;
 	}
 
-	// add printer settings message
+	// Add printer settings message
 	if (!fSetupMessage->HasString(PSRV_FIELD_CURRENT_PRINTER))
 		fSetupMessage->AddString(PSRV_FIELD_CURRENT_PRINTER, printer);
 
 	_AddSetupSpec();
 	_NewPage();
 
-	// state variables
+	// State variables
 	fAbort = 0;
 	fError = B_OK;
 }
@@ -300,16 +303,17 @@ BPrintJob::CommitJob()
 		return;
 	}
 
-	// update spool file
+	// Update spool file
 	_EndLastPage();
 
-	// write spool file header
+	// Write spool file header
 	fSpoolFile->Seek(0, SEEK_SET);
 	fSpoolFile->Write(&fSpoolFileHeader, sizeof(print_file_header));
 
-	// set file attributes
+	// Set file attributes
 	app_info appInfo;
 	be_app->GetAppInfo(&appInfo);
+
 	const char* printerName = "";
 	fSetupMessage->FindString(PSRV_FIELD_CURRENT_PRINTER, &printerName);
 
@@ -371,7 +375,7 @@ BPrintJob::SpoolPage()
 	fSpoolFileHeader.page_count++;
 	fSpoolFile->Seek(0, SEEK_END);
 	if (fCurrentPageHeaderOffset) {
-		// update last written page_header
+		// Update last written page_header
 		fCurrentPageHeader->next_page = fSpoolFile->Position();
 		fSpoolFile->Seek(fCurrentPageHeaderOffset, SEEK_SET);
 		fSpoolFile->Write(fCurrentPageHeader, sizeof(_page_header_));
@@ -502,7 +506,7 @@ BPrintJob::PrinterType(void*) const
 {
 	BMessenger printServer;
 	if (PrintServerMessenger::GetPrintServerMessenger(printServer) != B_OK)
-		return B_COLOR_PRINTER; // default
+		return B_COLOR_PRINTER; // Default
 
 	BMessage reply;
 	BMessage message(PSRV_GET_ACTIVE_PRINTER);
@@ -510,7 +514,7 @@ BPrintJob::PrinterType(void*) const
 
 	int32 type;
 	if (reply.FindInt32("color", &type) != B_OK)
-		return B_COLOR_PRINTER; // default
+		return B_COLOR_PRINTER; // Default
 
 	return type;
 }
@@ -630,7 +634,7 @@ BPrintJob::_NewPage()
 void
 BPrintJob::_EndLastPage()
 {
-	if (!fSpoolFile)
+	if (fSpoolFile == NULL)
 		return;
 
 	if (fCurrentPageHeader->number_of_pictures == 0)
@@ -699,7 +703,7 @@ BPrintJob::_LoadDefaultSettings()
 		return;
 
 	BMessage message(PSRV_GET_DEFAULT_SETTINGS);
-	BMessage* reply = new BMessage;
+	BMessage* reply = new BMessage();
 
 	printServer.SendMessage(&message, reply);
 
@@ -720,7 +724,6 @@ void BPrintJob::_ReservedPrintJob4() {}
 
 // #pragma mark -- PrintServerMessenger
 
-
 namespace BPrivate {
 
 
@@ -733,36 +736,37 @@ PrintServerMessenger::PrintServerMessenger(uint32 what, BMessage* input)
 	fThreadCompleted(-1),
 	fHiddenApplicationModalWindow(NULL)
 {
-	RejectUserInput();
+	_RejectUserInput();
 }
 
 
 PrintServerMessenger::~PrintServerMessenger()
 {
-	DeleteSemaphore();
-		// in case SendRequest could not start the thread
+	_DeleteSemaphore();
+		// In case SendRequest() could not start the thread
 
 	delete fRequest;
 	fRequest = NULL;
 
-	AllowUserInput();
+	_AllowUserInput();
 }
 
 
 void
-PrintServerMessenger::RejectUserInput()
+PrintServerMessenger::_RejectUserInput()
 {
 	fHiddenApplicationModalWindow = new BAlert("bogus", "app_modal", "OK");
 	fHiddenApplicationModalWindow->DefaultButton()->SetEnabled(false);
 	fHiddenApplicationModalWindow->SetDefaultButton(NULL);
-	fHiddenApplicationModalWindow->SetFlags(fHiddenApplicationModalWindow->Flags() | B_CLOSE_ON_ESCAPE);
+	fHiddenApplicationModalWindow->SetFlags(
+		fHiddenApplicationModalWindow->Flags() | B_CLOSE_ON_ESCAPE);
 	fHiddenApplicationModalWindow->MoveTo(-65000, -65000);
 	fHiddenApplicationModalWindow->Go(NULL);
 }
 
 
 void
-PrintServerMessenger::AllowUserInput()
+PrintServerMessenger::_AllowUserInput()
 {
 	fHiddenApplicationModalWindow->Lock();
 	fHiddenApplicationModalWindow->Quit();
@@ -770,7 +774,7 @@ PrintServerMessenger::AllowUserInput()
 
 
 void
-PrintServerMessenger::DeleteSemaphore()
+PrintServerMessenger::_DeleteSemaphore()
 {
 	if (fThreadCompleted >= B_OK) {
 		sem_id id = fThreadCompleted;
@@ -783,35 +787,36 @@ PrintServerMessenger::DeleteSemaphore()
 status_t
 PrintServerMessenger::SendRequest()
 {
-	fThreadCompleted = create_sem(0, "print_server_messenger_sem");
+	fThreadCompleted = create_sem(0, "print_server messenger monitor");
 	if (fThreadCompleted < B_OK)
 		return B_ERROR;
 
-	thread_id id = spawn_thread(MessengerThread, "async_request",
+	thread_id id = spawn_thread(_MessengerThread, "print_server messenger",
 		B_NORMAL_PRIORITY, this);
-	if (id <= 0 || resume_thread(id) != B_OK)
+	if (id < B_NO_ERROR || resume_thread(id) != B_OK)
 		return B_ERROR;
 
 	// Get the originating window, if it exists
 	BWindow* window = dynamic_cast<BWindow*>(
 		BLooper::LooperForThread(find_thread(NULL)));
 	if (window != NULL) {
-		status_t err;
+		status_t error = B_ERROR;
 		while (true) {
 			do {
-				err = acquire_sem_etc(fThreadCompleted, 1, B_RELATIVE_TIMEOUT,
+				error = acquire_sem_etc(fThreadCompleted, 1, B_RELATIVE_TIMEOUT,
 					50000);
 			// We've (probably) had our time slice taken away from us
-			} while (err == B_INTERRUPTED);
+			} while (error == B_INTERRUPTED);
 
-			// Semaphore was finally nuked in SetResult(BMessage *)
-			if (err == B_BAD_SEM_ID)
+			// Semaphore was finally nuked in SetResult(BMessage*)
+			if (error == B_BAD_SEM_ID)
 				break;
+
 			window->UpdateIfNeeded();
 		}
 	} else {
-		// No window to update, so just hang out until we're done.
 		while (acquire_sem(fThreadCompleted) == B_INTERRUPTED);
+			// No window to update, so just hang out until we're done.
 	}
 
 	status_t status;
@@ -841,8 +846,8 @@ void
 PrintServerMessenger::SetResult(BMessage* result)
 {
 	fResult = result;
-	DeleteSemaphore();
-	// terminate loop in thread spawned by SendRequest
+	_DeleteSemaphore();
+		// Terminate loop in thread spawned by SendRequest
 }
 
 
@@ -855,7 +860,7 @@ PrintServerMessenger::GetPrintServerMessenger(BMessenger& messenger)
 
 
 status_t
-PrintServerMessenger::MessengerThread(void* data)
+PrintServerMessenger::_MessengerThread(void* data)
 {
 	PrintServerMessenger* messenger = static_cast<PrintServerMessenger*>(data);
 
@@ -883,6 +888,5 @@ PrintServerMessenger::MessengerThread(void* data)
 	messenger->SetResult(new BMessage(reply));
 	return B_OK;
 }
-
 
 }	// namespace BPrivate
