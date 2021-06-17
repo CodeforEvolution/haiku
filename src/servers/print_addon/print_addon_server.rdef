@@ -6,11 +6,11 @@ resource app_version {
 	middle = 0,
 	minor = 0,
 
-	variety = B_APPV_ALPHA,
+	variety = B_APPV_BETA,
 	internal = 0,
 
 	short_info = "print_addon_server",
-	long_info = "print_addon_server ©2010 Haiku"
+	long_info = "print_addon_server ©2010-2021 Haiku"
 };
 
 resource app_flags B_MULTIPLE_LAUNCH | B_BACKGROUND_APP;

@@ -1,12 +1,13 @@
 /*
- * Copyright 2010 Haiku, Inc. All rights reserved.
+ * Copyright 2010-2021 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
  *		Michael Pfeiffer
  */
-#ifndef PRINT_ADD_ON_SERVER_H
-#define PRINT_ADD_ON_SERVER_H
+#ifndef _PRINT_ADD_ON_SERVER_H
+#define _PRINT_ADD_ON_SERVER_H
+
 
 #include <Application.h>
 #include <Directory.h>
@@ -17,39 +18,40 @@
 #include <PrintAddOnServerProtocol.h>
 
 
-class PrintAddOnServerApplication : public BApplication
-{
+class PrintAddOnServerApplication : public BApplication {
 public:
-					PrintAddOnServerApplication(const char* signature);
-			void	MessageReceived(BMessage* message);
+								PrintAddOnServerApplication(
+									const char* signature);
+
+			void				MessageReceived(BMessage* message);
 
 private:
-			void		AddPrinter(BMessage* message);
-			status_t	AddPrinter(const char* driver,
-							const char* spoolFolderName);
+			void				_AddPrinter(BMessage* message);
+			status_t			_AddPrinter(const char* driver,
+									const char* spoolFolderName);
 
-			void		ConfigPage(BMessage* message);
-			status_t	ConfigPage(const char* driver,
-							BDirectory* spoolFolder,
-							BMessage* settings);
+			void				_ConfigPage(BMessage* message);
+			status_t			_ConfigPage(const char* driver,
+									BDirectory* spoolFolder,
+									BMessage* settings);
 
-			void		ConfigJob(BMessage* message);
-			status_t	ConfigJob(const char* driver,
-							BDirectory* spoolFolder,
-							BMessage* settings);
+			void				_ConfigJob(BMessage* message);
+			status_t			_ConfigJob(const char* driver,
+									BDirectory* spoolFolder,
+									BMessage* settings);
 
-			void		DefaultSettings(BMessage* message);
-			status_t	DefaultSettings(const char* driver,
-							BDirectory* spoolFolder,
-							BMessage* settings);
+			void				_DefaultSettings(BMessage* message);
+			status_t			_DefaultSettings(const char* driver,
+									BDirectory* spoolFolder,
+									BMessage* settings);
 
-			void		TakeJob(BMessage* message);
-			status_t	TakeJob(const char* driver,
-							const char* spoolFile,
-							BDirectory* spoolFolder);
+			void				_TakeJob(BMessage* message);
+			status_t			_TakeJob(const char* driver,
+									const char* spoolFile,
+									BDirectory* spoolFolder);
 
-			void		SendReply(BMessage* message, status_t status);
-			void		SendReply(BMessage* message, BMessage* reply);
+			void				_SendReply(BMessage* message, status_t status);
+			void				_SendReply(BMessage* message, BMessage* reply);
 };
 
-#endif
+#endif /* _PRINT_ADD_ON_SERVER_H */
