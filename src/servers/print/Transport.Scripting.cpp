@@ -1,5 +1,5 @@
 /*
- * Copyright 2008, Haiku. All rights reserved.
+ * Copyright 2008-2021, Haiku. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -27,89 +27,97 @@ static property_info prop_list[] = {
 	{ "Ports", { B_GET_PROPERTY }, { B_DIRECT_SPECIFIER },
 		B_TRANSLATE_MARK("Get currently available ports/devices") },
 
-	{ 0 } // terminate list
+	{ NULL } // terminate list
 };
 
 
 void
-Transport::HandleScriptingCommand(BMessage* msg)
+Transport::HandleScriptingCommand(BMessage* message)
 {
-	status_t rc = B_ERROR;
+	status_t error = B_ERROR;
 	BString propName;
 	BString result;
 	BMessage spec;
-	int32 idx;
+	int32 index;
 
-	if ((rc=msg->GetCurrentSpecifier(&idx,&spec)) == B_OK
-		&& (rc=spec.FindString("property",&propName)) == B_OK) {
-		switch(msg->what) {
+	if (message->GetCurrentSpecifier(&index, &spec) == B_OK
+		&& spec.FindString("property", &propName) == B_OK) {
+		switch (message->what) {
 			case B_GET_PROPERTY:
+			{
 				if (propName == "Name")
 					result = Name();
 				else if (propName == "Ports") {
 					// Need to duplicate messaging code, as our result is a
 					// complex bmessage, not a string :(
 					BMessage reply(B_REPLY);
-					rc = ListAvailablePorts(&reply);
-					reply.AddInt32("error", rc);
-					msg->SendReply(&reply);
+					error = ListAvailablePorts(&reply);
+					reply.AddInt32("error", error);
+					message->SendReply(&reply);
+
 					break;
 				} else {
 					// If unknown scripting request, let superclas handle it
-					Inherited::MessageReceived(msg);
+					BHandler::MessageReceived(message);
 					break;
 				}
 
 				BMessage reply(B_REPLY);
 				reply.AddString("result", result);
-				reply.AddInt32("error", rc);
-				msg->SendReply(&reply);
+				reply.AddInt32("error", error);
+				message->SendReply(&reply);
+
 				break;
+			}
 		}
 	} else {
 		// If GetSpecifier failed
-		if (idx == -1) {
+		if (index == -1) {
 			BMessage reply(B_REPLY);
 			reply.AddMessenger("result", BMessenger(this));
 			reply.AddInt32("error", B_OK);
-			msg->SendReply(&reply);
+			message->SendReply(&reply);
 		}
 	}
 }
 
 
 BHandler*
-Transport::ResolveSpecifier(BMessage* msg, int32 index, BMessage* spec,
+Transport::ResolveSpecifier(BMessage* message, int32 index, BMessage* spec,
 	int32 form, const char* prop)
 {
 	BPropertyInfo prop_info(prop_list);
-	BHandler* rc = this;
+	BHandler* result = this;
 
-	int32 idx;
-	switch (idx=prop_info.FindMatch(msg,0,spec,form,prop)) {
+	int32 matchIndex = prop_info.FindMatch(message, 0, spec,form, prop);
+	switch (matchIndex) {
 		case B_ERROR:
-			rc = Inherited::ResolveSpecifier(msg,index,spec,form,prop);
+		{
+			result = BHandler::ResolveSpecifier(message, index, spec, form,
+				prop);
+
 			break;
+		}
 	}
 
-	return rc;
+	return result;
 }
 
 
 status_t
-Transport::GetSupportedSuites(BMessage* msg)
+Transport::GetSupportedSuites(BMessage* message)
 {
-	msg->AddString("suites", "application/x-vnd.OpenBeOS-transport");
+	message->AddString("suites", "suite/vnd.Haiku-transport");
 
 	static bool localized = false;
 	if (!localized) {
 		localized = true;
-		for (int i = 0; prop_list[i].name != NULL; i ++)
+		for (int i = 0; prop_list[i].name != NULL; i++)
 			prop_list[i].usage = B_TRANSLATE_NOCOLLECT(prop_list[i].usage);
 	}
 
 	BPropertyInfo prop_info(prop_list);
-	msg->AddFlat("messages", &prop_info);
+	message->AddFlat("messages", &prop_info);
 
-	return Inherited::GetSupportedSuites(msg);
+	return BHandler::GetSupportedSuites(message);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2008, Haiku. All rights reserved.
+ * Copyright 2002-2021, Haiku. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -31,51 +31,54 @@ class ConfigWindow : public BWindow {
 		MSG_OK               = 'cwok',
 		MSG_CANCEL           = 'cwcl',
 	};
-	
-public:
-					ConfigWindow(config_setup_kind kind,
-						Printer* defaultPrinter, BMessage* settings,
-						AutoReply* sender);
-					~ConfigWindow();
-			void	 Go();
-	
-			void	MessageReceived(BMessage* m);
-			void	AboutRequested();
-			void	FrameMoved(BPoint p);
 
-	static	BRect	GetWindowFrame();
-	static	void	SetWindowFrame(BRect frame);
+public:
+								ConfigWindow(config_setup_kind kind,
+									Printer* defaultPrinter, BMessage* settings,
+									AutoReply* sender);
+								~ConfigWindow();
+
+			void				Go();
+
+			void				MessageReceived(BMessage* message);
+			void				AboutRequested();
+			void				FrameMoved(BPoint point);
+
+	static	BRect				GetWindowFrame();
+	static	void				SetWindowFrame(BRect frame);
 
 private:
-			BButton* AddPictureButton(BView* panel, const char* name,
-								const char* picture, uint32 what);
-			void	PrinterForMimeType();
-			void	SetupPrintersMenu(BMenu* menu);
-			void	UpdateAppSettings(const char* mime, const char* printer);
-			void	UpdateSettings(bool read);
-			void	UpdateUI();
-			void	Setup(config_setup_kind);
+			BButton* 			_AddPictureButton(BView* panel,
+									const char* name, const char* picture,
+									uint32 what);
+			void				_PrinterForMimeType();
+			void				_SetupPrintersMenu(BMenu* menu);
+			void				_UpdateAppSettings(const char* mime,
+									const char* printer);
+			void				_UpdateSettings(bool read);
+			void				_UpdateUI();
+			void				_Setup(config_setup_kind kind);
 
-			config_setup_kind fKind;
-			Printer*		fDefaultPrinter;
-			BMessage*		fSettings;
-			AutoReply*		fSender;
-			BString			fSenderMimeType;
+private:
+			config_setup_kind	fKind;
+			Printer*			fDefaultPrinter;
+			BMessage*			fSettings;
+			AutoReply*			fSender;
+			BString				fSenderMimeType;
 
-			BString			fPrinterName;
-			Printer*		fCurrentPrinter;
-			BMessage		fPageSettings;
-			BMessage		fJobSettings;
+			BString				fPrinterName;
+			Printer*			fCurrentPrinter;
+			BMessage			fPageSettings;
+			BMessage			fJobSettings;
 
-			sem_id			fFinished;
+			sem_id				fFinished;
 
-			BMenuField*		fPrinters;
-			BButton*		fPageSetup;
-			BButton*		fJobSetup;
-			BButton*		fOk;
-			BStringView*	fPageFormatText;
-			BStringView*	fJobSetupText;
+			BMenuField*			fPrinters;
+			BButton*			fPageSetup;
+			BButton*			fJobSetup;
+			BButton*			fOk;
+			BStringView*		fPageFormatText;
+			BStringView*		fJobSetupText;
 };
 
-
-#endif
+#endif /* _CONFIG_WINDOW_H */
