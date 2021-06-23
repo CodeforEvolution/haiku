@@ -226,7 +226,7 @@ Database::_SetStringValue(const char *type, int32 what, const char* attribute,
 // SetAppHint
 /*!	\brief Sets the application hint for the given MIME type
 	\param type Pointer to a NULL-terminated string containing the MIME type of interest
-	\param decsription Pointer to an entry_ref containing the location of an application
+	\param description Pointer to an entry_ref containing the location of an application
 	       that should be used when launching an application with this signature.
 */
 status_t
@@ -799,13 +799,20 @@ Database::GuessMimeType(const entry_ref *ref, BString *result)
 		// Vanilla file: sniff first
 		status = fSnifferRules.GuessMimeType(ref, result);
 
-		// If that fails, check extensions
-		if (status == kMimeGuessFailureError)
+		// If that fails, check extensions.
+		// Additionally, if we determined the file to be plain text through
+		// sniffing, let's not believe that and check the file extension to be
+		// sure. :)
+		if (status == kMimeGuessFailureError
+			|| (status == B_OK && *result == kPlainTextType))
 			status = fAssociatedTypes.GuessMimeType(ref, result);
 
-		// If that fails, return the generic file type
+		// If that fails, return the generic file type.
+		// Otherwise, if the mime sniffing detection had succeeded before, we'll
+		// revert back to the plain text type.
 		if (status == kMimeGuessFailureError) {
-			result->SetTo(kGenericFileType);
+			if (*result != kPlainTextType)
+				result->SetTo(kGenericFileType);
 			status = B_OK;
 		}
 	} else {

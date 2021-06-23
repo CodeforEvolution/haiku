@@ -69,6 +69,7 @@ extern const char* kGenericFileType;
 extern const char* kDirectoryType;
 extern const char* kSymlinkType;
 extern const char* kMetaMimeType;
+extern const char* kPlainTextType;
 
 // Error codes (to be used only by BPrivate::Storage::Mime members)
 extern const status_t kMimeGuessFailureError;
