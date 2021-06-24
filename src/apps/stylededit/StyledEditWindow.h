@@ -48,7 +48,9 @@ public:
 			void				Print(const char* documentName);
 			void				SearchAllWindows(BString find, BString replace,
 									bool caseSensitive);
+
 			bool				IsDocumentEntryRef(const entry_ref* ref);
+			bool 				IsDocumentModified();
 
 private:
 			void				_InitWindow(uint32 encoding = 0);

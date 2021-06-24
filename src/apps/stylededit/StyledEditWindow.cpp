@@ -129,6 +129,7 @@ StyledEditWindow::Quit()
 	_SaveAttrs();
 	if (StyledEditApp* app = dynamic_cast<StyledEditApp*>(be_app))
 		app->CloseDocument();
+
 	BWindow::Quit();
 }
 
@@ -1092,6 +1093,12 @@ StyledEditWindow::IsDocumentEntryRef(const entry_ref* ref)
 	get_ref_for_path(documentPath.Path(), &documentRef);
 
 	return *ref == documentRef;
+}
+
+
+bool
+StyledEditWindow::IsDocumentModified() {
+	return !fClean;
 }
 
 

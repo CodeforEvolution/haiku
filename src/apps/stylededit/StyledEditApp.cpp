@@ -129,7 +129,6 @@ StyledEditApp::StyledEditApp()
 	} else
 		fOpenPanelEncodingMenu = NULL;
 
-	fWindowCount = 0;
 	fNextUntitledWindow = 1;
 	fBadArguments = false;
 
@@ -149,6 +148,29 @@ StyledEditApp::~StyledEditApp()
 	delete fOpenPanel;
 }
 
+
+bool
+StyledEditApp::QuitRequested()
+{
+	BObjectList<StyledEditWindow> modifiedWindows;
+	StyledEditWindow* window;
+
+	for (int32 index = 0; (window = fWindows.ItemAt(index)); index++) {
+		if (window->IsDocumentModified())
+			modifiedWindows.AddItem(window);
+	}
+
+	if (!modifiedWindows.IsEmpty()) {
+		BMessage* replyMessage = new BMessage();
+		for (int32 index = 0; (window = modifiedWindows.ItemAt(index)); index++) {
+			BMessenger windowMessenger(window);
+			windowMessenger.SendMessage(B_QUIT_REQUESTED, replyMessage);
+		}
+		delete replyMessage;
+	}
+
+	return BApplication::QuitRequested();
+}
 
 void
 StyledEditApp::MessageReceived(BMessage* message)
@@ -182,9 +204,11 @@ StyledEditApp::MessageReceived(BMessage* message)
 void
 StyledEditApp::OpenDocument()
 {
-	new StyledEditWindow(sWindowRect, fNextUntitledWindow++, fOpenAsEncoding);
+	StyledEditWindow* window = new StyledEditWindow(sWindowRect,
+		 fNextUntitledWindow++, fOpenAsEncoding);
+	fWindows.AddItem(window);
+
 	cascade();
-	fWindowCount++;
 }
 
 
@@ -212,36 +236,31 @@ StyledEditApp::OpenDocument(entry_ref* ref, BMessage* message)
 		return B_ERROR;
 	}
 
-	BWindow* window = NULL;
-	StyledEditWindow* document = NULL;
+	StyledEditWindow* window = NULL;
 
-	for (int32 index = 0; ; index++) {
-		window = WindowAt(index);
+	for (int32 index = 0; index < fWindows.CountItems(); index++) {
+		window = fWindows.ItemAt(index);
 		if (window == NULL)
 			break;
 
-		document = dynamic_cast<StyledEditWindow*>(window);
-		if (document == NULL)
-			continue;
-
-		if (document->IsDocumentEntryRef(ref)) {
-			if (document->Lock()) {
-				document->Activate();
-				document->Unlock();
+		if (window->IsDocumentEntryRef(ref)) {
+			if (window->Lock()) {
+				window->Activate();
+				window->Unlock();
 				if (message != NULL)
-					document->PostMessage(message);
+					window->PostMessage(message);
 				return B_OK;
 			}
 		}
 	}
 
-	document = new StyledEditWindow(sWindowRect, ref, fOpenAsEncoding);
+	window = new StyledEditWindow(sWindowRect, ref, fOpenAsEncoding);
+	fWindows.AddItem(window);
+
 	cascade();
 
 	if (message != NULL)
-		document->PostMessage(message);
-
-	fWindowCount++;
+		window->PostMessage(message);
 
 	return B_OK;
 }
@@ -251,8 +270,8 @@ void
 StyledEditApp::CloseDocument()
 {
 	uncascade();
-	fWindowCount--;
-	if (fWindowCount == 0) {
+
+	if (fWindows.IsEmpty()) {
 		BAutolock lock(this);
 		Quit();
 	}
@@ -336,7 +355,7 @@ StyledEditApp::ArgvReceived(int32 argc, char* argv[])
 void
 StyledEditApp::ReadyToRun()
 {
-	if (fWindowCount > 0)
+	if (!fWindows.IsEmpty())
 		return;
 
 	if (fBadArguments)
@@ -349,7 +368,7 @@ StyledEditApp::ReadyToRun()
 int32
 StyledEditApp::NumberOfWindows()
 {
-	return fWindowCount;
+	return fWindows.CountItems();
 }
 
 
