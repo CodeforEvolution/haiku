@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include <Application.h>
+#include <Beep.h>
 #include <Bitmap.h>
 #include <Button.h>
 #include <Cursor.h>
@@ -53,6 +54,7 @@
 #include <AppServerLink.h>
 #include <binary_compatibility/Interface.h>
 #include <binary_compatibility/Support.h>
+#include <MediaSounds.h>
 #include <MessagePrivate.h>
 #include <MessageUtils.h>
 #include <PortLink.h>
@@ -4956,8 +4958,13 @@ BView::MessageReceived(BMessage* message)
 				const char* string;
 				ssize_t bytes;
 				if (message->FindData("bytes", B_STRING_TYPE,
-						(const void**)&string, &bytes) == B_OK)
+						(const void**)&string, &bytes) == B_OK) {
 					KeyDown(string, bytes - 1);
+					if (message->HasInt32("be:key_repeat"))
+						system_beep(MEDIA_SOUNDS_KEY_REPEAT);
+					else
+						system_beep(MEDIA_SOUNDS_KEY_DOWN);
+				}
 				break;
 			}
 
@@ -4967,8 +4974,10 @@ BView::MessageReceived(BMessage* message)
 				const char* string;
 				ssize_t bytes;
 				if (message->FindData("bytes", B_STRING_TYPE,
-						(const void**)&string, &bytes) == B_OK)
+						(const void**)&string, &bytes) == B_OK) {
 					KeyUp(string, bytes - 1);
+					system_beep(MEDIA_SOUNDS_KEY_UP);
+				}
 				break;
 			}
 
@@ -4986,6 +4995,7 @@ BView::MessageReceived(BMessage* message)
 				BPoint where;
 				message->FindPoint("be:view_where", &where);
 				MouseDown(where);
+				system_beep(MEDIA_SOUNDS_MOUSE_DOWN);
 				break;
 			}
 
@@ -5079,6 +5089,7 @@ BView::MessageReceived(BMessage* message)
 				message->FindPoint("be:view_where", &where);
 				fMouseEventOptions = 0;
 				MouseUp(where);
+				system_beep(MEDIA_SOUNDS_MOUSE_UP);
 				break;
 			}
 

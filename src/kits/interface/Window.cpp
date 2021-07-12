@@ -22,6 +22,7 @@
 #include <AppServerLink.h>
 #include <ApplicationPrivate.h>
 #include <Autolock.h>
+#include <Beep.h>
 #include <Bitmap.h>
 #include <Button.h>
 #include <Deskbar.h>
@@ -53,6 +54,7 @@
 
 #include <binary_compatibility/Interface.h>
 #include <input_globals.h>
+#include <MediaSounds.h>
 #include <tracker_private.h>
 
 
@@ -531,6 +533,8 @@ BWindow::Quit()
 		Hide();
 	}
 
+	system_beep(MEDIA_SOUNDS_WINDOW_CLOSE);
+
 	if (fFlags & B_QUIT_ON_WINDOW_CLOSE)
 		be_app->PostMessage(B_QUIT_REQUESTED);
 
@@ -943,18 +947,23 @@ BWindow::DispatchMessage(BMessage* message, BHandler* target)
 	switch (message->what) {
 		case B_ZOOM:
 			Zoom();
+			system_beep(MEDIA_SOUNDS_WINDOW_ZOOMED);
 			break;
 
 		case _MINIMIZE_:
 			// Used by the minimize shortcut
-			if ((Flags() & B_NOT_MINIMIZABLE) == 0)
+			if ((Flags() & B_NOT_MINIMIZABLE) == 0) {
 				Minimize(true);
+				system_beep(MEDIA_SOUNDS_WINDOW_MINIMIZED);
+			}
 			break;
 
 		case _ZOOM_:
 			// Used by the zoom shortcut
-			if ((Flags() & B_NOT_ZOOMABLE) == 0)
+			if ((Flags() & B_NOT_ZOOMABLE) == 0) {
 				Zoom();
+				system_beep(MEDIA_SOUNDS_WINDOW_ZOOMED);
+			}
 			break;
 
 		case _SEND_BEHIND_:
@@ -968,8 +977,13 @@ BWindow::DispatchMessage(BMessage* message, BHandler* target)
 		case B_MINIMIZE:
 		{
 			bool minimize;
-			if (message->FindBool("minimize", &minimize) == B_OK)
+			if (message->FindBool("minimize", &minimize) == B_OK) {
 				Minimize(minimize);
+				if (minimize)
+					system_beep(MEDIA_SOUNDS_WINDOW_MINIMIZED);
+				else
+					system_beep(MEDIA_SOUNDS_WINDOW_RESTORED);
+			}
 			break;
 		}
 
@@ -1085,6 +1099,7 @@ FrameMoved(origin);
 				fActive = active;
 
 				WindowActivated(active);
+				system_beep(MEDIA_SOUNDS_WINDOW_ACTIVATED);
 
 				// call hook function 'WindowActivated(bool)' for all
 				// views attached to this window.
@@ -1152,11 +1167,15 @@ FrameMoved(origin);
 		case B_KEY_DOWN:
 			if (!_HandleKeyDown(message))
 				target->MessageReceived(message);
+			else
+				system_beep(MEDIA_SOUNDS_KEY_DOWN);
 			break;
 
 		case B_UNMAPPED_KEY_DOWN:
 			if (!_HandleUnmappedKeyDown(message))
 				target->MessageReceived(message);
+			else
+				system_beep(MEDIA_SOUNDS_KEY_DOWN);
 			break;
 
 		case B_PULSE:
@@ -2575,8 +2594,10 @@ BWindow::Show()
 			// in starting our looper
 			fThread = B_ERROR;
 			return;
-		} else
-			Run();
+		}
+
+		Run();
+		system_beep(MEDIA_SOUNDS_WINDOW_OPEN);
 	}
 }
 
