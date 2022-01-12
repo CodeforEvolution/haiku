@@ -11,6 +11,7 @@ SubDirC++Flags
 #	-D_INCLUDES_CLASS_DEVICE_MAP=1
 	-D_SUPPORTS_RESOURCES=1
 #	-D_SILENTLY_CORRECT_FILE_NAMES=1
+	-DxDEBUG=1
 	;
 
 local architectureObject ;

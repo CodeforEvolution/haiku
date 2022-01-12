@@ -1266,6 +1266,7 @@ IconCache::MakeSelectedIcon(const BBitmap* normal, BSize size,
 
 
 #if xDEBUG
+#if 0
 static void
 DumpBitmap(const BBitmap* bitmap)
 {
@@ -1289,6 +1290,7 @@ DumpBitmap(const BBitmap* bitmap)
 	}
 	printf("\n");
 }
+#endif
 #endif
 
 

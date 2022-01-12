@@ -35,6 +35,7 @@ All rights reserved.
 
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
 #include <Debug.h>
 #include <NodeMonitor.h>
@@ -251,8 +252,11 @@ BPose::UpdateWidgetAndModel(Model* resolvedModel, const char* attrName,
 
 	if (attrName != NULL) {
 		// pick up new attributes and find out if icon needs updating
-		if (resolvedModel->AttrChanged(attrName) && visible)
+		if (resolvedModel->AttrChanged(attrName) && visible) {
+			PrintToLogFile("BPose::UpdateIcon() about to be called from BPose::UpdateWidgetAndModel()\n");
+			PrintToLogFile("attrName: %s\n", attrName);
 			UpdateIcon(poseLoc, poseView);
+		}
 
 		// ToDo: the following code is wrong, because this sort of hashing
 		// may overlap and we get aliasing

@@ -248,9 +248,10 @@ SetDefaultAppForOneType(const BString* element, void* castToEntryRef)
 	// set the app hint on the metamime for this signature
 	mime.SetTo(appSignature);
 #if xDEBUG
-	status_t result =
-#endif
+	status_t result = mime.SetAppHint(appRef);
+#else
 	mime.SetAppHint(appRef);
+#endif
 
 #if xDEBUG
 	BEntry debugEntry(appRef);

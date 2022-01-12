@@ -5848,7 +5848,7 @@ BPoseView::AttributeChanged(const BMessage* message)
 		// TODO: make this simpler (i.e. store the icon with the window)
 		BView* view = Window()->FindView("MenuBar");
 		if (view != NULL) {
-			view = view->FindView("ThisContainer");
+			view = view->FindView("DraggableContainerIcon");
 			if (view != NULL) {
 				IconCache::sIconCache->IconChanged(targetModel);
 				view->Invalidate();
@@ -5871,8 +5871,8 @@ BPoseView::AttributeChanged(const BMessage* message)
 
 		status_t result = B_OK;
 		for (int32 count = 0; count < 100; count++) {
-			// if node is busy, wait a little, it may be in the
-			// middle of mimeset and we wan't to pick up the changes
+			// If node is busy, wait a little. It may be in the
+			// middle of mimeset and we want to pick up the changes
 			result = poseModel->OpenNode();
 			if (result == B_OK || result != B_BUSY)
 				break;

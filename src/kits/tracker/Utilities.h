@@ -37,6 +37,7 @@ All rights reserved.
 
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <Bitmap.h>
@@ -451,14 +452,14 @@ inline void
 PrintRefToStream(const entry_ref* ref, const char* trailer = "\n")
 {
 	if (ref == NULL) {
-		PRINT(("NULL entry_ref%s", trailer));
+		fprintf(stdout, "NULL entry_ref%s", trailer);
 		return;
 	}
 
 	BPath path;
 	BEntry entry(ref);
 	entry.GetPath(&path);
-	PRINT(("%s%s", path.Path(), trailer));
+	fprintf(stdout, "%s%s", path.Path(), trailer);
 }
 
 
@@ -466,13 +467,13 @@ inline void
 PrintEntryToStream(const BEntry* entry, const char* trailer = "\n")
 {
 	if (entry == NULL) {
-		PRINT(("NULL entry%s", trailer));
+		fprintf(stdout, "NULL entry%s", trailer);
 		return;
 	}
 
 	BPath path;
 	entry->GetPath(&path);
-	PRINT(("%s%s", path.Path(), trailer));
+	fprintf(stdout, "%s%s", path.Path(), trailer);
 }
 
 
@@ -480,7 +481,7 @@ inline void
 PrintDirToStream(const BDirectory* dir, const char* trailer = "\n")
 {
 	if (dir == NULL) {
-		PRINT(("NULL entry_ref%s", trailer));
+		fprintf(stdout, "NULL entry_ref%s", trailer);
 		return;
 	}
 
@@ -488,14 +489,14 @@ PrintDirToStream(const BDirectory* dir, const char* trailer = "\n")
 	BEntry entry;
 	dir->GetEntry(&entry);
 	entry.GetPath(&path);
-	PRINT(("%s%s", path.Path(), trailer));
+	fprintf(stdout, "%s%s", path.Path(), trailer);
 }
 
 #else
 
-inline void PrintRefToStream(const entry_ref*, const char* = 0) {}
-inline void PrintEntryToStream(const BEntry*, const char* = 0) {}
-inline void PrintDirToStream(const BDirectory*, const char* = 0) {}
+inline void PrintRefToStream(const entry_ref*, const char* = NULL) {}
+inline void PrintEntryToStream(const BEntry*, const char* = NULL) {}
+inline void PrintDirToStream(const BDirectory*, const char* = NULL) {}
 
 #endif
 
@@ -506,16 +507,16 @@ inline void PrintDirToStream(const BDirectory*, const char* = 0) {}
 	inline void PrintToLogFile(const char* format, ...)
 	{
 		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(logFile, fmt, ap);
+		va_start(ap, format);
+		vfprintf(logFile, format, ap);
 		va_end(ap);
 	}
 
 #define WRITELOG(_ARGS_)													\
-	if (logFile == 0) 														\
+	if (logFile == NULL) 														\
 		logFile = fopen("/var/log/tracker.log", "a+");						\
 																			\
-	if (logFile != 0) {														\
+	if (logFile != NULL) {														\
 		thread_info info;													\
 		get_thread_info(find_thread(NULL), &info);							\
 		PrintToLogFile("[t %Ld] \"%s\" (%s:%i) ", system_time(),			\
