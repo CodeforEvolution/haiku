@@ -1,30 +1,27 @@
-/* config driver
- * provides userland access to the device configuration manager
- *
+/*
  * Copyright 2002-2004, Axel Doerfler. All rights reserved.
+ * Copyright 2022, Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  */
 
 
-#include <Drivers.h>
-#include <drivers/config_manager.h>
-#include <string.h>
-
 #include "config_driver.h"
 
+#include <drivers/config_manager.h>
+#include <Drivers.h>
 
-#define DEVICE_NAME "misc/config"
+#include <string.h>
+
 
 int32 api_version = B_CUR_DRIVER_API_VERSION;
 
-struct config_manager_for_driver_module_info *gConfigManager;
+struct config_manager_for_driver_module_info* gConfigManager;
 
 
-//	Device interface
-
+/* Device interface */
 
 static status_t
-config_open(const char *name, uint32 flags, void **_cookie)
+config_open(const char* name, uint32 flags, void** _cookie)
 {
 	*_cookie = NULL;
 	return B_OK;
@@ -32,71 +29,87 @@ config_open(const char *name, uint32 flags, void **_cookie)
 
 
 static status_t
-config_close(void *cookie)
+config_close(void* cookie)
 {
 	return B_OK;
 }
 
 
 static status_t
-config_free_cookie(void *cookie)
+config_free_cookie(void* cookie)
 {
 	return B_OK;
 }
 
 
 static status_t
-config_ioctl(void *cookie, uint32 op, void *buffer, size_t len)
+config_ioctl(void* cookie, uint32 op, void* buffer, size_t len)
 {
-	struct cm_ioctl_data *params = (struct cm_ioctl_data *)buffer;
+	struct cm_ioctl_data* params = (struct cm_ioctl_data*)buffer;
 
-	// simple check for validity of the argument
+	// Simple check for validity of the argument
 	if (params == NULL || params->magic != op)
 		return B_BAD_VALUE;
 
-	// ToDo: the access of the params is not safe!
+	// TODO: The access of the params is not safe!
 
 	switch (op) {
-		case CM_GET_NEXT_DEVICE_INFO:
-			return gConfigManager->get_next_device_info(params->bus, &params->cookie,
-				(struct device_info *)params->data, params->data_len);
-		case CM_GET_DEVICE_INFO_FOR:
+		case B_CM_GET_NEXT_DEVICE_INFO:
+			return gConfigManager->get_next_device_info(params->bus,
+				&params->cookie, (struct device_info*)params->data,
+				params->data_len);
+
+		case B_CM_GET_DEVICE_INFO_FOR:
 			return gConfigManager->get_device_info_for(params->cookie,
-				(struct device_info *)params->data, params->data_len);
-		case CM_GET_SIZE_OF_CURRENT_CONFIGURATION_FOR:
-			return gConfigManager->get_size_of_current_configuration_for(params->cookie);
-		case CM_GET_CURRENT_CONFIGURATION_FOR:
+				(struct device_info*)params->data, params->data_len);
+
+		case B_CM_GET_SIZE_OF_CURRENT_CONFIGURATION_FOR:
+			return gConfigManager->get_size_of_current_configuration_for(
+				params->cookie);
+
+		case B_CM_GET_CURRENT_CONFIGURATION_FOR:
 			return gConfigManager->get_current_configuration_for(params->cookie,
-				(struct device_configuration *)params->data, params->data_len);
-		case CM_GET_SIZE_OF_POSSIBLE_CONFIGURATIONS_FOR:
-			return gConfigManager->get_size_of_possible_configurations_for(params->cookie);
-		case CM_GET_POSSIBLE_CONFIGURATIONS_FOR:
-			return gConfigManager->get_possible_configurations_for(params->cookie,
-				(struct possible_device_configurations *)params->data, params->data_len);
-		case CM_COUNT_RESOURCE_DESCRIPTORS_OF_TYPE:
-			return gConfigManager->count_resource_descriptors_of_type(params->config, params->type);
-		case CM_GET_NTH_RESOURCE_DESCRIPTOR_OF_TYPE:
-			return gConfigManager->get_nth_resource_descriptor_of_type(params->config, params->n,
-				params->type, (resource_descriptor *)params->data, params->data_len);
+				(struct device_configuration*)params->data, params->data_len);
+
+		case B_CM_GET_SIZE_OF_POSSIBLE_CONFIGURATIONS_FOR:
+			return gConfigManager->get_size_of_possible_configurations_for(
+				params->cookie);
+
+		case B_CM_GET_POSSIBLE_CONFIGURATIONS_FOR:
+			return gConfigManager->get_possible_configurations_for(
+				params->cookie,
+				(struct possible_device_configurations*)params->data,
+				params->data_len);
+
+		case B_CM_COUNT_RESOURCE_DESCRIPTORS_OF_TYPE:
+			return gConfigManager->count_resource_descriptors_of_type(
+				params->config,
+				params->type);
+
+		case B_CM_GET_NTH_RESOURCE_DESCRIPTOR_OF_TYPE:
+			return gConfigManager->get_nth_resource_descriptor_of_type(
+				params->config, params->n,
+				params->type, (resource_descriptor*)params->data,
+				params->data_len);
 	}
 
-	return B_BAD_VALUE;
+	return B_DEV_INVALID_IOCTL;
 }
 
 
 static status_t
-config_read(void * cookie, off_t pos, void *buf, size_t *_length)
+config_read(void* cookie, off_t pos, void* buf, size_t* _length)
 {
 	*_length = 0;
-	return B_OK;
+	return B_NOT_SUPPORTED;
 }
 
 
 static status_t
-config_write(void * cookie, off_t pos, const void *buf, size_t *_length)
+config_write(void* cookie, off_t pos, const void* buf, size_t* _length)
 {
 	*_length = 0;
-	return B_OK;
+	return B_NOT_SUPPORTED;
 }
 
 
@@ -111,11 +124,11 @@ init_hardware()
 }
 
 
-const char **
-publish_devices(void)
+const char**
+publish_devices()
 {
-	static const char *devices[] = {
-		DEVICE_NAME, 
+	static const char* devices[] = {
+		B_CM_DEVICE_NAME,
 		NULL
 	};
 
@@ -123,8 +136,8 @@ publish_devices(void)
 }
 
 
-device_hooks *
-find_device(const char *name)
+device_hooks*
+find_device(const char* name)
 {
 	static device_hooks hooks = {
 		&config_open,
@@ -142,7 +155,7 @@ find_device(const char *name)
 		NULL
 	};
 
-	if (!strcmp(name, DEVICE_NAME))
+	if (!strcmp(name, B_CM_DEVICE_NAME))
 		return &hooks;
 
 	return NULL;
@@ -152,7 +165,8 @@ find_device(const char *name)
 status_t
 init_driver()
 {
-	return get_module(B_CONFIG_MANAGER_FOR_DRIVER_MODULE_NAME, (module_info **)&gConfigManager);
+	return get_module(B_CONFIG_MANAGER_FOR_DRIVER_MODULE_NAME,
+		(module_info**)&gConfigManager);
 }
 
 
@@ -161,4 +175,3 @@ uninit_driver()
 {
 	put_module(B_CONFIG_MANAGER_FOR_DRIVER_MODULE_NAME);
 }
-
