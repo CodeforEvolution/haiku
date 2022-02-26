@@ -122,6 +122,23 @@ FileDevice::UninitDevice()
 }
 
 
+const char*
+FileDevice::DevicePath() {
+	KPath devicePath;
+	if (devicePath.InitCheck() != B_OK)
+		return NULL;
+
+	struct vnode* vnode;
+	status_t error = vfs_get_vnode_from_fd(fFD, true, &vnode);
+	if (error != B_OK)
+		return NULL;
+
+	if (vnode->Lock())
+
+
+}
+
+
 void
 FileDevice::Removed()
 {
