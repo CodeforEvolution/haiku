@@ -1,178 +1,176 @@
-// MediaReaderAddOn.cpp
-//
-// Andrew Bachmann, 2002
-//
-// A MediaReaderAddOn is an add-on
-// that can make MediaReader nodes
-//
-// MediaReader nodes read a file into a multistream
-#include "MediaReader.h"
+/*
+ * Copyright 2002 Andrew Bachmann
+ * All rights reserved. Distributed under the terms of the MIT License.
+ */
+
+
 #include "MediaReaderAddOn.h"
-#include "debug.h"
-
-#include <Errors.h>
-#include <MediaAddOn.h>
-#include <MediaDefs.h>
-#include <MediaRoster.h>
-#include <Mime.h>
-#include <Node.h>
-#include <StorageDefs.h>
-
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
+#include <Errors.h>
+#include <MediaRoster.h>
+#include <Mime.h>
+#include <Node.h>
+#include <StorageDefs.h>
+
+#include "MediaReader.h"
+
+
+//#define TRACE_MEDIA_READER_ADDON
+#ifdef TRACE_MEDIA_READER_ADDON
+	#define TRACE(args...)		dprintf(STDOUT_FILENO, "reader.media_addon: " args)
+#else
+	#define TRACE(args...)
+#endif
+
+#define TRACE_ALWAYS(args...)	dprintf(STDOUT_FILENO, "reader.media_addon: " args)
+#define TRACE_ERROR(args...)	dprintf(STDERR_FILENO, "\33[33mreader.media_addon:\33[0m " args)
+#define CALLED()				TRACE("CALLED %s\n", __PRETTY_FUNCTION__)
+
+
+// A MediaReaderAddOn is an add-on
+// that can make MediaReader nodes
+//
+// MediaReader nodes read a file into a multistream
+
 
 // instantiation function
-extern "C" _EXPORT BMediaAddOn * make_media_addon(image_id image) {
+extern "C" _EXPORT BMediaAddOn*
+make_media_addon(image_id image) {
 	return new MediaReaderAddOn(image);
 }
 
 
-MediaReaderAddOn::~MediaReaderAddOn()
-{
-}
-
-
-MediaReaderAddOn::MediaReaderAddOn(image_id image) :
+MediaReaderAddOn::MediaReaderAddOn(image_id image)
+	:
 	AbstractFileInterfaceAddOn(image)
 {
 	CALLED();
 }
 
 
+MediaReaderAddOn::~MediaReaderAddOn()
+{
+	CALLED();
+}
+
+
+
 // -------------------------------------------------------- //
-// BMediaAddOn impl
+// BMediaAddOn implementation
 // -------------------------------------------------------- //
-status_t MediaReaderAddOn::GetFlavorAt(
-	int32 n,
-	const flavor_info ** out_info)
+status_t
+MediaReaderAddOn::GetFlavorAt(int32 index, const flavor_info** outInfo)
 {
 	CALLED();
 
-	if (n != 0) {
-		PRINT("\t<- B_BAD_INDEX\n");
+	if (index != 0)
 		return B_BAD_INDEX;
-	}
 
-	flavor_info * infos = new flavor_info[1];
-	MediaReader::GetFlavor(&infos[0],n);
-	(*out_info) = infos;
+	flavor_info* infos = new flavor_info[1];
+	if (infos == NULL)
+		return B_NO_MEMORY;
+
+	MediaReader::GetFlavor(&infos[0], index);
+	(*outInfo) = infos;
+
 	return B_OK;
 }
 
 
-BMediaNode * MediaReaderAddOn::InstantiateNodeFor(
-				const flavor_info * info,
-				BMessage * config,
-				status_t * out_error)
+BMediaNode*
+MediaReaderAddOn::InstantiateNodeFor(const flavor_info* info, BMessage* config, status_t* outError)
 {
 	CALLED();
 
-	// XXX: read from add-on's attributes
-	size_t defaultChunkSize = size_t(8192); // 8192 bytes = 8 Kilobytes
-	// = 2048 kilobits/millisec = 256000 Kilobytes/sec
-	float defaultBitRate = 2048; 
-	MediaReader * node
-		= new MediaReader(defaultChunkSize,
-						  defaultBitRate,
-						  info,config,this);
-	if (node == 0) {
-		*out_error = B_NO_MEMORY;
-		PRINT("\t<- B_NO_MEMORY\n");
-	} else { 
-		*out_error = node->InitCheck();
-	}
-	return node;	
+	// TODO: Read from add-on's attributes
+	const size_t kDefaultChunkSize = 8192;
+		// 8192 bytes = 8 kilobytes = 2048 kilobits/millisec = 256000 kilobytes/sec
+	const float kDefaultBitRate = 2048;
+
+	MediaReader* node = new MediaReader(kDefaultChunkSize, kDefaultBitRate, info, config, this);
+	if (node == NULL) {
+		*outError = B_NO_MEMORY;
+	} else
+		*outError = node->InitCheck();
+
+	return node;
 }
 
 
-status_t MediaReaderAddOn::GetConfigurationFor(
-				BMediaNode * your_node,
-				BMessage * into_message)
+status_t
+MediaReaderAddOn::GetConfigurationFor(BMediaNode* yourNode, BMessage* intoMessage)
 {
 	CALLED();
 
-	MediaReader * node
-		= dynamic_cast<MediaReader*>(your_node);
-	if (node == 0) {
-		fprintf(stderr,"<- B_BAD_TYPE\n");
+	if (yourNode == NULL || intoMessage == NULL)
+		return B_BAD_VALUE;
+
+	MediaReader* node = dynamic_cast<MediaReader*>(yourNode);
+	if (node == NULL)
 		return B_BAD_TYPE;
-	}
-	return node->GetConfigurationFor(into_message);
+
+	return node->GetConfigurationFor(intoMessage);
 }
 
 
 // -------------------------------------------------------- //
-// BMediaAddOn impl for B_FILE_INTERFACE nodes
+// BMediaAddOn implementation for B_FILE_INTERFACE nodes
 // -------------------------------------------------------- //
 
-status_t MediaReaderAddOn::GetFileFormatList(
-				int32 flavor_id,
-				media_file_format * out_writable_formats,
-				int32 in_write_items,
-				int32 * out_write_items,
-				media_file_format * out_readable_formats,
-				int32 in_read_items,
-				int32 * out_read_items,
-				void * _reserved)
+status_t
+MediaReaderAddOn::GetFileFormatList(int32 flavorId, media_file_format* outWritableFormats,
+	int32 inWriteItems, int32* outWriteItems, media_file_format* outReadableFormats,
+	int32 inReadItems, int32* outReadItems, void* _reserved)
 {
 	CALLED();
 
-	if (flavor_id != 0) {
-		// this is a sanity check for now
-		PRINT("\t<- B_BAD_INDEX\n");
+	if (flavorId != 0) {
+		// This is a sanity check for now.
 		return B_BAD_INDEX;
 	}
-		// don't go off the end
-		if (in_read_items > 0) {
-			MediaReader::GetFileFormat(&out_readable_formats[0]);
-		}
+
+	if (outReadableFormats == NULL)
+		return B_BAD_VALUE;
+
+	// Don't go off the end!
+	if (inReadItems > 0)
+		MediaReader::GetFileFormat(&outReadableFormats[0]);
+
 	return B_OK;
 }
 
 
-status_t MediaReaderAddOn::SniffTypeKind(
-				const BMimeType & type,
-				uint64 in_kinds,
-				float * out_quality,
-				int32 * out_internal_id,
-				void * _reserved)
+status_t
+MediaReaderAddOn::SniffTypeKind(const BMimeType& type, uint64 inKinds, float* outQuality,
+	int32* outInternalId, void* _reserved)
 {
 	CALLED();
-	return AbstractFileInterfaceAddOn::SniffTypeKind(type,in_kinds,
-													 B_BUFFER_PRODUCER,
-													 out_quality,out_internal_id,
-													 _reserved);
+	return AbstractFileInterfaceAddOn::SniffTypeIOKind(type, inKinds, B_BUFFER_PRODUCER, outQuality,
+		outInternalId, _reserved);
 }
 
-// -------------------------------------------------------- //
-// main
-// -------------------------------------------------------- //
-int main(int argc, char *argv[])
-{
-	fprintf(stderr,"main called for MediaReaderAddOn\n");
-	return 0;
-}
 
 // -------------------------------------------------------- //
-// stuffing
+// Mmmh! Stuffing...
 // -------------------------------------------------------- //
 
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_0(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_1(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_2(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_3(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_4(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_5(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_6(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_7(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_8(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_9(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_10(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_11(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_12(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_13(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_14(void *) {return B_ERROR;};
-status_t MediaReaderAddOn::_Reserved_MediaReaderAddOn_15(void *) {return B_ERROR;};
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_0(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_1(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_2(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_3(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_4(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_5(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_6(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_7(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_8(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_9(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_10(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_11(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_12(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_13(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_14(void*) { return B_ERROR; };
+status_t	MediaReaderAddOn::_Reserved_MediaReaderAddOn_15(void*) { return B_ERROR; };

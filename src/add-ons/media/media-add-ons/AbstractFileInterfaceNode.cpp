@@ -5,8 +5,13 @@
 // The AbstractFileInterfaceNode class implements
 // the common functionality between MediaReader
 // and MediaWriter.
+
+
 #include "AbstractFileInterfaceNode.h"
-#include "debug.h"
+
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <Buffer.h>
 #include <Controllable.h>
@@ -19,18 +24,17 @@
 #include <MediaNode.h>
 #include <TimeSource.h>
 #include <ParameterWeb.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
+
+#include "MediaDebug.h"
 
 
-AbstractFileInterfaceNode::~AbstractFileInterfaceNode(void)
+AbstractFileInterfaceNode::~AbstractFileInterfaceNode()
 {
 	CALLED();
 
 	// Stop the BMediaEventLooper thread
 	Quit();
-	if (fCurrentFile != 0)
+	if (fCurrentFile != NULL)
 		delete fCurrentFile;
 }
 
@@ -38,23 +42,23 @@ AbstractFileInterfaceNode::~AbstractFileInterfaceNode(void)
 AbstractFileInterfaceNode::AbstractFileInterfaceNode(
 				size_t defaultChunkSize,
 				float defaultBitRate,
-				const flavor_info * info,
-				BMessage * config,
-				BMediaAddOn * addOn)
-	: BMediaNode("AbstractFileInterfaceNode"),
-	  BFileInterface(),
-	  BControllable(),
-	  BMediaEventLooper()
+				const flavor_info* info,
+				BMessage* config,
+				BMediaAddOn* addOn)
+	:
+	BMediaNode("AbstractFileInterfaceNode"),
+	BFileInterface(),
+	BControllable(),
+	BMediaEventLooper(),
+	fAddOn(addOn),
+	fCurrentFile(NULL),
 {
 	CALLED();
 
-	// keep our creator around for AddOn calls later
-	fAddOn = addOn;
-	// null some fields
-	fCurrentFile = 0;
 	f_current_mime_type[0] = '\0';
 
-	// initialize the parameters
+	// Check our parameters for valid values
+
 	if (defaultChunkSize <= 0) {
 		fInitCheckStatus = B_BAD_VALUE;
 		return;
@@ -69,33 +73,38 @@ AbstractFileInterfaceNode::AbstractFileInterfaceNode(
 
 	fDefaultBitRateParam = defaultBitRate;
 	fDefaultBitRateParamChangeTime = 0;
+
 	// initialize parameter compute fields
 	fLeastRecentlyUpdatedParameter = DEFAULT_BIT_RATE_PARAM;
-	fLastUpdatedParameter = DEFAULT_BUFFER_PERIOD_PARAM;	
+	fLastUpdatedParameter = DEFAULT_BUFFER_PERIOD_PARAM;
+
 	// From the chunk size and bit rate we compute the buffer period.
-	int64 value = int64(8000000/1024*fDefaultChunkSizeParam/fDefaultBitRateParam);
-	if ((value <= 0) || (value > INT_MAX)) {
+	int64 value = int64(((8000000 / 1024) * fDefaultChunkSizeParam) / fDefaultBitRateParam);
+	if (value <= 0 || value > INT_MAX) {
 		fInitCheckStatus = B_BAD_VALUE;
 		return;
 	}
+
 	fDefaultBufferPeriodParam = int32(value);
 	fDefaultBufferPeriodParamChangeTime = 0;
-	
+
 	fInitCheckStatus = B_OK;
 }
 
 
-status_t AbstractFileInterfaceNode::InitCheck(void) const
+status_t AbstractFileInterfaceNode::InitCheck() const
 {
 	CALLED();
 	return fInitCheckStatus;
 }
 
 
-status_t AbstractFileInterfaceNode::GetConfigurationFor(
-				BMessage * into_message)
+status_t
+AbstractFileInterfaceNode::GetConfigurationFor(BMessage* intoMessage)
 {
 	CALLED();
+	// Nothing to do...
+
 	return B_OK;
 }
 
@@ -103,16 +112,18 @@ status_t AbstractFileInterfaceNode::GetConfigurationFor(
 // -------------------------------------------------------- //
 // implementation of BMediaNode
 // -------------------------------------------------------- //
-BMediaAddOn * AbstractFileInterfaceNode::AddOn(
-				int32 * internal_id) const
+BMediaAddOn*
+AbstractFileInterfaceNode::AddOn(int32* internal_id) const
 {
 	CALLED();
+
 	// BeBook says this only gets called if we were in an add-on.
-	if (fAddOn != 0) {
+	if (fAddOn != NULL) {
 		// If we get a null pointer then we just won't write.
-		if (internal_id != 0)
-			internal_id = 0;
+		if (internal_id != NULL)
+			internal_id = NULL;
 	}
+
 	return fAddOn;
 }
 
@@ -120,7 +131,7 @@ BMediaAddOn * AbstractFileInterfaceNode::AddOn(
 void AbstractFileInterfaceNode::Start(
 				bigtime_t performance_time)
 {
-	PRINT("AbstractFileInterfaceNode::Start(pt=%lld)\n",performance_time);
+	TRACE("AbstractFileInterfaceNode::Start(pt=%lld)\n", performance_time);
 	BMediaEventLooper::Start(performance_time);
 }
 
@@ -129,7 +140,7 @@ void AbstractFileInterfaceNode::Stop(
 				bigtime_t performance_time,
 				bool immediate)
 {
-	PRINT("AbstractFileInterfaceNode::Stop(pt=%lld, im=%d)\n",
+	TRACE("AbstractFileInterfaceNode::Stop(pt=%lld, im=%d)\n",
 		  performance_time, immediate);
 	BMediaEventLooper::Stop(performance_time,immediate);
 }
@@ -139,7 +150,7 @@ void AbstractFileInterfaceNode::Seek(
 				bigtime_t media_time,
 				bigtime_t performance_time)
 {
-	PRINT("AbstractFileInterfaceNode::Seek(mt=%lld,pt=%lld)\n",
+	TRACE("AbstractFileInterfaceNode::Seek(mt=%lld,pt=%lld)\n",
 		  media_time,performance_time);
 	BMediaEventLooper::Seek(media_time,performance_time);
 }
@@ -179,77 +190,72 @@ void AbstractFileInterfaceNode::SetTimeSource(
 }
 
 
-status_t AbstractFileInterfaceNode::HandleMessage(
-				int32 message,
-				const void * data,
-				size_t size)
+status_t
+AbstractFileInterfaceNode::HandleMessage(int32 message, const void* data, size_t size)
 {
 	CALLED();
 
-	status_t status = B_OK;
+	// No special messages to handle for now
 	switch (message) {
-		// no special messages for now
 		default:
-			status = BFileInterface::HandleMessage(message,data,size);
-			if (status == B_OK) {
+			if (BFileInterface::HandleMessage(message, data, size) == B_OK)
 				break;
-			}
-			status = BControllable::HandleMessage(message, data, size);
-			if (status == B_OK)
+
+			if (BControllable::HandleMessage(message, data, size) == B_OK)
 				break;
-			status = BMediaNode::HandleMessage(message,data,size);
-			if (status == B_OK) {
+
+			if (BMediaNode::HandleMessage(message, data, size) == B_OK)
 				break;
-			}
-			BMediaNode::HandleBadMessage(message,data,size);
-			status = B_ERROR;
-			break;
+
+			BMediaNode::HandleBadMessage(message, data, size);
+			return B_ERROR;
 	}
-	return status;
+
+	return B_OK;
 }
 
 
-status_t AbstractFileInterfaceNode::RequestCompleted(
-				const media_request_info & info)
+status_t
+AbstractFileInterfaceNode::RequestCompleted(const media_request_info& info)
 {
 	CALLED();
 	return BMediaNode::RequestCompleted(info);
 }
 
 
-status_t AbstractFileInterfaceNode::DeleteHook(
-				BMediaNode * node)
+status_t
+AbstractFileInterfaceNode::DeleteHook(BMediaNode* node)
 {
 	CALLED();
 	return BMediaEventLooper::DeleteHook(node);
 }
 
 
-void AbstractFileInterfaceNode::NodeRegistered(void)
+void
+AbstractFileInterfaceNode::NodeRegistered()
 {
 	CALLED();
-	
-	// set up our parameter web
+
+	// Setup our parameter web
 	SetParameterWeb(MakeParameterWeb());
-	
-	// start the BMediaEventLooper thread
+
+	// Start the BMediaEventLooper thread
 	SetPriority(B_REAL_TIME_PRIORITY);
 	Run();
 }
 
 
-status_t AbstractFileInterfaceNode::GetNodeAttributes(
-				media_node_attribute * outAttributes,
-				size_t inMaxCount)
+status_t
+AbstractFileInterfaceNode::GetNodeAttributes(media_node_attribute* outAttributes,
+	size_t inMaxCount)
 {
 	CALLED();
-	return BMediaNode::GetNodeAttributes(outAttributes,inMaxCount);
+	return BMediaNode::GetNodeAttributes(outAttributes, inMaxCount);
 }
 
 
-status_t AbstractFileInterfaceNode::AddTimer(
-					bigtime_t at_performance_time,
-					int32 cookie)
+status_t
+AbstractFileInterfaceNode::AddTimer(bigtime_t at_performance_time, int32 cookie)
 {
 	CALLED();
 	return BMediaEventLooper::AddTimer(at_performance_time,cookie);
@@ -257,96 +263,94 @@ status_t AbstractFileInterfaceNode::AddTimer(
 
 
 // protected:
-BParameterWeb * AbstractFileInterfaceNode::MakeParameterWeb(void)
+BParameterWeb*
+AbstractFileInterfaceNode::MakeParameterWeb()
 {
 	CALLED();
-	
-	BParameterWeb * web = new BParameterWeb();
-	BParameterGroup * mainGroup = web->MakeGroup("AbstractFileInterfaceNode Parameters");
+
+	BParameterWeb* web = new BParameterWeb();
+	BParameterGroup* mainGroup = web->MakeGroup("AbstractFileInterfaceNode Parameters");
 
 	// these three are related:
-	// DEFAULT_CHUNK_SIZE_PARAM = 
+	// DEFAULT_CHUNK_SIZE_PARAM =
 	// DEFAULT_BIT_RATE_PARAM / 1024 * DEFAULT_BUFFER_PERIOD_PARAM * 1000
-	BParameterGroup * chunkSizeGroup = mainGroup->MakeGroup("Chunk Size Group");
-	BContinuousParameter * chunkSizeParameter
-	   = chunkSizeGroup->MakeContinuousParameter(
-	     DEFAULT_CHUNK_SIZE_PARAM, B_MEDIA_MULTISTREAM,
-		 "Chunk Size", B_GAIN, "bytes", 1024, 32*1024, 512);
-	chunkSizeParameter->SetResponse(BContinuousParameter::B_LINEAR,1,0);
-	chunkSizeParameter->SetValue(&fDefaultChunkSizeParam,sizeof(fDefaultChunkSizeParam),0);
-	
-	BParameterGroup * bitRateGroup = mainGroup->MakeGroup("Bit Rate Group");
-	BContinuousParameter * bitRateParameter
-	   = bitRateGroup->MakeContinuousParameter(
-	     DEFAULT_BIT_RATE_PARAM, B_MEDIA_MULTISTREAM,
-	     "Bit Rate", B_GAIN, "kbits/sec", 1, 320000, 1);
-	bitRateParameter->SetResponse(BContinuousParameter::B_LINEAR,.001,0);
-	bitRateParameter->SetValue(&fDefaultBitRateParam,sizeof(fDefaultBitRateParam),0);
-	
-	BParameterGroup * bufferPeriodGroup = mainGroup->MakeGroup("Buffer Period Group");
-	BContinuousParameter * bufferPeriodParameter
-	   = bufferPeriodGroup->MakeContinuousParameter(
-	     DEFAULT_BUFFER_PERIOD_PARAM, B_MEDIA_MULTISTREAM,
-	     "Buffer Period", B_GAIN, "ms", 1, 10000, 1);
-	bufferPeriodParameter->SetResponse(BContinuousParameter::B_LINEAR,1,0);
-	bufferPeriodParameter->SetValue(&fDefaultBufferPeriodParam,sizeof(fDefaultBufferPeriodParam),0);
-	
+	BParameterGroup* chunkSizeGroup = mainGroup->MakeGroup("Chunk Size Group");
+	BContinuousParameter* chunkSizeParameter = chunkSizeGroup->MakeContinuousParameter(
+		DEFAULT_CHUNK_SIZE_PARAM, B_MEDIA_MULTISTREAM, "Chunk Size", B_GAIN, "bytes", 1024,
+		32 * 1024, 512);
+	chunkSizeParameter->SetResponse(BContinuousParameter::B_LINEAR, 1, 0);
+	chunkSizeParameter->SetValue(&fDefaultChunkSizeParam, sizeof(fDefaultChunkSizeParam), 0);
+
+	BParameterGroup* bitRateGroup = mainGroup->MakeGroup("Bit Rate Group");
+	BContinuousParameter* bitRateParameter = bitRateGroup->MakeContinuousParameter(
+		DEFAULT_BIT_RATE_PARAM, B_MEDIA_MULTISTREAM, "Bit Rate", B_GAIN, "kbits/sec", 1, 320000, 1);
+	bitRateParameter->SetResponse(BContinuousParameter::B_LINEAR, .001, 0);
+	bitRateParameter->SetValue(&fDefaultBitRateParam, sizeof(fDefaultBitRateParam), 0);
+
+	BParameterGroup* bufferPeriodGroup = mainGroup->MakeGroup("Buffer Period Group");
+	BContinuousParameter* bufferPeriodParameter = bufferPeriodGroup->MakeContinuousParameter(
+		DEFAULT_BUFFER_PERIOD_PARAM, B_MEDIA_MULTISTREAM, "Buffer Period", B_GAIN, "ms", 1, 10000,
+		1);
+	bufferPeriodParameter->SetResponse(BContinuousParameter::B_LINEAR, 1, 0);
+	bufferPeriodParameter->SetValue(&fDefaultBufferPeriodParam, sizeof(fDefaultBufferPeriodParam),
+		0);
+
 	return web;
 }
 
 
 // -------------------------------------------------------- //
-// implementation of BFileInterface
+// Implementation of BFileInterface
 // -------------------------------------------------------- //
-status_t AbstractFileInterfaceNode::GetNextFileFormat(
-				int32 * cookie,
-				media_file_format * out_format)
+status_t
+AbstractFileInterfaceNode::GetNextFileFormat(int32* cookie, media_file_format* out_format)
 {
 	CALLED();
 
 	// it's valid but they already got our 1 file format
 	if (*cookie != 0) {
-		PRINT("\t<- B_ERROR\n");
+		ERROR("\t<- B_ERROR\n");
 		return B_ERROR;
 	}
 
-	// so next time they won't get the same format again
+	// Make sure the caller won't get the same format again
 	*cookie = 1;
 	GetFileFormat(out_format);
+
 	return B_OK;
 }
 
 
-void AbstractFileInterfaceNode::DisposeFileFormatCookie(
-				int32 cookie)
+void
+AbstractFileInterfaceNode::DisposeFileFormatCookie(int32 cookie)
 {
 	CALLED();
-	// nothing to do since our cookies are just integers
+	// Nothing to do since our cookies are just integers
 }
 
 
-status_t AbstractFileInterfaceNode::GetDuration(
-				bigtime_t * out_time)
+status_t
+AbstractFileInterfaceNode::GetDuration(bigtime_t* out_time)
 {
 	CALLED();
-	if (out_time == 0) {
-		PRINT("\t<- B_BAD_VALUE\n");
+
+	if (out_time == NULL) {
+		ERROR("\t<- B_BAD_VALUE\n");
 		return B_BAD_VALUE;
 	}
 
-	if (fCurrentFile == 0) {
-		PRINT("\t<- B_NO_INIT\n");
+	if (fCurrentFile == NULL) {
+		ERROR("\t<- B_NO_INIT\n");
 		return B_NO_INIT;
-	}	
+	}
 
 	return fCurrentFile->GetSize(out_time);
 }
 
 
-status_t AbstractFileInterfaceNode::SniffRef(
-				const entry_ref & file,
-				char * out_mime_type,	/* 256 bytes */
-				float * out_quality)
+status_t
+AbstractFileInterfaceNode::SniffRef(const entry_ref & file, char* out_mime_type,	/* 256 bytes */
+				float* out_quality)
 {
 	CALLED();
 	return StaticSniffRef(file,out_mime_type,out_quality);
@@ -363,46 +367,46 @@ status_t AbstractFileInterfaceNode::SetRef(
 
 	status_t status;
 	f_current_ref = file;
-	if (fCurrentFile == 0) {
-		fCurrentFile = new BFile(&f_current_ref,(openMode|(create?B_CREATE_FILE:0)));
+	if (fCurrentFile == NULL) {
+		fCurrentFile = new BFile(&f_current_ref, (openMode | (create ? B_CREATE_FILE : 0)));
 		status = fCurrentFile->InitCheck();
-	} else {
-		status = fCurrentFile->SetTo(&f_current_ref,(openMode|(create?B_CREATE_FILE:0)));
-	}
+	} else
+		status = fCurrentFile->SetTo(&f_current_ref, (openMode | (create ? B_CREATE_FILE : 0)));
 
 	if (status != B_OK) {
-		PRINT("\t<- failed BFile initialization\n");
+		ERROR("\t<- failed BFile initialization\n");
 		return status;
 	}
 
-	// cache the mime type for later
-	fCurrentFile->ReadAttr("BEOS:TYPE",0,0,f_current_mime_type,B_MIME_TYPE_LENGTH);
+	// Cache the mime type for later
+	fCurrentFile->ReadAttr("BEOS:TYPE", 0, 0, f_current_mime_type, B_MIME_TYPE_LENGTH);
+
 	// compute the duration and return any error
 	return GetDuration(out_time);
 }
 
 
-status_t AbstractFileInterfaceNode::GetRef(
-				entry_ref * out_ref,
-				char * out_mime_type)
+status_t
+AbstractFileInterfaceNode::GetRef(entry_ref* out_ref, char* out_mime_type)
 {
 	CALLED();
 
-	if (fCurrentFile == 0) {
-		PRINT("\t<- B_NO_INIT\n");
+	if (fCurrentFile == NULL) {
+		ERROR("\t<- B_NO_INIT\n");
 		return B_NO_INIT; // the input_ref isn't valid yet either
 	}
 
 	*out_ref = f_current_ref;
-	// they hopefully allocated enough space (no way to check :-/ )
-	strcpy(out_mime_type,f_current_mime_type);
+	// Hopefully enough space was allocated... (no way to check :-/ )
+	strlcpy(out_mime_type,f_current_mime_type, B_MIME_TYPE_LENGTH);
+
 	return B_OK;
 }
 
 
 // provided for BAbstractFileInterfaceNodeAddOn
-status_t AbstractFileInterfaceNode::StaticSniffRef(
-				const entry_ref & file,
+status_t
+AbstractFileInterfaceNode::StaticSniffRef(const entry_ref& file,
 				char * out_mime_type,	/* 256 bytes */
 				float * out_quality)
 {
@@ -411,13 +415,14 @@ status_t AbstractFileInterfaceNode::StaticSniffRef(
 	BNode node(&file);
 	status_t initCheck = node.InitCheck();
 	if (initCheck != B_OK) {
-		PRINT("\t<- failed BNode::InitCheck()\n");
+		ERROR("\t<- failed BNode::InitCheck()\n");
 		return initCheck;
 	}
 
 	// they hopefully allocated enough room
 	node.ReadAttr("BEOS:TYPE",0,0,out_mime_type,B_MIME_TYPE_LENGTH);
 	*out_quality = 1.0; // we handle all files perfectly!  we are so amazing!
+
 	return B_OK;
 }
 
@@ -447,7 +452,7 @@ status_t AbstractFileInterfaceNode::GetParameterValue(
 			*((size_t*)value) = fDefaultChunkSizeParam;
 			*ioSize = sizeof(size_t);
 			break;
-			
+
 		case DEFAULT_BIT_RATE_PARAM:
 			if (*ioSize < sizeof(float)) {
 				return B_ERROR; // not enough room
@@ -456,7 +461,7 @@ status_t AbstractFileInterfaceNode::GetParameterValue(
 			*((float*)value) = fDefaultBitRateParam;
 			*ioSize = sizeof(float);
 			break;
-		
+
 		case DEFAULT_BUFFER_PERIOD_PARAM:
 			if (*ioSize < sizeof(int32)) {
 				return B_ERROR; // not enough room
@@ -465,7 +470,7 @@ status_t AbstractFileInterfaceNode::GetParameterValue(
 			*((int32*)value) = fDefaultBufferPeriodParam;
 			*ioSize = sizeof(int32);
 			break;
-				
+
 		default:
 			PRINT("AbstractFileInterfaceNode::GetParameterValue unknown id (%ld)\n",id);
 			return B_ERROR;
@@ -494,12 +499,12 @@ void AbstractFileInterfaceNode::SetParameterValue(
 				EventQueue()->AddEvent(event);
 			}
 			break;
-			
+
 		default:
 			PRINT("AbstractFileInterfaceNode::SetParameterValue unknown id (%ld)\n",id);
 			break;
 	}
-}			
+}
 
 
 // the default implementation should call the add-on main()
@@ -565,8 +570,9 @@ bigtime_t AbstractFileInterfaceNode::OfflineTime()
 {
 	CALLED();
 	return BMediaEventLooper::OfflineTime();
-	// XXX: do something else?
-	//	if (inputFile == 0) {
+
+	// TODO: Do something else?
+	//	if (inputFile == NULL) {
 	//		return 0;
 	//	} else {
 	//		return inputFile->Position();
@@ -584,89 +590,89 @@ void AbstractFileInterfaceNode::ControlLoop() {
 
 
 // protected:
-status_t AbstractFileInterfaceNode::HandleStart(
-						const media_timed_event *event,
-						bigtime_t lateness,
-						bool realTimeEvent)
+status_t
+AbstractFileInterfaceNode::HandleStart(const media_timed_event* event, bigtime_t lateness,
+	bool realTimeEvent)
 {
 	CALLED();
 
 	if (RunState() != B_STARTED) {
-		// XXX: Either use the following line or the lines that are not commented.
+		// FIXME: Either use the following line or the lines that are not commented.
 		// There doesn't seem to be a practical difference that i can tell.
 		//		HandleBuffer(event,lateness,realTimeEvent);
 		media_timed_event firstBufferEvent(event->event_time, BTimedEventQueue::B_HANDLE_BUFFER);
 		HandleEvent(&firstBufferEvent, 0, false);
 		EventQueue()->AddEvent(firstBufferEvent);
 	}
+
 	return B_OK;
 }
 
 
-status_t AbstractFileInterfaceNode::HandleSeek(
-						const media_timed_event *event,
-						bigtime_t lateness,
-						bool realTimeEvent)
+status_t
+AbstractFileInterfaceNode::HandleSeek(const media_timed_event* event, bigtime_t lateness,
+	bool realTimeEvent)
 {
-	PRINT("AbstractFileInterfaceNode::HandleSeek(t=%lld,d=%ld,bd=%lld)\n",event->event_time,event->data,event->bigdata);
+	TRACE("AbstractFileInterfaceNode::HandleSeek(t=%lld,d=%ld,bd=%lld)\n", event->event_time, event->data, event->bigdata);
 
-	if (fCurrentFile != 0)
-		return fCurrentFile->Seek(event->bigdata,SEEK_SET);
+	if (fCurrentFile != NULL)
+		return fCurrentFile->Seek(event->bigdata, SEEK_SET);
 	else
 		return B_ERROR;
 }
-						
 
-status_t AbstractFileInterfaceNode::HandleWarp(
-						const media_timed_event *event,
-						bigtime_t lateness,
-						bool realTimeEvent)
+
+status_t
+AbstractFileInterfaceNode::HandleWarp(const media_timed_event* event, bigtime_t lateness,
+	bool realTimeEvent)
 {
 	CALLED();
 	return B_OK;
 }
 
 
-status_t AbstractFileInterfaceNode::HandleStop(
-						const media_timed_event *event,
-						bigtime_t lateness,
-						bool realTimeEvent)
+status_t
+AbstractFileInterfaceNode::HandleStop(const media_timed_event* event, bigtime_t lateness,
+	bool realTimeEvent)
 {
 	CALLED();
 
-	// flush the queue so downstreamers don't get any more
-	EventQueue()->FlushEvents(0, BTimedEventQueue::B_ALWAYS, true, BTimedEventQueue::B_HANDLE_BUFFER);
+	// Flush the queue so downstreamers don't get any more
+	EventQueue()->FlushEvents(0, BTimedEventQueue::B_ALWAYS, true,
+		BTimedEventQueue::B_HANDLE_BUFFER);
+
 	return B_OK;
 }
 
 
-status_t AbstractFileInterfaceNode::HandleParameter(
-				const media_timed_event *event,
-				bigtime_t lateness,
-				bool realTimeEvent)
+status_t
+AbstractFileInterfaceNode::HandleParameter(const media_timed_event* event, bigtime_t lateness,
+	bool realTimeEvent)
 {
 	CALLED();
 
 	status_t status = B_OK;
 
-	bool chunkSizeUpdated = false, bitRateUpdated = false, bufferPeriodUpdated = false;
+	bool chunkSizeUpdated = false;
+	bool bitRateUpdated = false;
+	bool bufferPeriodUpdated = false;
 
 	size_t dataSize = size_t(event->data);
 	int64 param = int64(event->bigdata);
 
 	switch (param) {
 		case DEFAULT_CHUNK_SIZE_PARAM:
-			PRINT("(DEFAULT_CHUNK_SIZE_PARAM,size=%ld",dataSize);
+			TRACE("(DEFAULT_CHUNK_SIZE_PARAM,size=%ld",dataSize);
 			if (dataSize < sizeof(size_t)) {
-				PRINT("\ŧ<- B_BAD_VALUE: %lld\n",param);
+				ERROR("\ŧ<- B_BAD_VALUE: %lld\n",param);
 				status = B_BAD_VALUE;
 			} else {
 				size_t newDefaultChunkSize = *((size_t*)event->user_data);
-				PRINT(",%ld)\n", newDefaultChunkSize);
+				TRACE(",%ld)\n", newDefaultChunkSize);
 				// ignore non positive chunk sizes
 				// XXX: we may decide later that a 0 chunk size means ship the whole file in one chunk (!)
 				if ((newDefaultChunkSize > 0) && (newDefaultChunkSize != fDefaultChunkSizeParam)) {
-					PRINT("\tgot a new chunk size, old chunk size was %ld\n",fDefaultChunkSizeParam);
+					TRACE("\tgot a new chunk size, old chunk size was %ld\n",fDefaultChunkSizeParam);
 					fDefaultChunkSizeParam = newDefaultChunkSize;
 					fDefaultChunkSizeParamChangeTime = TimeSource()->Now();
 					chunkSizeUpdated = true;
@@ -697,7 +703,7 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 							fDefaultChunkSizeParam = size_t(1024/8000000*fDefaultBitRateParam*fDefaultBufferPeriodParam);
 						} else {
 							fDefaultBufferPeriodParam = MAX(1,value);
-						}							
+						}
 						fDefaultBufferPeriodParamChangeTime = fDefaultChunkSizeParamChangeTime;
 						bufferPeriodUpdated = true;
 					} else { // must have been bit rate
@@ -707,18 +713,19 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 					}
 				}
 			}
-			break;		
+			break;
+
 		case DEFAULT_BIT_RATE_PARAM:
-			PRINT("(DEFAULT_BIT_RATE_PARAM,size=%ld",dataSize);
+			TRACE("(DEFAULT_BIT_RATE_PARAM,size=%ld",dataSize);
 			if (dataSize < sizeof(float)) {
-				PRINT("\t<- B_BAD_VALUE:lld\n",param);
+				ERROR("\t<- B_BAD_VALUE:lld\n",param);
 				status = B_BAD_VALUE;
 			} else {
 				float newDefaultBitRate = *((float*)event->user_data);
-				PRINT(",%f)\n",newDefaultBitRate);
+				TRACE(",%f)\n",newDefaultBitRate);
 				// ignore non positive bitrates
 				if ((newDefaultBitRate > 0) && (newDefaultBitRate != fDefaultBitRateParam)) {
-					PRINT("\tgot a new bit rate, old bit rate was %ld\n",fDefaultBitRateParam);
+					TRACE("\tgot a new bit rate, old bit rate was %ld\n",fDefaultBitRateParam);
 					fDefaultBitRateParam = newDefaultBitRate;
 					fDefaultBitRateParamChangeTime = TimeSource()->Now();
 					bitRateUpdated = true;
@@ -742,7 +749,7 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 					// now we have to compute the new value for the leastRecentlyUpdatedParameter
 					// we use the bit rate change time to preserve "simultaneity" information
 					if (fLeastRecentlyUpdatedParameter == DEFAULT_BUFFER_PERIOD_PARAM) {
-						int64 value = 
+						int64 value =
 								int64(8000000/1024*fDefaultChunkSizeParam/fDefaultBitRateParam);
 						if (value > INT_MAX) {
 							// clamp to INT_MAX
@@ -756,13 +763,13 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 						fDefaultBufferPeriodParamChangeTime = fDefaultBitRateParamChangeTime;
 						bufferPeriodUpdated = true;
 					} else { // must have been chunk size
-						int64 value = 
+						int64 value =
 								int64(1024/8000000*fDefaultBitRateParam*fDefaultBufferPeriodParam);
 						if (value > INT_MAX) {
 							// clamp to INT_MAX
 							fDefaultChunkSizeParam = INT_MAX;
 							// recompute bit rate
-							fDefaultBitRateParam = 
+							fDefaultBitRateParam =
 									MAX(0.001,8000000/1024*fDefaultChunkSizeParam/fDefaultBufferPeriodParam);
 						} else {
 							fDefaultChunkSizeParam = MAX(1,int32(value));
@@ -772,18 +779,19 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 					}
 				}
 			}
-			break;		
+			break;
+
 		case DEFAULT_BUFFER_PERIOD_PARAM:
-			PRINT("(DEFAULT_BUFFER_PERIOD_PARAM,size=%ld",dataSize);
+			TRACE("(DEFAULT_BUFFER_PERIOD_PARAM,size=%ld",dataSize);
 			if (dataSize < sizeof(int32)) {
-				PRINT("\t<- B_BAD_VALUE:%ld\n",param);
+				ERROR("\t<- B_BAD_VALUE:%ld\n",param);
 				status = B_BAD_VALUE;
 			} else {
 				int32 newBufferPeriod = *((int32*)event->user_data);
 				PRINT(",%ld)\n",newBufferPeriod);
 				// ignore non positive buffer period
 				if ((newBufferPeriod > 0) && (newBufferPeriod != fDefaultBufferPeriodParam)) {
-					PRINT("\tgot a new buffer period, old buffer period was %ld\n",
+					TRACE("\tgot a new buffer period, old buffer period was %ld\n",
 						  fDefaultBufferPeriodParam);
 					fDefaultBufferPeriodParam = newBufferPeriod;
 					fDefaultBufferPeriodParamChangeTime = TimeSource()->Now();
@@ -801,7 +809,7 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 					// now we have to compute the new value for the leastRecentlyUpdatedParameter
 					// we use the buffer period change time to preserve "simultaneity" information
 					if (fLeastRecentlyUpdatedParameter == DEFAULT_BIT_RATE_PARAM) {
-						fDefaultBitRateParam = 
+						fDefaultBitRateParam =
 								MAX(0.001,8000000/1024*fDefaultChunkSizeParam/fDefaultBufferPeriodParam);
 						fDefaultBitRateParamChangeTime = fDefaultBufferPeriodParamChangeTime;
 						bitRateUpdated = true;
@@ -811,44 +819,49 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 							// clamp to INT_MAX
 							fDefaultChunkSizeParam = INT_MAX;
 							// recompute buffer period
-							fDefaultBufferPeriodParam = 
+							fDefaultBufferPeriodParam =
 									size_t(8000000/1024*fDefaultChunkSizeParam/fDefaultBitRateParam);
 						} else {
 							fDefaultChunkSizeParam = MAX(1,int32(value));
 						}
 						fDefaultChunkSizeParamChangeTime = fDefaultBufferPeriodParamChangeTime;
 						chunkSizeUpdated = true;
-					}					
+					}
 				}
 			}
-			break;	
+			break;
 		default:
-			PRINT("AbstractFileInterfaceNode::HandleParameter called with unknown param id (%ld)\n",param);
+			TRACE("AbstractFileInterfaceNode::HandleParameter called with unknown param id (%ld)\n",
+				param);
 			status = B_ERROR;
 	}
+
 	// send updates out for all the parameters that changed
 	// in every case this should be two updates. (if I have not made an error :-) )
 	if (chunkSizeUpdated) {
-		PRINT("\tchunk size parameter updated\n");
+		TRACE("\tchunk size parameter updated\n");
 		BroadcastNewParameterValue(fDefaultChunkSizeParamChangeTime,
 								   DEFAULT_CHUNK_SIZE_PARAM,
 								   &fDefaultChunkSizeParam,
 								   sizeof(fDefaultChunkSizeParam));
 	}
+
 	if (bitRateUpdated) {
-		PRINT("\tbit rate parameter updated\n");
+		TRACE("\tbit rate parameter updated\n");
 		BroadcastNewParameterValue(fDefaultBitRateParamChangeTime,
 								   DEFAULT_BIT_RATE_PARAM,
 								   &fDefaultBitRateParam,
 								   sizeof(fDefaultBitRateParam));
 	}
+
 	if (bufferPeriodUpdated) {
-		PRINT("\tbuffer period parameter updated\n");
+		TRACE("\tbuffer period parameter updated\n");
 		BroadcastNewParameterValue(fDefaultBufferPeriodParamChangeTime,
 								   DEFAULT_BUFFER_PERIOD_PARAM,
 								   &fDefaultBufferPeriodParam,
 								   sizeof(fDefaultBufferPeriodParam));
 	}
+
 	return status;
 }
 
@@ -856,15 +869,16 @@ status_t AbstractFileInterfaceNode::HandleParameter(
 // -------------------------------------------------------- //
 // AbstractFileInterfaceNode specific functions
 // -------------------------------------------------------- //
-void AbstractFileInterfaceNode::GetFlavor(flavor_info * info, int32 id)
+void
+AbstractFileInterfaceNode::GetFlavor(flavor_info * info, int32 id)
 {
 	CALLED();
 
-	if (info == 0)
+	if (info == NULL)
 		return;
 
 	info->name = strdup("AbstractFileInterfaceNode");
-	info->info = strdup("A AbstractFileInterfaceNode node handles a file.");
+	info->info = strdup("A node that handles reading from/writing to a file.");
 	info->kinds = B_FILE_INTERFACE | B_CONTROLLABLE;
 	info->flavor_flags = B_FLAVOR_IS_LOCAL;
 	info->possible_count = INT_MAX;
@@ -873,20 +887,20 @@ void AbstractFileInterfaceNode::GetFlavor(flavor_info * info, int32 id)
 	info->out_format_count = 0; // no outputs
 	info->out_formats = 0;
 	info->internal_id = id;
-	return;
 }
 
 
-void AbstractFileInterfaceNode::GetFormat(media_format * outFormat)
+void
+AbstractFileInterfaceNode::GetFormat(media_format* outFormat)
 {
 	CALLED();
 
-	if (outFormat == 0)
+	if (outFormat == NULL)
 		return;
 
 	outFormat->type = B_MEDIA_MULTISTREAM;
 	outFormat->require_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
-	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;	
+	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
 	outFormat->u.multistream = media_multistream_format::wildcard;
 }
 
@@ -895,26 +909,29 @@ void AbstractFileInterfaceNode::GetFileFormat(media_file_format * outFileFormat)
 {
 	CALLED();
 
-	if (outFileFormat == 0)
+	if (outFileFormat == NULL)
 		return;
 
-	outFileFormat->capabilities =
-			  media_file_format::B_PERFECTLY_SEEKABLE
-			| media_file_format::B_IMPERFECTLY_SEEKABLE
-			| media_file_format::B_KNOWS_ANYTHING;
+	outFileFormat->capabilities = media_file_format::B_PERFECTLY_SEEKABLE
+		| media_file_format::B_IMPERFECTLY_SEEKABLE
+		| media_file_format::B_KNOWS_ANYTHING;
+
 	/* I don't know what to initialize this to. (or if I should) */
-	// format.id =
+	// outFileFormat->id = ???
 	outFileFormat->family = B_ANY_FORMAT_FAMILY;
 	outFileFormat->version = 100;
 	// see media_file_format in <MediaDefs.h> for limits
-	strncpy(outFileFormat->mime_type,"",63);
+	strncpy(outFileFormat->mime_type, "" , 63);
 	outFileFormat->mime_type[63]='\0';
+
 	strncpy(outFileFormat->pretty_name,"any media file format",63);
 	outFileFormat->pretty_name[63]='\0';
+
 	strncpy(outFileFormat->short_name,"any",31);
 	outFileFormat->short_name[31]='\0';
+
 	strncpy(outFileFormat->file_extension,"",7);
-	outFileFormat->file_extension[7]='\0';	
+	outFileFormat->file_extension[7]='\0';
 }
 
 
@@ -925,7 +942,7 @@ void AbstractFileInterfaceNode::GetFileFormat(media_file_format * outFileFormat)
 // the stream to be considered a different one. (so you can say that you
 // want to read that mpeg file as avi if you are so nutty.)
 //
-status_t AbstractFileInterfaceNode::AddRequirements(media_format * format)
+status_t AbstractFileInterfaceNode::AddRequirements(media_format* format)
 {
 	if (strcmp("video/x-msvideo",f_current_mime_type) == 0) {
 		if (format->u.multistream.format == media_multistream_format::wildcard.format) {

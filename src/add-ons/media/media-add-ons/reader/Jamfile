@@ -1,19 +1,22 @@
 SubDir HAIKU_TOP src add-ons media media-add-ons reader ;
 
 UsePrivateHeaders media ;
-
-SEARCH_SOURCE += [ FDirName $(HAIKU_TOP) src add-ons media media-add-ons ] ;
+SubDirHdrs [ FDirName $(SUBDIR) $(DOTDOT) abstract_file_interface ] ;
 
 local architectureObject ;
 for architectureObject in [ MultiArchSubDirSetup ] {
 	on $(architectureObject) {
-		Application [ MultiArchDefaultGristFiles reader.media_addon ] :
-			../AbstractFileInterfaceNode.cpp
-			../AbstractFileInterfaceAddOn.cpp
+		Addon [ MultiArchDefaultGristFiles reader.media_addon ] :
 			MediaReader.cpp
 			MediaReaderAddOn.cpp
-			../misc.cpp
-			: be media [ TargetLibsupc++ ]
+
+			:
+			libabstract_file_interface.a
+
+			be
+			media
+			[ TargetLibsupc++ ]
 		;
 	}
 }
+

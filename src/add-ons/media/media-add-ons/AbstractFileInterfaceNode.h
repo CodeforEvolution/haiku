@@ -6,8 +6,9 @@
 // the common functionality between MediaReader
 // and MediaWriter.
 
-#if !defined(_ABSTRACT_FILE_INTERFACE_NODE_H)
+#ifndef _ABSTRACT_FILE_INTERFACE_NODE_H
 #define _ABSTRACT_FILE_INTERFACE_NODE_H
+
 
 #include <BufferGroup.h>
 #include <Controllable.h>
@@ -18,6 +19,7 @@
 #include <MediaDefs.h>
 #include <MediaNode.h>
 #include <MediaEventLooper.h>
+
 
 class AbstractFileInterfaceNode :
     public BFileInterface,
@@ -37,6 +39,14 @@ explicit AbstractFileInterfaceNode(
 				BMediaAddOn * addOn = 0);
 
 virtual status_t InitCheck(void) const;
+
+
+virtual	status_t SetRef(
+				const entry_ref & file,
+				uint32 openMode,
+				bool create,
+				bigtime_t * out_time);
+
 
 // see BMediaAddOn::GetConfigurationFor
 virtual	status_t GetConfigurationFor(
@@ -79,7 +89,7 @@ virtual	status_t HandleMessage(
 				int32 message,
 				const void * data,
 				size_t size);
-				
+
 protected:
 		/* Called when requests have completed, or failed. */
 virtual	status_t RequestCompleted(	/* reserved 0 */
@@ -134,13 +144,9 @@ virtual	status_t SetRef(
 				const entry_ref & file,
 				bool create,
 				bigtime_t * out_time) = 0;
-				
-virtual	status_t SetRef(
-				const entry_ref & file,
-				uint32 openMode,
-				bool create,
-				bigtime_t * out_time);
-				
+
+
+
 virtual	status_t GetRef(
 				entry_ref * out_ref,
 				char * out_mime_type);
@@ -163,7 +169,7 @@ static status_t StaticSniffRef(
 //                int32 message,
 //				const void * data,
 //				size_t size);
-public:		
+public:
 		/* These are alternate methods of accomplishing the same thing as */
 		/* connecting to control information source/destinations would. */
 virtual	status_t GetParameterValue(
@@ -190,11 +196,11 @@ public:
 		static const int32 DEFAULT_BUFFER_PERIOD_PARAM; // milliseconds
 
 private:
-		size_t fDefaultChunkSizeParam;				
+		size_t fDefaultChunkSizeParam;
 		bigtime_t fDefaultChunkSizeParamChangeTime;
-		float fDefaultBitRateParam;				
+		float fDefaultBitRateParam;
 		bigtime_t fDefaultBitRateParamChangeTime;
-		int32 fDefaultBufferPeriodParam;				
+		int32 fDefaultBufferPeriodParam;
 		bigtime_t fDefaultBufferPeriodParamChangeTime;
 
 		// This is used to figure out which parameter to compute
@@ -214,7 +220,7 @@ private:
 
 		/* override to clean up custom events you have added to your queue */
 		virtual void		CleanUpEvent(const media_timed_event *event);
-		
+
 		/* called from Offline mode to determine the current time of the node */
 		/* update your internal information whenever it changes */
 		virtual	bigtime_t	OfflineTime();
@@ -272,23 +278,23 @@ virtual status_t ResolveWildcards(media_format * format);
 
 // accessors
 
-inline BFile * GetCurrentFile() { return fCurrentFile; }
+inline BFile* GetCurrentFile() { return fCurrentFile; }
 
 private:
 
 		AbstractFileInterfaceNode(	/* private unimplemented */
 				const AbstractFileInterfaceNode & clone);
 		AbstractFileInterfaceNode & operator=(
-				const AbstractFileInterfaceNode & clone);				
+				const AbstractFileInterfaceNode & clone);
 
 		status_t fInitCheckStatus;
 
 		BMediaAddOn * fAddOn;
-		
+
 		BFile * fCurrentFile;
 		entry_ref f_current_ref;
 		char f_current_mime_type[B_MIME_TYPE_LENGTH+1];
-		
+
 		/* Mmmh, stuffing! */
 virtual		status_t _Reserved_AbstractFileInterfaceNode_0(void *);
 virtual		status_t _Reserved_AbstractFileInterfaceNode_1(void *);

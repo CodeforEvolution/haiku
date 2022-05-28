@@ -5,7 +5,7 @@
 // Some functions for general debugging and
 // working around be media kit bugs.
 
-#if !defined(_MISC_H)
+#ifndef _MISC_H
 #define _MISC_H
 
 #include <MediaDefs.h>
@@ -15,7 +15,7 @@
 // -------------------------------------------------------- //
 
 void print_multistream_format(media_multistream_format * format);
-	
+
 void print_media_format(media_format * format);
 
 bool multistream_format_is_acceptible(

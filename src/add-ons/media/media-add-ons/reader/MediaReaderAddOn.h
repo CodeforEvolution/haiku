@@ -1,94 +1,94 @@
-// MediaReaderAddOn.h
-//
-// Andrew Bachmann, 2002
-//
-// A MediaReaderAddOn is an add-on
-// that can make MediaReader nodes
-//
-// MediaReader nodes read a file into a multistream
-
-#if !defined(_MEDIA_READER_ADD_ON_H)
+/*
+ * Copyright 2002 Andrew Bachmann
+ * All rights reserved. Distributed under the terms of the MIT License.
+ */
+#ifndef _MEDIA_READER_ADD_ON_H
 #define _MEDIA_READER_ADD_ON_H
 
-#include <MediaDefs.h>
-#include <MediaAddOn.h>
-#include "../AbstractFileInterfaceAddOn.h"
 
-class MediaReaderAddOn :
-    public AbstractFileInterfaceAddOn
-{
+#include <MediaAddOn.h>
+#include <MediaDefs.h>
+
+#include "AbstractFileInterfaceAddOn.h"
+
+
+// A MediaReaderAddOn is an add-on that can make MediaReader nodes.
+// MediaReader nodes read a file into a multistream
+
+
+class MediaReaderAddOn : public AbstractFileInterfaceAddOn {
 public:
-	virtual ~MediaReaderAddOn(void);
-	explicit MediaReaderAddOn(image_id image);
+	explicit					MediaReaderAddOn(image_id image);
+	virtual						~MediaReaderAddOn();
+
 
 /**************************/
-/* begin from BMediaAddOn */
+/* Begin inherited from BMediaAddOn */
+
 public:
-virtual	status_t GetFlavorAt(
-				int32 n,
-				const flavor_info ** out_info);
-virtual	BMediaNode * InstantiateNodeFor(
-				const flavor_info * info,
-				BMessage * config,
-				status_t * out_error);
-virtual	status_t GetConfigurationFor(
-				BMediaNode * your_node,
-				BMessage * into_message);
+	virtual	status_t			GetFlavorAt(int32 index, const flavor_info** outInfo);
+	virtual	BMediaNode*			InstantiateNodeFor(const flavor_info* info, BMessage* config,
+									status_t* outError);
+	virtual	status_t			GetConfigurationFor(BMediaNode* yourNode, BMessage* intoMessage);
 
-/* only implement if you have a B_FILE_INTERFACE node */
-virtual	status_t GetFileFormatList(
-				int32 flavor_id,			//	for this node flavor (if it matters)
-				media_file_format * out_writable_formats, 	//	don't write here if NULL
-				int32 in_write_items,		//	this many slots in out_writable_formats
-				int32 * out_write_items,	//	set this to actual # available, even if bigger than in count
-				media_file_format * out_readable_formats, 	//	don't write here if NULL
-				int32 in_read_items,		//	this many slots in out_readable_formats
-				int32 * out_read_items,		//	set this to actual # available, even if bigger than in count
-				void * _reserved);			//	ignore until further notice
+								/* Only implement if you have a B_FILE_INTERFACE node */
+	virtual	status_t			GetFileFormatList(int32 flavorId,
+														// For this node flavor (if it matters)
+													media_file_format* outWritableFormats,
+														// Don't write here if NULL
+													int32 inWriteItems,
+														// Slot count in outWritableFormats
+													int32* outWriteItems,
+														// Set this to actual # available,
+														// even if bigger than in count
+													media_file_format* outReadableFormats,
+														// Don't write here if NULL
+													int32 inReadItems,
+														// Slot count in outReadableFormats
+													int32* outReadItems,
+														// Set this to actual # available,
+														// even if bigger than in count
+													void* _reserved
+														// Ignore until further notice
+													);
 
-using AbstractFileInterfaceAddOn::SniffTypeKind;
-
-virtual	status_t SniffTypeKind(				//	Like SniffType, but for the specific kind(s)
-				const BMimeType & type,
-				uint64 in_kinds,
-				float * out_quality,
-				int32 * out_internal_id,
-				void * _reserved);
+protected:
+								//	Like SniffType(), but for the specific kind(s).
+	virtual	status_t			SniffTypeKind(const BMimeType& type, uint64 inKinds,
+									float* outQuality, int32* outInternalId, void* _reserved);
 
 /* end from BMediaAddOn */
 /************************/
 
 private:
+								/* Private/Unimplemented */
+								MediaReaderAddOn(const MediaReaderAddOn& clone);
+								MediaReaderAddOn& operator= (const MediaReaderAddOn& clone);
 
-		MediaReaderAddOn(	/* private unimplemented */
-				const MediaReaderAddOn & clone);
-		MediaReaderAddOn & operator=(
-				const MediaReaderAddOn & clone);				
+	/* Mmmh, stuffing! */
+	virtual	status_t			_Reserved_MediaReaderAddOn_0(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_1(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_2(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_3(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_4(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_5(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_6(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_7(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_8(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_9(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_10(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_11(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_12(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_13(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_14(void*);
+	virtual	status_t			_Reserved_MediaReaderAddOn_15(void*);
 
-		/* Mmmh, stuffing! */
-virtual		status_t _Reserved_MediaReaderAddOn_0(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_1(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_2(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_3(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_4(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_5(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_6(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_7(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_8(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_9(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_10(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_11(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_12(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_13(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_14(void *);
-virtual		status_t _Reserved_MediaReaderAddOn_15(void *);
-
-		uint32 _reserved_media_reader_add_on_[16];
+			uint32				_reserved_media_reader_add_on_[16];
 
 };
 
 #if BUILDING_MEDIA_READER__ADD_ON
-extern "C" _EXPORT BMediaAddOn * make_media_reader_add_on(image_id you);
+extern "C" _EXPORT BMediaAddOn* make_media_reader_add_on(image_id you);
 #endif
 
 #endif /* _MEDIA_READER_ADD_ON_H */

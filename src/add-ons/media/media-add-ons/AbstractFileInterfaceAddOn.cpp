@@ -8,21 +8,28 @@
 // AbstractFileInterfaceNode handles a file and a multistream
 
 
-#include "AbstractFileInterfaceNode.h"
 #include "AbstractFileInterfaceAddOn.h"
-#include "debug.h"
-
-#include <Errors.h>
-#include <MediaDefs.h>
-#include <MediaAddOn.h>
-#include <Mime.h>
-#include <Node.h>
-#include <StorageDefs.h>
-
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <Errors.h>
+#include <Mime.h>
+#include <Node.h>
+#include <StorageDefs.h>
+
+#include "AbstractFileInterfaceNode.h"
+#include "MediaDebug.h"
+
+
+AbstractFileInterfaceAddOn::AbstractFileInterfaceAddOn(image_id image)
+	:
+	BMediaAddOn(image),
+	fRefCount(0)
+{
+	CALLED();
+}
 
 
 AbstractFileInterfaceAddOn::~AbstractFileInterfaceAddOn()
@@ -30,75 +37,65 @@ AbstractFileInterfaceAddOn::~AbstractFileInterfaceAddOn()
 }
 
 
-AbstractFileInterfaceAddOn::AbstractFileInterfaceAddOn(image_id image) :
-	BMediaAddOn(image)
-{
-	CALLED();
-	refCount = 0;
-}
-
-
-// -------------------------------------------------------- //
-// BMediaAddOn impl
-// -------------------------------------------------------- //
-status_t AbstractFileInterfaceAddOn::InitCheck(
-	const char ** out_failure_text)
+status_t
+AbstractFileInterfaceAddOn::InitCheck(const char** _failureText)
 {
 	CALLED();
 	return B_OK;
 }
 
-int32 AbstractFileInterfaceAddOn::CountFlavors()
+
+int32
+AbstractFileInterfaceAddOn::CountFlavors()
 {
 	CALLED();
 	return 1;
 }
 
-status_t AbstractFileInterfaceAddOn::GetFlavorAt(
-	int32 n,
-	const flavor_info ** out_info)
+
+status_t
+AbstractFileInterfaceAddOn::GetFlavorAt(int32 index, const flavor_info** _info)
 {
 	CALLED();
 
-	if (n != 0) {
-		PRINT("\t<- B_BAD_INDEX\n");
+	if (index != 0)
 		return B_BAD_INDEX;
-	}
 
-	flavor_info * infos = new flavor_info[1];
-	AbstractFileInterfaceNode::GetFlavor(&infos[0],n);
-	(*out_info) = infos;
+	flavor_info* infos = new flavor_info[1];
+	if (infos == NULL)
+		return B_NO_MEMORY;
+
+	AbstractFileInterfaceNode::GetFlavor(&infos[0], index);
+	*_info = infos;
+
 	return B_OK;
 }
 
 
-status_t AbstractFileInterfaceAddOn::GetConfigurationFor(
-				BMediaNode * your_node,
-				BMessage * into_message)
+status_t
+AbstractFileInterfaceAddOn::GetConfigurationFor(BMediaNode* yourNode, BMessage* intoMessage);
 {
 	CALLED();
-	AbstractFileInterfaceNode * node
-		= dynamic_cast<AbstractFileInterfaceNode*>(your_node);
-	if (node == 0) {
-		PRINT("\t<- B_BAD_TYPE\n");
+
+	AbstractFileInterfaceNode* node = dynamic_cast<AbstractFileInterfaceNode*>(yourNode);
+	if (node == NULL)
 		return B_BAD_TYPE;
-	}
-	return node->GetConfigurationFor(into_message);
+
+	return node->GetConfigurationFor(intoMessage);
 }
 
 
-bool AbstractFileInterfaceAddOn::WantsAutoStart()
+bool
+AbstractFileInterfaceAddOn::WantsAutoStart()
 {
 	CALLED();
 	return false;
 }
 
 
-status_t AbstractFileInterfaceAddOn::AutoStart(
-				int in_count,
-				BMediaNode ** out_node,
-				int32 * out_internal_id,
-				bool * out_has_more)
+status_t
+AbstractFileInterfaceAddOn::AutoStart(int in_count, BMediaNode** out_node, int32* out_internal_id,
+	bool* out_has_more)
 {
 	CALLED();
 	return B_OK;
@@ -135,7 +132,7 @@ status_t AbstractFileInterfaceAddOn::SniffType(
 
 	*out_quality = 1.0;
 	*out_internal_id = 0;
-	return B_OK;	
+	return B_OK;
 }
 
 
@@ -152,8 +149,7 @@ status_t AbstractFileInterfaceAddOn::GetFileFormatList(
 	CALLED();
 
 	if (flavor_id != 0) {
-		// this is a sanity check for now
-		PRINT("\t<- B_BAD_INDEX\n");
+		// This is a sanity check for now
 		return B_BAD_INDEX;
 	}
 
@@ -180,7 +176,7 @@ status_t AbstractFileInterfaceAddOn::SniffTypeKind(
 		// They asked for some kind we don't supply.  We set the output
 		// just in case they try to do something with it anyway (!)
 		*out_quality = 0;
-		*out_internal_id = -1; 
+		*out_internal_id = -1;
 		PRINT("\t<- B_BAD_TYPE\n");
 		return B_BAD_TYPE;
 	}

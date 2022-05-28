@@ -5,8 +5,11 @@
 // Some functions for general debugging and
 // working around be media kit bugs.
 
+
 #include "misc.h"
+
 #include <stdio.h>
+
 
 // -------------------------------------------------------- //
 // lib functions
@@ -28,12 +31,12 @@ void print_multistream_format(media_multistream_format * format) {
 	fprintf(stderr," avg_chunk_size(%" B_PRId32
 			") max_chunk_size(%"  B_PRId32 ")",
 			format->avg_chunk_size,format->max_chunk_size);
-}	
-	
+}
+
 void print_media_format(media_format * format) {
 	fprintf(stderr,"{");
 	switch (format->type) {
-	case B_MEDIA_NO_TYPE:		fprintf(stderr,"NO_TYPE"); break;		
+	case B_MEDIA_NO_TYPE:		fprintf(stderr,"NO_TYPE"); break;
 	case B_MEDIA_UNKNOWN_TYPE:	fprintf(stderr,"UNKNOWN_TYPE"); break;
 	case B_MEDIA_RAW_AUDIO:		fprintf(stderr,"RAW_AUDIO"); break;
 	case B_MEDIA_RAW_VIDEO:		fprintf(stderr,"RAW_VIDEO"); break;
@@ -100,7 +103,7 @@ bool multistream_format_is_acceptible(
 	}
 	// should also check format specific fields, and others?
 	return true;
-}						
+}
 
 bool format_is_acceptible(
 						const media_format & producer_format,
