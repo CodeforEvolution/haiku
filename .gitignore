@@ -5,6 +5,9 @@ build/user_config_headers
 
 # KDE backup files ending with a ~ (created by KDE and Qt text editors)
 *~
+# Project files for Kate's Project Plugin
+.kateproject*
+
 # Vim temporary/lock files
 .*.sw?
 # Configuration directories for Visual Studio Code
