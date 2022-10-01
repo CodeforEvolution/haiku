@@ -1,0 +1,207 @@
+// AbstractFileInterfaceAddOn.cpp
+//
+// Andrew Bachmann, 2002
+//
+// AbstractFileInterfaceAddOn is an add-on
+// that can make instances of AbstractFileInterfaceNode
+//
+// AbstractFileInterfaceNode handles a file and a multistream
+
+
+#include "AbstractFileInterfaceAddOn.h"
+
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <Errors.h>
+#include <Mime.h>
+#include <Node.h>
+#include <StorageDefs.h>
+
+#include "AbstractFileInterfaceNode.h"
+
+
+//#define ABSTRACT_FILE_INTERFACE_ADDON
+#ifdef ABSTRACT_FILE_INTERFACE_ADDON
+	#define TRACE(args...)		dprintf(STDOUT_FILENO, "libabstract_file_interface.a: " args)
+#else
+	#define TRACE(args...)
+#endif
+
+#define TRACE_ALWAYS(args...)	dprintf(STDOUT_FILENO, "libabstract_file_interface.a: " args)
+#define TRACE_ERROR(args...)	dprintf(STDERR_FILENO, "\33[33mlibabstract_file_interface.a: " \
+									"\33[0m " args)
+#define CALLED()				TRACE("CALLED %s\n", __PRETTY_FUNCTION__)
+
+
+AbstractFileInterfaceAddOn::AbstractFileInterfaceAddOn(image_id image)
+	:
+	BMediaAddOn(image),
+	fRefCount(0)
+{
+	CALLED();
+}
+
+
+AbstractFileInterfaceAddOn::~AbstractFileInterfaceAddOn()
+{
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::InitCheck(const char** _failureText)
+{
+	CALLED();
+	return B_OK;
+}
+
+
+int32
+AbstractFileInterfaceAddOn::CountFlavors()
+{
+	CALLED();
+	return 1;
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::GetFlavorAt(int32 index, const flavor_info** _info)
+{
+	CALLED();
+
+	if (index != 0)
+		return B_BAD_INDEX;
+
+	flavor_info* infos = new flavor_info[1];
+	if (infos == NULL)
+		return B_NO_MEMORY;
+
+	AbstractFileInterfaceNode::GetFlavor(&infos[0], index);
+	*_info = infos;
+
+	return B_OK;
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::GetConfigurationFor(BMediaNode* yourNode, BMessage* intoMessage)
+{
+	CALLED();
+
+	AbstractFileInterfaceNode* node = dynamic_cast<AbstractFileInterfaceNode*>(yourNode);
+	if (node == NULL)
+		return B_BAD_TYPE;
+
+	return node->GetConfigurationFor(intoMessage);
+}
+
+
+bool
+AbstractFileInterfaceAddOn::WantsAutoStart()
+{
+	CALLED();
+	return false;
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::AutoStart(int in_count, BMediaNode** out_node, int32* out_internal_id,
+	bool* out_has_more)
+{
+	CALLED();
+	return B_OK;
+}
+
+
+// -------------------------------------------------------- //
+// BMediaAddOn impl for B_FILE_INTERFACE nodes
+// -------------------------------------------------------- //
+status_t
+AbstractFileInterfaceAddOn::SniffRef(const entry_ref& file, BMimeType* io_mime_type,
+	float* out_quality, int32* out_internal_id)
+{
+	CALLED();
+
+	*out_internal_id = 0; // only one flavor
+	char mime_string[B_MIME_TYPE_LENGTH + 1];
+
+	status_t status =  AbstractFileInterfaceNode::StaticSniffRef(file, mime_string, out_quality);
+	io_mime_type->SetTo(mime_string);
+
+	return status;
+}
+
+
+// even though I implemented SniffTypeKind below and this shouldn't get called,
+// I am going to implement it anyway.  I'll use it later anyhow.
+status_t
+AbstractFileInterfaceAddOn::SniffType(const BMimeType& type, float* out_quality,
+	int32* out_internal_id)
+{
+	CALLED();
+
+	*out_quality = 1.0;
+	*out_internal_id = 0;
+	return B_OK;
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::GetFileFormatList(int32 flavor_id,
+	media_file_format* out_writable_formats, int32 in_write_items, int32* out_write_items,
+	media_file_format* out_readable_formats, int32 in_read_items, int32* out_read_items,
+	void* _reserved)
+{
+	CALLED();
+
+	if (flavor_id != 0) {
+		// This is a sanity check for now
+		return B_BAD_INDEX;
+	}
+
+	*out_write_items = 0;
+	*out_read_items = 0;
+
+	return B_OK;
+}
+
+
+status_t
+AbstractFileInterfaceAddOn::SniffTypeIOKind(const BMimeType& type, uint64 in_kinds, uint64 io_kind,
+	float* out_quality, int32* out_internal_id, void* _reserved)
+{
+	CALLED();
+
+	if (in_kinds & (io_kind | B_FILE_INTERFACE | B_CONTROLLABLE)) {
+		return SniffType(type, out_quality, out_internal_id);
+	} else {
+		// They asked for some kind we don't supply.  We set the output
+		// just in case they try to do something with it anyway (!)
+		*out_quality = 0;
+		*out_internal_id = -1;
+		return B_BAD_TYPE;
+	}
+}
+
+
+// -------------------------------------------------------- //
+// Stuffing
+// -------------------------------------------------------- //
+
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_0(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_1(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_2(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_3(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_4(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_5(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_6(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_7(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_8(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_9(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_10(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_11(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_12(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_13(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_14(void*) {return B_ERROR;};
+status_t AbstractFileInterfaceAddOn::_Reserved_AbstractFileInterfaceAddOn_15(void*) {return B_ERROR;};

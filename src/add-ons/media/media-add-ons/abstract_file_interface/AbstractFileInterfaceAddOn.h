@@ -17,7 +17,7 @@
 
 
 class AbstractFileInterfaceAddOn : public BMediaAddOn {
-public:
+protected:
 	explicit					AbstractFileInterfaceAddOn(image_id image);
 	virtual						~AbstractFileInterfaceAddOn();
 
@@ -48,23 +48,15 @@ public:
 									media_file_format* _readableFormats, int32 readableFormatsCount,
 									int32* _readableFormatsTotalCount, void* _reserved);
 
-	virtual	status_t SniffTypeKind(				//	Like SniffType, but for the specific kind(s)
-					const BMimeType & type,
-					uint64 in_kinds,
-					float * out_quality,
-					int32 * out_internal_id,
-					void * _reserved) = 0;
-	virtual	status_t SniffTypeKind(				//	Like SniffType, but for the specific kind(s)
-					const BMimeType & type,
-					uint64 in_kinds,
-					uint64 io_kind,
-					float * out_quality,
-					int32 * out_internal_id,
-					void * _reserved);
+protected:
+	//	Like SniffType, but for the specific kind(s)
+	virtual	status_t			SniffTypeIOKind(const BMimeType& type, uint64 in_kinds,
+									uint64 io_kind, float* out_quality, int32* out_internal_id,
+									void* _reserved);
 
-	// NOTE: Like SniffType, but for the specific kind(s)
-	virtual	status_t			SniffTypeKind(const BMimeType& type, uint64 kinds, float* _quality,
-									int32* _internalID, void* _reserved);
+	virtual	status_t			SniffTypeKind(const BMimeType& type, uint64 in_kinds,
+									float* out_quality, int32* out_internal_id,
+									void* _reserved) = 0;
 
 private:
 	/* Private/Unimplemented */
