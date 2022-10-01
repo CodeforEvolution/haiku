@@ -346,37 +346,41 @@ static bool
 multistream_format_matches(const media_multistream_format& a,
 	const media_multistream_format& b)
 {
-	if (a.avg_bit_rate != 0 && b.avg_bit_rate != 0
-		&& a.avg_bit_rate != b.avg_bit_rate) {
-		return false;
-	}
-	if (a.max_bit_rate != 0 && b.max_bit_rate != 0
-		&& a.max_bit_rate != b.max_bit_rate) {
-		return false;
-	}
-	if (a.avg_chunk_size != 0 && b.avg_chunk_size != 0
-		&& a.avg_chunk_size != b.avg_chunk_size) {
-		return false;
-	}
-	if (a.max_chunk_size != 0 && b.max_chunk_size != 0
-		&& a.max_chunk_size != b.max_chunk_size) {
-		return false;
-	}
-	if (a.flags != 0 && b.flags != 0 && a.flags != b.flags)
-		return false;
-	if (a.format != 0 && b.format != 0 && a.format != b.format)
-		return false;
-
-	if (a.format == 0 && b.format == 0) {
+	if (a.format == media_multistream_format::B_ANY
+		&& b.format == media_multistream_format::B_ANY) {
 		// TODO: How do we compare two formats with no type?
 		return true;
 	}
 
-	switch ((a.format != 0) ? a.format : b.format) {
-		default:
-			return true; // TODO: really?
+	if (a.avg_bit_rate != 0 && b.avg_bit_rate != 0
+		&& a.avg_bit_rate != b.avg_bit_rate) {
+		return false;
+	}
 
+	if (a.max_bit_rate != 0 && b.max_bit_rate != 0
+		&& a.max_bit_rate != b.max_bit_rate) {
+		return false;
+	}
+
+	if (a.avg_chunk_size != 0 && b.avg_chunk_size != 0
+		&& a.avg_chunk_size != b.avg_chunk_size) {
+		return false;
+	}
+
+	if (a.max_chunk_size != 0 && b.max_chunk_size != 0
+		&& a.max_chunk_size != b.max_chunk_size) {
+		return false;
+	}
+
+	if (a.flags != 0 && b.flags != 0 && a.flags != b.flags)
+		return false;
+
+	if (a.format != 0 && b.format != 0 && a.format != b.format)
+		return false;
+
+	switch ((a.format != 0) ? a.format : b.format) {
 		case media_multistream_format::B_VID:
+		{
 			if (a.u.vid.frame_rate != 0 && b.u.vid.frame_rate != 0
 				&& a.u.vid.frame_rate != b.u.vid.frame_rate) {
 				return false;
@@ -409,9 +413,12 @@ multistream_format_matches(const media_multistream_format& a,
 				&& a.u.vid.channel_count != b.u.vid.channel_count) {
 				return false;
 			}
+
 			return true;
+		}
 
 		case media_multistream_format::B_AVI:
+		{
 			if (a.u.avi.us_per_frame != 0 && b.u.avi.us_per_frame != 0
 				&& a.u.avi.us_per_frame != b.u.avi.us_per_frame) {
 				return false;
@@ -448,7 +455,15 @@ multistream_format_matches(const media_multistream_format& a,
 				&& a.u.avi.types[4] != b.u.avi.types[4]) {
 				return false;
 			}
+
 			return true;
+		}
+
+		default:
+		{
+			// TODO: Is there nothing else we can still check?
+			return true;
+		}
 	}
 }
 
@@ -708,15 +723,15 @@ media_format::Matches(const media_format* other) const
 {
 	CALLED();
 
-	if (type == 0 && other->type == 0) {
+	if (type == B_MEDIA_UNKNOWN_TYPE && other->type == B_MEDIA_UNKNOWN_TYPE) {
 		// TODO: How do we compare two formats with no type?
 		return true;
 	}
 
-	if (type != 0 && other->type != 0 && type != other->type)
+	if (type != B_MEDIA_UNKNOWN_TYPE && other->type != B_MEDIA_UNKNOWN_TYPE && type != other->type)
 		return false;
 
-	switch ((type != 0) ? type : other->type) {
+	switch ((type != B_MEDIA_UNKNOWN_TYPE) ? type : other->type) {
 		case B_MEDIA_RAW_AUDIO:
 			return multi_audio_format_matches(u.raw_audio, other->u.raw_audio);
 
@@ -1102,9 +1117,9 @@ operator==(const media_format& a, const media_format& b)
 	a is the format you want to feed to something accepting b
 */
 bool
-format_is_compatible(const media_format& a, const media_format& b)
+format_is_compatible(const media_format& producerFormat, const media_format& consumerFormat)
 {
-	return a.Matches(&b);
+	return producerFormat.Matches(&consumerFormat);
 }
 
 
