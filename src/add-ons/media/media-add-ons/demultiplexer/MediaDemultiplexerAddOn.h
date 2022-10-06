@@ -51,7 +51,7 @@ private:
 		MediaDemultiplexerAddOn(	/* private unimplemented */
 				const MediaDemultiplexerAddOn & clone);
 		MediaDemultiplexerAddOn & operator=(
-				const MediaDemultiplexerAddOn & clone);				
+				const MediaDemultiplexerAddOn & clone);
 
 		int32 refCount;
 

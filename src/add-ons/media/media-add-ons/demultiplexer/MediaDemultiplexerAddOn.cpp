@@ -39,7 +39,7 @@ MediaDemultiplexerAddOn::MediaDemultiplexerAddOn(image_id image) :
 	fprintf(stderr,"MediaDemultiplexerAddOn::MediaDemultiplexerAddOn\n");
 	refCount = 0;
 }
-	
+
 // -------------------------------------------------------- //
 // BMediaAddOn impl
 // -------------------------------------------------------- //
@@ -83,10 +83,10 @@ BMediaNode * MediaDemultiplexerAddOn::InstantiateNodeFor(
 	if (node == 0) {
 		*out_error = B_NO_MEMORY;
 		fprintf(stderr,"<- B_NO_MEMORY\n");
-	} else { 
+	} else {
 		*out_error = node->InitCheck();
 	}
-	return node;	
+	return node;
 }
 
 status_t MediaDemultiplexerAddOn::GetConfigurationFor(

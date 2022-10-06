@@ -50,21 +50,21 @@ MediaDemultiplexerNode::MediaDemultiplexerNode(
 	fAddOn = addOn;
 	// null out our latency estimates
 	fDownstreamLatency = 0;
-	fInternalLatency = 0;	
+	fInternalLatency = 0;
 	// don't overwrite available space, and be sure to terminate
 	strncpy(input.name,"Demultiplexer Input",B_MEDIA_NAME_LENGTH-1);
 	input.name[B_MEDIA_NAME_LENGTH-1] = '\0';
 	// initialize the input
 	input.node = media_node::null;               // until registration
-	input.source = media_source::null; 
+	input.source = media_source::null;
 	input.destination = media_destination::null; // until registration
 	GetInputFormat(&input.format);
-	
+
 	outputs.empty();
 	// outputs initialized after we connect,
 	// find a suitable extractor,
 	// and it tells us the ouputs
-	
+
 	fInitCheckStatus = B_OK;
 }
 
@@ -210,7 +210,7 @@ void MediaDemultiplexerNode::NodeRegistered(void)
 	// outputs initialized after we connect,
 	// find a suitable extractor,
 	// and it tells us the ouputs
-	
+
 	// start the BMediaEventLooper thread
 	SetPriority(B_REAL_TIME_PRIORITY);
 	Run();
@@ -256,7 +256,7 @@ status_t MediaDemultiplexerNode::AcceptFormat(
 		return B_MEDIA_BAD_FORMAT;
 	}
 	AddRequirements(format);
-	return B_OK;	
+	return B_OK;
 }
 
 status_t MediaDemultiplexerNode::GetNextInput(
@@ -293,7 +293,7 @@ void MediaDemultiplexerNode::BufferReceived(
 //			status_t status = ApplyParameterData(buffer->Data(),buffer->SizeUsed());
 //			if (status != B_OK) {
 //				fprintf(stderr,"ApplyParameterData in MediaDemultiplexerNode::BufferReceived failed\n");
-//			}			
+//			}
 //			buffer->Recycle();
 //			}
 //			break;
@@ -301,7 +301,7 @@ void MediaDemultiplexerNode::BufferReceived(
 			if (buffer->Flags() & BBuffer::B_SMALL_BUFFER) {
 				fprintf(stderr,"NOT IMPLEMENTED: B_SMALL_BUFFER in MediaDemultiplexerNode::BufferReceived\n");
 				// XXX: implement this part
-				buffer->Recycle();			
+				buffer->Recycle();
 			} else {
 				media_timed_event event(buffer->Header()->start_time, BTimedEventQueue::B_HANDLE_BUFFER,
 										buffer, BTimedEventQueue::B_RECYCLE_BUFFER);
@@ -312,7 +312,7 @@ void MediaDemultiplexerNode::BufferReceived(
 				}
 			}
 			break;
-		default: 
+		default:
 			fprintf(stderr,"unexpected buffer type in MediaDemultiplexerNode::BufferReceived\n");
 			buffer->Recycle();
 			break;
@@ -331,7 +331,7 @@ void MediaDemultiplexerNode::ProducerDataStatus(
 	}
 	media_timed_event event(at_performance_time, BTimedEventQueue::B_DATA_STATUS,
 			&input, BTimedEventQueue::B_NO_CLEANUP, status, 0, NULL);
-	EventQueue()->AddEvent(event);	
+	EventQueue()->AddEvent(event);
 }
 
 status_t MediaDemultiplexerNode::GetLatencyFor(
@@ -375,7 +375,7 @@ status_t MediaDemultiplexerNode::Connected(
 	// compute the latency or just guess
 	fInternalLatency = 500; // just guess
 	fprintf(stderr,"  internal latency guessed = %lld\n",fInternalLatency);
-	
+
 	SetEventLatency(fInternalLatency);
 
 	// record the agreed upon values
@@ -400,7 +400,7 @@ void MediaDemultiplexerNode::Disconnected(
 	}
 	input.source = media_source::null;
 	GetInputFormat(&input.format);
-	
+
 	outputs.empty();
 }
 
@@ -408,7 +408,7 @@ void MediaDemultiplexerNode::Disconnected(
 	/* the format; you should not ask him about it in here. */
 status_t MediaDemultiplexerNode::FormatChanged(
 				const media_source & producer,
-				const media_destination & consumer, 
+				const media_destination & consumer,
 				int32 change_tag,
 				const media_format & format)
 {
@@ -434,7 +434,7 @@ status_t MediaDemultiplexerNode::FormatChanged(
 status_t MediaDemultiplexerNode::SeekTagRequested(
 				const media_destination & destination,
 				bigtime_t in_target_time,
-				uint32 in_flags, 
+				uint32 in_flags,
 				media_seek_tag * out_seek_tag,
 				bigtime_t * out_tagged_time,
 				uint32 * out_flags)
@@ -532,7 +532,7 @@ status_t MediaDemultiplexerNode::GetNextOutput(	/* cookie starts as 0 */
 		= (vector<MediaOutputInfo>::iterator)(*cookie);
 	// XXX: check here if the vector has been modified.
 	//      if the iterator is invalid, return an error code??
-	
+
 	// they already got our 1 output
 	if (itr == outputs.end()) {
 		fprintf(stderr,"<- B_ERROR (no more outputs)\n");
@@ -627,7 +627,7 @@ status_t MediaDemultiplexerNode::PrepareToConnect(
 }
 
 void MediaDemultiplexerNode::Connect(
-				status_t error, 
+				status_t error,
 				const media_source & source,
 				const media_destination & destination,
 				const media_format & format,
@@ -684,7 +684,7 @@ void MediaDemultiplexerNode::Connect(
 	// XXX: what do I set the buffer duration to?
 	//      it depends on which output is sending!!
 	// SetBufferDuration(bufferPeriod);
-	
+
 	// XXX: do anything else?
 	return;
 }
@@ -714,9 +714,9 @@ void MediaDemultiplexerNode::ComputeInternalLatency() {
 //			buffer->Recycle();
 //		}
 //		GetCurrentFile()->Seek(-bytesRead,SEEK_CUR); // put it back where we found it
-//	
+//
 //		fInternalLatency = end - start;
-//		
+//
 //		fprintf(stderr,"  internal latency from disk read = %lld\n",fInternalLatency);
 //	} else {
 		fInternalLatency = 100; // just guess
@@ -940,7 +940,7 @@ void MediaDemultiplexerNode::CleanUpEvent(
 {
 	BMediaEventLooper::CleanUpEvent(event);
 }
-		
+
 /* called from Offline mode to determine the current time of the node */
 /* update your internal information whenever it changes */
 bigtime_t MediaDemultiplexerNode::OfflineTime()
@@ -985,7 +985,7 @@ status_t MediaDemultiplexerNode::HandleSeek(
 	fprintf(stderr,"MediaDemultiplexerNode::HandleSeek(t=%lld,d=%i,bd=%lld)\n",event->event_time,event->data,event->bigdata);
 	return B_OK;
 }
-						
+
 status_t MediaDemultiplexerNode::HandleWarp(
 						const media_timed_event *event,
 						bigtime_t lateness,
@@ -1114,7 +1114,7 @@ void MediaDemultiplexerNode::GetInputFormat(media_format * outFormat)
 	}
 	outFormat->type = B_MEDIA_MULTISTREAM;
 	outFormat->require_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
-	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;	
+	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
 	outFormat->u.multistream = media_multistream_format::wildcard;
 }
 
@@ -1126,7 +1126,7 @@ void MediaDemultiplexerNode::GetOutputFormat(media_format * outFormat)
 	}
 	outFormat->type = B_MEDIA_UNKNOWN_TYPE; // more like ANY_TYPE than unknown
 	outFormat->require_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
-	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;	
+	outFormat->deny_flags = B_MEDIA_MAUI_UNDEFINED_FLAGS;
 }
 
 // protected:

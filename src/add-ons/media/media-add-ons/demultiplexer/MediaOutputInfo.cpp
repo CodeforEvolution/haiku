@@ -42,7 +42,7 @@ status_t MediaOutputInfo::SetBufferGroup(BBufferGroup * group) {
 	if (bufferGroup != 0) {
 		if (bufferGroup == group) {
 			return B_OK; // time saver
-		}	
+		}
 		delete bufferGroup;
 	}
 	bufferGroup = group;
@@ -79,7 +79,7 @@ status_t MediaOutputInfo::FormatChangeRequested(const media_destination & destin
 	}
 	io_format->SpecializeTo(&fullySpecifiedFormat);
 	return B_OK;
-}								   
+}
 
 status_t MediaOutputInfo::PrepareToConnect(const media_destination & where,
 						  media_format * format,
@@ -100,7 +100,7 @@ status_t MediaOutputInfo::PrepareToConnect(const media_destination & where,
 	strncpy(out_name,output.name,B_MEDIA_NAME_LENGTH-1);
 	out_name[B_MEDIA_NAME_LENGTH] = '\0';
 	return B_OK;
-}					  
+}
 
 status_t MediaOutputInfo::Connect(const media_destination & destination,
 				 const media_format & format,
@@ -112,14 +112,14 @@ status_t MediaOutputInfo::Connect(const media_destination & destination,
 	strncpy(io_name,output.name,B_MEDIA_NAME_LENGTH-1);
 	io_name[B_MEDIA_NAME_LENGTH-1] = '\0';
 	downstreamLatency = _downstreamLatency; // must be set before create buffer group
-	
+
 	status_t status = CreateBufferGroup(); // also initializes buffer period
 	if (status != B_OK) {
 		output.destination = media_destination::null;
 		output.format = generalFormat;
 		return status;
 	}
-	return B_OK;	
+	return B_OK;
 }
 
 status_t MediaOutputInfo::Disconnect()
@@ -137,7 +137,7 @@ status_t MediaOutputInfo::EnableOutput(bool enabled)
 {
 	outputEnabled = enabled;
 	return B_OK;
-}		
+}
 
 status_t MediaOutputInfo::AdditionalBufferRequested(
 					media_buffer_id prev_buffer,
@@ -152,12 +152,12 @@ status_t MediaOutputInfo::AdditionalBufferRequested(
 
 status_t MediaOutputInfo::CreateBufferGroup() {
 	bufferPeriod = ComputeBufferPeriod();
-	
+
 	if (bufferGroup == 0) {
 		int32 count = int32(downstreamLatency/bufferPeriod)+2;
 		fprintf(stderr,"  downstream latency = %lld, buffer period = %lld, buffer count = %i\n",
 				downstreamLatency,bufferPeriod,count);
-	
+
 		// allocate the buffers
 		bufferGroup = new BBufferGroup(ComputeBufferSize(),count);
 		if (bufferGroup == 0) {
@@ -190,7 +190,7 @@ uint32 MediaOutputInfo::ComputeBufferSize(const media_format & format) {
 		bufferSize = format.u.multistream.max_chunk_size;
 		break;
 	case B_MEDIA_ENCODED_VIDEO:
-		bufferSize = format.u.encoded_video.frame_size; 
+		bufferSize = format.u.encoded_video.frame_size;
 		break;
 	case B_MEDIA_RAW_VIDEO:
 		if (format.u.raw_video.interlace == 0) {
@@ -266,5 +266,5 @@ bigtime_t MediaOutputInfo::ComputeBufferPeriod(const media_format & format) {
 	}
 	return bufferPeriod;
 }
-	
+
 

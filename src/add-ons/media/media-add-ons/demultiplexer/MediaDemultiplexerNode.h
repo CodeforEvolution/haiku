@@ -77,7 +77,7 @@ virtual	status_t HandleMessage(
 				int32 message,
 				const void * data,
 				size_t size);
-				
+
 protected:
 		/* Called when requests have completed, or failed. */
 virtual	status_t RequestCompleted(	/* reserved 0 */
@@ -145,7 +145,7 @@ virtual	void Disconnected(
 	/* the format; you should not ask him about it in here. */
 virtual	status_t FormatChanged(
 				const media_source & producer,
-				const media_destination & consumer, 
+				const media_destination & consumer,
 				int32 change_tag,
 				const media_format & format);
 
@@ -156,7 +156,7 @@ virtual	status_t FormatChanged(
 virtual	status_t SeekTagRequested(
 				const media_destination & destination,
 				bigtime_t in_target_time,
-				uint32 in_flags, 
+				uint32 in_flags,
 				media_seek_tag * out_seek_tag,
 				bigtime_t * out_tagged_time,
 				uint32 * out_flags);
@@ -222,7 +222,7 @@ virtual	status_t PrepareToConnect(
 				media_source * out_source,
 				char * out_name);
 virtual	void Connect(
-				status_t error, 
+				status_t error,
 				const media_source & source,
 				const media_destination & destination,
 				const media_format & format,
@@ -275,7 +275,7 @@ virtual	void LatencyChanged(					//	used to be Reserved 1
 
 		/* override to clean up custom events you have added to your queue */
 		virtual void		CleanUpEvent(const media_timed_event *event);
-		
+
 		/* called from Offline mode to determine the current time of the node */
 		/* update your internal information whenever it changes */
 		virtual	bigtime_t	OfflineTime();
@@ -343,7 +343,7 @@ private:
 		MediaDemultiplexerNode(	/* private unimplemented */
 				const MediaDemultiplexerNode & clone);
 		MediaDemultiplexerNode & operator=(
-				const MediaDemultiplexerNode & clone);				
+				const MediaDemultiplexerNode & clone);
 
 		status_t fInitCheckStatus;
 
