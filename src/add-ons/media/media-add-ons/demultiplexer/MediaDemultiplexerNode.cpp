@@ -25,6 +25,19 @@
 #include <stdio.h>
 #include <string.h>
 
+
+//#define TRACE_MEDIA_DEMULTIPLEXER_NODE
+#ifdef TRACE_MEDIA_DEMULTIPLEXER_NODE
+	#define TRACE(args...)		dprintf(STDOUT_FILENO, "demultiplexer.media_addon: " args)
+#else
+	#define TRACE(args...)
+#endif
+
+#define TRACE_ALWAYS(args...)	dprintf(STDOUT_FILENO, "demultiplexer.media_addon: " args)
+#define TRACE_ERROR(args...)	dprintf(STDERR_FILENO, "\33[33mdemultiplexer.media_addon:\33[0m " args)
+#define CALLED()				TRACE("CALLED %s\n", __PRETTY_FUNCTION__)
+
+
 // -------------------------------------------------------- //
 // ctor/dtor
 // -------------------------------------------------------- //
@@ -36,34 +49,36 @@ MediaDemultiplexerNode::~MediaDemultiplexerNode(void)
 	Quit();
 }
 
-MediaDemultiplexerNode::MediaDemultiplexerNode(
-				const flavor_info * info = 0,
-				BMessage * config = 0,
-				BMediaAddOn * addOn = 0)
-	: BMediaNode("MediaDemultiplexerNode"),
-	  BMediaEventLooper(),
-  	  BBufferConsumer(B_MEDIA_MULTISTREAM),
-  	  BBufferProducer(B_MEDIA_UNKNOWN_TYPE) // no B_MEDIA_ANY
+MediaDemultiplexerNode::MediaDemultiplexerNode(const flavor_info* info, BMessage* config,
+	BMediaAddOn* addOn)
+	:
+	BMediaNode("MediaDemultiplexerNode"),
+  	BBufferConsumer(B_MEDIA_MULTISTREAM),
+  	BBufferProducer(B_MEDIA_UNKNOWN_TYPE), // no B_MEDIA_ANY
+	BMediaEventLooper()
 {
 	fprintf(stderr,"MediaDemultiplexerNode::MediaDemultiplexerNode\n");
+
 	// keep our creator around for AddOn calls later
 	fAddOn = addOn;
+
 	// null out our latency estimates
 	fDownstreamLatency = 0;
 	fInternalLatency = 0;
-	// don't overwrite available space, and be sure to terminate
-	strncpy(input.name,"Demultiplexer Input",B_MEDIA_NAME_LENGTH-1);
-	input.name[B_MEDIA_NAME_LENGTH-1] = '\0';
-	// initialize the input
-	input.node = media_node::null;               // until registration
-	input.source = media_source::null;
-	input.destination = media_destination::null; // until registration
-	GetInputFormat(&input.format);
 
-	outputs.empty();
-	// outputs initialized after we connect,
-	// find a suitable extractor,
-	// and it tells us the ouputs
+	// don't overwrite available space, and be sure to terminate
+	strlcpy(fInput.name, "Demultiplexer Input", B_MEDIA_NAME_LENGTH);
+
+	// initialize the input
+	fInput.node = media_node::null;               // until registration
+	fInput.source = media_source::null;
+	fInput.destination = media_destination::null; // until registration
+	GetInputFormat(&fInput.format);
+
+	fOutputs.MakeEmpty();
+	// Outputs initialized after we connect,
+	// find a suitable MediaReader,
+	// and it tells us the ouputs.
 
 	fInitCheckStatus = B_OK;
 }
@@ -86,16 +101,18 @@ status_t MediaDemultiplexerNode::GetConfigurationFor(
 // -------------------------------------------------------- //
 
 BMediaAddOn * MediaDemultiplexerNode::AddOn(
-				int32 * internal_id) const
+				int32* internal_id) const
 {
 	fprintf(stderr,"MediaDemultiplexerNode::AddOn\n");
+
 	// BeBook says this only gets called if we were in an add-on.
-	if (fAddOn != 0) {
+	if (fAddOn != NULL) {
 		// If we get a null pointer then we just won't write.
-		if (internal_id != 0) {
-			internal_id = 0;
+		if (internal_id != NULL) {
+			*internal_id = 0;
 		}
 	}
+
 	return fAddOn;
 }
 
@@ -110,6 +127,7 @@ void MediaDemultiplexerNode::Stop(
 				bigtime_t performance_time,
 				bool immediate)
 {
+	CALLED();
 	if (immediate) {
 		fprintf(stderr,"MediaDemultiplexerNode::Stop(pt=%lld,<immediate>)\n",performance_time);
 	} else {
@@ -144,7 +162,7 @@ void MediaDemultiplexerNode::TimeWarp(
 void MediaDemultiplexerNode::Preroll(void)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::Preroll\n");
-	// XXX:Performance opportunity
+	// TODO: Performance opportunity
 	BMediaNode::Preroll();
 }
 
@@ -161,25 +179,30 @@ status_t MediaDemultiplexerNode::HandleMessage(
 				size_t size)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::HandleMessage\n");
-	status_t status = B_OK;
+
+	status_t status = B_ERROR;
 	switch (message) {
 		// no special messages for now
 		default:
+		{
 			status = BBufferConsumer::HandleMessage(message,data,size);
-			if (status == B_OK) {
+			if (status == B_OK)
 				break;
-			}
+
 			status = BBufferProducer::HandleMessage(message,data,size);
-			if (status == B_OK) {
+			if (status == B_OK)
 				break;
-			}
+
 			status = BMediaNode::HandleMessage(message,data,size);
 			if (status == B_OK) {
 				break;
 			}
+
 			BMediaNode::HandleBadMessage(message,data,size);
 			status = B_ERROR;
+
 			break;
+		}
 	}
 	return status;
 }
@@ -202,10 +225,11 @@ void MediaDemultiplexerNode::NodeRegistered(void)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::NodeRegistered\n");
 
-	// now we can do this
-	input.node = Node();
-	input.destination.id = 0;
-	input.destination.port = input.node.port; // same as ControlPort()
+	// Now we can do this!
+	fInput.node = Node();
+	fInput.destination.id = 0;
+	fInput.destination.port = fInput.node.port;
+		// Same as ControlPort()
 
 	// outputs initialized after we connect,
 	// find a suitable extractor,
@@ -243,35 +267,36 @@ status_t MediaDemultiplexerNode::AcceptFormat(
 				media_format * format)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::AcceptFormat\n");
-	if (input.destination != dest) {
-		fprintf(stderr,"<- B_MEDIA_BAD_DESTINATION");
+
+	if (fInput.destination != dest)
 		return B_MEDIA_BAD_DESTINATION; // we only have one input so that better be it
-	}
+
 	media_format myFormat;
 	GetInputFormat(&myFormat);
-	// Be's format_is_compatible doesn't work,
-	// so use our format_is_acceptible instead
-	if (!format_is_acceptible(*format,myFormat)) {
-		fprintf(stderr,"<- B_MEDIA_BAD_FORMAT\n");
+
+	if (!format_is_compatible(*format, myFormat))
 		return B_MEDIA_BAD_FORMAT;
-	}
+
 	AddRequirements(format);
 	return B_OK;
 }
 
+
 status_t MediaDemultiplexerNode::GetNextInput(
-				int32 * cookie,
-				media_input * out_input)
+				int32* cookie,
+				media_input* out_input)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::GetNextInput\n");
+
 	if (*cookie != 0) {
-		fprintf(stderr,"<- B_ERROR (no more inputs)\n");
+		TRACE_ERROR("\tNo more inputs available!\n");
 		return B_ERROR;
 	}
 
-	// so next time they won't get the same input again
+	// So next time they won't get the same input again
 	*cookie = 1;
-	*out_input = input;
+	*out_input = fInput;
+
 	return B_OK;
 }
 
@@ -280,13 +305,14 @@ void MediaDemultiplexerNode::DisposeInputCookie(
 {
 	fprintf(stderr,"MediaDemultiplexerNode::DisposeInputCookie\n");
 	// nothing to do since our cookies are just integers
-	return; // B_OK;
+	return;
 }
 
 void MediaDemultiplexerNode::BufferReceived(
 				BBuffer * buffer)
 {
-	fprintf(stderr,"MediaDemultiplexerNode::BufferReceived\n");
+	CALLED();
+
 	switch (buffer->Header()->type) {
 //		case B_MEDIA_PARAMETERS:
 //			{
@@ -298,24 +324,31 @@ void MediaDemultiplexerNode::BufferReceived(
 //			}
 //			break;
 		case B_MEDIA_MULTISTREAM:
+		{
 			if (buffer->Flags() & BBuffer::B_SMALL_BUFFER) {
-				fprintf(stderr,"NOT IMPLEMENTED: B_SMALL_BUFFER in MediaDemultiplexerNode::BufferReceived\n");
-				// XXX: implement this part
+				TRACE_ERROR("\tNOT IMPLEMENTED: B_SMALL_BUFFER in MediaDemultiplexerNode::BufferReceived\n");
+				// TODO: Implement handling a BSmallBuffer!
 				buffer->Recycle();
 			} else {
 				media_timed_event event(buffer->Header()->start_time, BTimedEventQueue::B_HANDLE_BUFFER,
 										buffer, BTimedEventQueue::B_RECYCLE_BUFFER);
-				status_t status = EventQueue()->AddEvent(event);
-				if (status != B_OK) {
-					fprintf(stderr,"EventQueue()->AddEvent(event) in MediaDemultiplexerNode::BufferReceived failed\n");
+				status_t result = EventQueue()->AddEvent(event);
+				if (result != B_OK) {
+					TRACE_ERROR("\tEventQueue()->AddEvent(event) failed: %s\n", strerror(result));
 					buffer->Recycle();
 				}
 			}
+
 			break;
+		}
+
 		default:
-			fprintf(stderr,"unexpected buffer type in MediaDemultiplexerNode::BufferReceived\n");
+		{
+			TRACE_ERROR("\tUnexpected buffer type in MediaDemultiplexerNode::BufferReceived\n");
 			buffer->Recycle();
+
 			break;
+		}
 	}
 }
 
@@ -324,32 +357,34 @@ void MediaDemultiplexerNode::ProducerDataStatus(
 				int32 status,
 				bigtime_t at_performance_time)
 {
-	fprintf(stderr,"MediaDemultiplexerNode::ProducerDataStatus\n");
-	if (input.destination != for_whom) {
-		fprintf(stderr,"invalid destination received in MediaDemultiplexerNode::ProducerDataStatus\n");
+	CALLED();
+
+	if (fInput.destination != for_whom) {
+		TRACE_ERROR("\tInvalid destination received!\n");
 		return;
 	}
+
 	media_timed_event event(at_performance_time, BTimedEventQueue::B_DATA_STATUS,
-			&input, BTimedEventQueue::B_NO_CLEANUP, status, 0, NULL);
+			&fInput, BTimedEventQueue::B_NO_CLEANUP, status, 0, NULL);
 	EventQueue()->AddEvent(event);
 }
 
 status_t MediaDemultiplexerNode::GetLatencyFor(
 				const media_destination & for_whom,
-				bigtime_t * out_latency,
+				bigtime_t* out_latency,
 				media_node_id * out_timesource)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::GetLatencyFor\n");
-	if ((out_latency == 0) || (out_timesource == 0)) {
-		fprintf(stderr,"<- B_BAD_VALUE\n");
+
+	if (out_latency == NULL || out_timesource == NULL)
 		return B_BAD_VALUE;
-	}
-	if (input.destination != for_whom) {
-		fprintf(stderr,"<- B_MEDIA_BAD_DESTINATION\n");
+
+	if (fInput.destination != for_whom)
 		return B_MEDIA_BAD_DESTINATION;
-	}
+
 	*out_latency = EventLatency();
 	*out_timesource = TimeSource()->ID();
+
 	return B_OK;
 }
 
@@ -360,28 +395,28 @@ status_t MediaDemultiplexerNode::Connected(
 				media_input * out_input)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::Connected\n");
-	if (input.destination != where) {
-		fprintf(stderr,"<- B_MEDIA_BAD_DESTINATION\n");
+
+	if (fInput.destination != where)
 		return B_MEDIA_BAD_DESTINATION;
-	}
 
 	// find an appropriate extractor to handle this type
-	fprintf(stderr,"  XXX: no extractors yet\n");
+	fprintf(stderr,"\tFIXME: No extractors yet!\n");
 
 	// initialize the outputs here
 	// provide all the types that the extractor claims
-	outputs.empty();
+	fOutputs.MakeEmpty();
 
 	// compute the latency or just guess
 	fInternalLatency = 500; // just guess
-	fprintf(stderr,"  internal latency guessed = %lld\n",fInternalLatency);
+	TRACE("\tInternal latency guessed = %lld\n", fInternalLatency);
 
 	SetEventLatency(fInternalLatency);
 
 	// record the agreed upon values
-	input.source = producer;
-	input.format = with_format;
-	*out_input = input;
+	fInput.source = producer;
+	fInput.format = with_format;
+	*out_input = fInput;
+
 	return B_OK;
 }
 
@@ -390,18 +425,21 @@ void MediaDemultiplexerNode::Disconnected(
 				const media_destination & where)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::Disconnected\n");
-	if (input.destination != where) {
+
+	if (fInput.destination != where) {
 		fprintf(stderr,"<- B_MEDIA_BAD_DESTINATION\n");
 		return;
 	}
-	if (input.source != producer) {
+
+	if (fInput.source != producer) {
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
 	}
-	input.source = media_source::null;
-	GetInputFormat(&input.format);
 
-	outputs.empty();
+	fInput.source = media_source::null;
+	GetInputFormat(&fInput.format);
+
+	fOutputs.MakeEmpty();
 }
 
 	/* The notification comes from the upstream producer, so he's already cool with */
@@ -413,24 +451,23 @@ status_t MediaDemultiplexerNode::FormatChanged(
 				const media_format & format)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::FormatChanged\n");
-	if (input.source != producer) {
+
+	if (fInput.source != producer)
 		return B_MEDIA_BAD_SOURCE;
-	}
-	if (input.destination != consumer) {
+
+	if (fInput.destination != consumer)
 		return B_MEDIA_BAD_DESTINATION;
-	}
-	// XXX: implement
+
+	// TODO: Implement handling a format change!
 	fprintf(stderr,"  This is because we asked to have the format changed.\n"
 	               "  Therefore we must switch to the other extractor that\n"
 	               "  we presumably have ready.");
-	input.format = format;
+	fInput.format = format;
+
 	return B_OK;
 }
 
-	/* Given a performance time of some previous buffer, retrieve the remembered tag */
-	/* of the closest (previous or exact) performance time. Set *out_flags to 0; the */
-	/* idea being that flags can be added later, and the understood flags returned in */
-	/* *out_flags. */
+
 status_t MediaDemultiplexerNode::SeekTagRequested(
 				const media_destination & destination,
 				bigtime_t in_target_time,
@@ -440,7 +477,11 @@ status_t MediaDemultiplexerNode::SeekTagRequested(
 				uint32 * out_flags)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::SeekTagRequested\n");
-	// XXX: implement this
+
+	/* TODO: Given a performance time of some previous buffer, retrieve the remembered tag */
+	/* of the closest (previous or exact) performance time. Set *out_flags to 0; the */
+	/* idea being that flags can be added later, and the understood flags returned in */
+	/* *out_flags. */
 	return BBufferConsumer::SeekTagRequested(destination,in_target_time,in_flags,
 											out_seek_tag,out_tagged_time,out_flags);
 }
@@ -457,13 +498,16 @@ status_t MediaDemultiplexerNode::FormatSuggestionRequested(
 				media_format * format)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::FormatSuggestionRequested\n");
-	// XXX: how do I pick which stream to supply here?....
+
+	// TODO: how do I pick which stream to supply here?....
 	//      answer?: get the first compatible stream that is available
-	fprintf(stderr,"  format suggestion requested not implemented\n");
+
+	TRACE_ERROR("\tFormat suggestion requested not implemented!\n");
 //	if ((type != B_MEDIA_MULTISTREAM) && (type != B_MEDIA_UNKNOWN_TYPE)) {
 //		fprintf(stderr,"<- B_MEDIA_BAD_FORMAT\n");
 //		return B_MEDIA_BAD_FORMAT;
 //	}
+
 	GetOutputFormat(format);
 //	AddRequirements(format);
 
@@ -478,18 +522,19 @@ status_t MediaDemultiplexerNode::FormatProposal(
 				media_format * format)
 {
 	fprintf(stderr,"MediaDemultiplexerNode::FormatProposal\n");
+
 	// find the information for this output
-	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for (int32 index = 0; index < fOutputs.Count(); index++) {
 		if (itr->output.source == output_source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
-		// we don't have that output
-		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
+
+	if (itr == fOutputs.end()) {
+		// We don't have that output
 		return B_MEDIA_BAD_SOURCE;
 	}
+
 	return itr->FormatProposal(format);
 }
 
@@ -506,12 +551,12 @@ status_t MediaDemultiplexerNode::FormatChangeRequested(
 	fprintf(stderr,"MediaDemultiplexerNode::FormatChangeRequested\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return B_MEDIA_BAD_SOURCE;
@@ -526,15 +571,15 @@ status_t MediaDemultiplexerNode::GetNextOutput(	/* cookie starts as 0 */
 	fprintf(stderr,"MediaDemultiplexerNode::GetNextOutput\n");
 	// they want a clean start
 	if (*cookie == 0) {
-		*cookie = (int32)outputs.begin();
+		*cookie = (int32)fOutputs.begin();
 	}
 	vector<MediaOutputInfo>::iterator itr
 		= (vector<MediaOutputInfo>::iterator)(*cookie);
-	// XXX: check here if the vector has been modified.
+	// TODO: Check here if the vector has been modified.
 	//      if the iterator is invalid, return an error code??
 
 	// they already got our 1 output
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		fprintf(stderr,"<- B_ERROR (no more outputs)\n");
 		return B_ERROR;
 	}
@@ -560,12 +605,12 @@ status_t MediaDemultiplexerNode::SetBufferGroup(
 	fprintf(stderr,"MediaDemultiplexerNode::SetBufferGroup\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == for_source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return B_MEDIA_BAD_SOURCE;
@@ -599,6 +644,7 @@ status_t MediaDemultiplexerNode::GetLatency(
 		fprintf(stderr,"<- B_BAD_VALUE\n");
 		return B_BAD_VALUE;
 	}
+
 	*out_latency = EventLatency() + SchedulingLatency();
 	return B_OK;
 }
@@ -613,16 +659,18 @@ status_t MediaDemultiplexerNode::PrepareToConnect(
 	fprintf(stderr,"MediaDemultiplexerNode::PrepareToConnect\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == what) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return B_MEDIA_BAD_SOURCE;
 	}
+
 	return itr->PrepareToConnect(where,format,out_source,out_name);
 }
 
@@ -636,12 +684,12 @@ void MediaDemultiplexerNode::Connect(
 	fprintf(stderr,"MediaDemultiplexerNode::Connect\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -681,11 +729,11 @@ void MediaDemultiplexerNode::Connect(
 		SetEventLatency(fDownstreamLatency + fInternalLatency);
 	}
 
-	// XXX: what do I set the buffer duration to?
+	// TODO: what do I set the buffer duration to?
 	//      it depends on which output is sending!!
 	// SetBufferDuration(bufferPeriod);
 
-	// XXX: do anything else?
+	// TODO: do anything else?
 	return;
 }
 
@@ -731,12 +779,12 @@ void MediaDemultiplexerNode::Disconnect(
 	fprintf(stderr,"MediaDemultiplexerNode::Disconnect\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == what) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -754,7 +802,7 @@ void MediaDemultiplexerNode::Disconnect(
 	// update the downstream latency if necessary
 	if (updateDownstreamLatency) {
 		bigtime_t newDownstreamLatency = 0;
-		for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+		for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 			if (itr->downstreamLatency > newDownstreamLatency) {
 				newDownstreamLatency = itr->downstreamLatency;
 			}
@@ -770,12 +818,12 @@ void MediaDemultiplexerNode::LateNoticeReceived(
 {
 	fprintf(stderr,"MediaDemultiplexerNode::LateNoticeReceived\n");
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == what) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -812,12 +860,12 @@ void MediaDemultiplexerNode::EnableOutput(
 	fprintf(stderr,"MediaDemultiplexerNode::EnableOutput\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == what) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -846,12 +894,12 @@ void MediaDemultiplexerNode::AdditionalBufferRequested(			//	used to be Reserved
 	fprintf(stderr,"MediaDemultiplexerNode::AdditionalBufferRequested\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -874,12 +922,12 @@ void MediaDemultiplexerNode::LatencyChanged(
 	fprintf(stderr,"MediaDemultiplexerNode::LatencyChanged\n");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		if (itr->output.source == source) {
 			break;
 		}
 	}
-	if (itr == outputs.end()) {
+	if (itr == fOutputs.end()) {
 		// we don't have that output
 		fprintf(stderr,"<- B_MEDIA_BAD_SOURCE\n");
 		return;
@@ -890,7 +938,8 @@ void MediaDemultiplexerNode::LatencyChanged(
 	}
 	fDownstreamLatency = new_latency;
 	SetEventLatency(fDownstreamLatency + fInternalLatency);
-	// XXX: we may have to recompute the number of buffers that we are using
+
+	// TODO: we may have to recompute the number of buffers that we are using
 	// see SetBufferGroup
 }
 
@@ -946,8 +995,9 @@ void MediaDemultiplexerNode::CleanUpEvent(
 bigtime_t MediaDemultiplexerNode::OfflineTime()
 {
 	fprintf(stderr,"MediaDemultiplexerNode::OfflineTime\n");
+	// TODO: do something else?
 	return BMediaEventLooper::OfflineTime();
-// XXX: do something else?
+
 }
 
 /* override only if you know what you are doing! */
@@ -958,8 +1008,6 @@ void MediaDemultiplexerNode::ControlLoop() {
 	BMediaEventLooper::ControlLoop();
 }
 
-// protected:
-
 status_t MediaDemultiplexerNode::HandleStart(
 						const media_timed_event *event,
 						bigtime_t lateness,
@@ -967,7 +1015,7 @@ status_t MediaDemultiplexerNode::HandleStart(
 {
 	fprintf(stderr,"MediaDemultiplexerNode::HandleStart()\n");
 	if (RunState() != B_STARTED) {
-// XXX: Either use the following line or the lines that are not commented.
+// FIXME: Either use the following line or the lines that are not commented.
 // There doesn't seem to be a practical difference that i can tell.
 //		HandleBuffer(event,lateness,realTimeEvent);
 		media_timed_event firstBufferEvent(event->event_time, BTimedEventQueue::B_HANDLE_BUFFER);
@@ -1017,16 +1065,16 @@ status_t MediaDemultiplexerNode::HandleBuffer(
 		fprintf(stderr,"<- B_BAD_VALUE\n");
 		return B_BAD_VALUE;
 	}
-	if (buffer->Header()->destination != input.destination.id) {
+	if (buffer->Header()->destination != fInput.destination.id) {
 		fprintf(stderr,"<- B_MEDIA_BAD_DESTINATION\n");
 		return B_MEDIA_BAD_DESTINATION;
 	}
-	if (outputs.begin() == outputs.end()) {
+	if (fOutputs.begin() == fOutputs.end()) {
 		fprintf(stderr,"<- B_MEDIA_NOT_CONNECTED\n");
 		return B_MEDIA_NOT_CONNECTED;
 	}
 	status_t status = B_OK;
-	fprintf(stderr,"  XXX: HandleBuffer not yet implemented.\n");
+	fprintf(stderr,"  TODO: HandleBuffer not yet implemented.\n");
 	// we have to hand the buffer to the extractor
 	// and then whenever we get a buffer for an output send it
 	// to that particular output (assuming it exists and is enabled)
@@ -1048,7 +1096,7 @@ status_t MediaDemultiplexerNode::HandleBuffer(
 //			}
 //		}
 //	}
-	bigtime_t nextEventTime = event->event_time+10000; // fBufferPeriod; // XXX : should multiply
+	bigtime_t nextEventTime = event->event_time+10000; // fBufferPeriod; // FIXME : should multiply
 	media_timed_event nextBufferEvent(nextEventTime, BTimedEventQueue::B_HANDLE_BUFFER);
 	EventQueue()->AddEvent(nextBufferEvent);
 	return status;
@@ -1062,7 +1110,7 @@ status_t MediaDemultiplexerNode::HandleDataStatus(
 	fprintf(stderr,"MediaDemultiplexerNode::HandleDataStatus");
 	// find the information for this output
 	vector<MediaOutputInfo>::iterator itr;
-	for(itr = outputs.begin() ; (itr != outputs.end()) ; itr++) {
+	for(itr = fOutputs.begin() ; (itr != fOutputs.end()) ; itr++) {
 		SendDataStatus(event->data,itr->output.destination,event->event_time);
 	}
 	return B_OK;

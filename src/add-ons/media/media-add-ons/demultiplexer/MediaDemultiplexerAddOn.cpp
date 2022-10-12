@@ -1,5 +1,3 @@
-// MediaDemultiplexerAddOn.cpp
-//
 // Andrew Bachmann, 2002
 //
 // MediaDemultiplexerAddOn is an add-on
@@ -8,19 +6,33 @@
 // MediaDemultiplexerNode handles a file and a multistream
 
 
-#include <MediaDefs.h>
-#include <MediaAddOn.h>
-#include <Errors.h>
-
-#include "MediaDemultiplexerNode.h"
 #include "MediaDemultiplexerAddOn.h"
+
+#include <Errors.h>
+#include <MediaAddOn.h>
+#include <MediaDefs.h>
 
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "MediaDemultiplexerNode.h"
+
+
+//#define TRACE_MEDIA_DEMULTIPLEXER_ADDON
+#ifdef TRACE_MEDIA_DEMULTIPLEXER_ADDON
+	#define TRACE(args...)		dprintf(STDOUT_FILENO, "demultiplexer.media_addon: " args)
+#else
+	#define TRACE(args...)
+#endif
+
+#define TRACE_ALWAYS(args...)	dprintf(STDOUT_FILENO, "demultiplexer.media_addon: " args)
+#define TRACE_ERROR(args...)	dprintf(STDERR_FILENO, "\33[33mdemultiplexer.media_addon:\33[0m " args)
+#define CALLED()				TRACE("CALLED %s\n", __PRETTY_FUNCTION__)
+
+
 // instantiation function
-extern "C" _EXPORT BMediaAddOn * make_media_addon(image_id image)
+extern "C" _EXPORT BMediaAddOn* make_media_addon(image_id image)
 {
 	return new MediaDemultiplexerAddOn(image);
 }
@@ -33,89 +45,93 @@ MediaDemultiplexerAddOn::~MediaDemultiplexerAddOn()
 {
 }
 
-MediaDemultiplexerAddOn::MediaDemultiplexerAddOn(image_id image) :
-	BMediaAddOn(image)
+
+MediaDemultiplexerAddOn::MediaDemultiplexerAddOn(image_id image)
+	:
+	BMediaAddOn(image),
+	fRefCount(0)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::MediaDemultiplexerAddOn\n");
-	refCount = 0;
+	CALLED();
 }
 
 // -------------------------------------------------------- //
 // BMediaAddOn impl
 // -------------------------------------------------------- //
 
-status_t MediaDemultiplexerAddOn::InitCheck(
-	const char ** out_failure_text)
+status_t
+MediaDemultiplexerAddOn::InitCheck(const char** out_failure_text)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::InitCheck\n");
+	CALLED();
 	return B_OK;
 }
 
-int32 MediaDemultiplexerAddOn::CountFlavors()
+
+int32
+MediaDemultiplexerAddOn::CountFlavors()
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::CountFlavors\n");
+	CALLED();
 	return 1;
 }
 
-status_t MediaDemultiplexerAddOn::GetFlavorAt(
-	int32 n,
-	const flavor_info ** out_info)
+
+status_t
+MediaDemultiplexerAddOn::GetFlavorAt(int32 index, const flavor_info** out_info)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::GetFlavorAt\n");
-	if (n != 0) {
-		fprintf(stderr,"<- B_BAD_INDEX\n");
+	CALLED();
+
+	if (index != 0)
 		return B_BAD_INDEX;
-	}
-	flavor_info * infos = new flavor_info[1];
-	MediaDemultiplexerNode::GetFlavor(&infos[0],n);
-	(*out_info) = infos;
+
+	flavor_info* infos = new flavor_info[1];
+	if (infos == NULL)
+		return B_NO_MEMORY;
+
+	MediaDemultiplexerNode::GetFlavor(&infos[0], index);
+	*out_info = infos;
+
 	return B_OK;
 }
 
-BMediaNode * MediaDemultiplexerAddOn::InstantiateNodeFor(
-				const flavor_info * info,
-				BMessage * config,
-				status_t * out_error)
+BMediaNode*
+MediaDemultiplexerAddOn::InstantiateNodeFor(const flavor_info* info, BMessage* config,
+	status_t* out_error)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::InstantiateNodeFor\n");
-	MediaDemultiplexerNode * node
-		= new MediaDemultiplexerNode(info,config,this);
-	if (node == 0) {
+	CALLED();
+
+	MediaDemultiplexerNode* node = new MediaDemultiplexerNode(info, config, this);
+	if (node == NULL) {
 		*out_error = B_NO_MEMORY;
-		fprintf(stderr,"<- B_NO_MEMORY\n");
-	} else {
+		ERROR("Couldn't construct a MediaDemultiplexerNode!");
+	} else
 		*out_error = node->InitCheck();
-	}
+
 	return node;
 }
 
-status_t MediaDemultiplexerAddOn::GetConfigurationFor(
-				BMediaNode * your_node,
-				BMessage * into_message)
+status_t
+MediaDemultiplexerAddOn::GetConfigurationFor(BMediaNode* your_node, BMessage* into_message)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::GetConfigurationFor\n");
-	MediaDemultiplexerNode * node
-		= dynamic_cast<MediaDemultiplexerNode*>(your_node);
-	if (node == 0) {
-		fprintf(stderr,"<- B_BAD_TYPE\n");
+	CALLED();
+
+	MediaDemultiplexerNode* node = dynamic_cast<MediaDemultiplexerNode*>(your_node);
+	if (node == NULL)
 		return B_BAD_TYPE;
-	}
+
 	return node->GetConfigurationFor(into_message);
 }
 
-bool MediaDemultiplexerAddOn::WantsAutoStart()
+bool
+MediaDemultiplexerAddOn::WantsAutoStart()
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::WantsAutoStart\n");
+	CALLED();
 	return false;
 }
 
-status_t MediaDemultiplexerAddOn::AutoStart(
-				int in_count,
-				BMediaNode ** out_node,
-				int32 * out_internal_id,
-				bool * out_has_more)
+status_t
+MediaDemultiplexerAddOn::AutoStart(int in_count, BMediaNode** out_node, int32* out_internal_id,
+	bool* out_has_more)
 {
-	fprintf(stderr,"MediaDemultiplexerAddOn::AutoStart\n");
+	CALLED();
 	return B_OK;
 }
 
@@ -123,28 +139,28 @@ status_t MediaDemultiplexerAddOn::AutoStart(
 // main
 // -------------------------------------------------------- //
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-	fprintf(stderr,"main called for MediaDemultiplexerAddOn\n");
+	CALLED();
 }
 
 // -------------------------------------------------------- //
 // stuffing
 // -------------------------------------------------------- //
 
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_0(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_1(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_2(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_3(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_4(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_5(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_6(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_7(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_8(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_9(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_10(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_11(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_12(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_13(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_14(void *) {};
-status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_15(void *) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_0(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_1(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_2(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_3(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_4(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_5(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_6(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_7(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_8(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_9(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_10(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_11(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_12(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_13(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_14(void*) {};
+status_t MediaDemultiplexerAddOn::_Reserved_MediaDemultiplexerAddOn_15(void*) {};

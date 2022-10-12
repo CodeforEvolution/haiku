@@ -13,35 +13,33 @@
 #include <MediaDefs.h>
 #include <MediaAddOn.h>
 
-class MediaDemultiplexerAddOn :
-    public BMediaAddOn
-{
+class MediaDemultiplexerAddOn : public BMediaAddOn {
 public:
-	virtual ~MediaDemultiplexerAddOn(void);
+	virtual ~MediaDemultiplexerAddOn();
 	explicit MediaDemultiplexerAddOn(image_id image);
 
 /**************************/
 /* begin from BMediaAddOn */
 public:
-virtual	status_t InitCheck(
-				const char ** out_failure_text);
-virtual	int32 CountFlavors(void);
-virtual	status_t GetFlavorAt(
-				int32 n,
-				const flavor_info ** out_info);
-virtual	BMediaNode * InstantiateNodeFor(
-				const flavor_info * info,
-				BMessage * config,
-				status_t * out_error);
-virtual	status_t GetConfigurationFor(
-				BMediaNode * your_node,
-				BMessage * into_message);
-virtual	bool WantsAutoStart(void);
-virtual	status_t AutoStart(
-				int in_count,
-				BMediaNode ** out_node,
-				int32 * out_internal_id,
-				bool * out_has_more);
+	virtual	status_t InitCheck(
+					const char ** out_failure_text);
+	virtual	int32 CountFlavors();
+	virtual	status_t GetFlavorAt(
+					int32 n,
+					const flavor_info ** out_info);
+	virtual	BMediaNode * InstantiateNodeFor(
+					const flavor_info * info,
+					BMessage * config,
+					status_t * out_error);
+	virtual	status_t GetConfigurationFor(
+					BMediaNode * your_node,
+					BMessage * into_message);
+	virtual	bool WantsAutoStart(void);
+	virtual	status_t AutoStart(
+					int in_count,
+					BMediaNode ** out_node,
+					int32 * out_internal_id,
+					bool * out_has_more);
 
 /* end from BMediaAddOn */
 /************************/
@@ -53,7 +51,7 @@ private:
 		MediaDemultiplexerAddOn & operator=(
 				const MediaDemultiplexerAddOn & clone);
 
-		int32 refCount;
+		int32 fRefCount;
 
 		/* Mmmh, stuffing! */
 virtual		status_t _Reserved_MediaDemultiplexerAddOn_0(void *);
