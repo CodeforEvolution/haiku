@@ -198,7 +198,7 @@ DevicesView::RebuildDevicesOutline()
 	fDevicesOutline->MakeEmpty();
 
 	if (fOrderBy == ORDER_BY_CONNECTION) {
-		for (unsigned int i = 0; i < fDevices.size(); i++) {
+		for (size_t i = 0; i < fDevices.size(); i++) {
 			if (fDevices[i]->GetPhysicalParent() == NULL) {
 				// process each parent device and its children
 				fDevicesOutline->AddItem(fDevices[i]);
@@ -213,13 +213,12 @@ DevicesView::RebuildDevicesOutline()
 		}
 
 		// Add all devices under the categories
-		for (unsigned int i = 0; i < fDevices.size(); i++) {
+		for (size_t i = 0; i < fDevices.size(); i++) {
 			Category category = fDevices[i]->GetCategory();
 
 			iter = fCategoryMap.find(category);
 			if (iter == fCategoryMap.end()) {
-				std::cerr
-					<< "Tried to add device without category, file a bug\n";
+				std::cerr << "Tried to add device without category, file a bug!" << std::endl;
 				continue;
 			} else {
 				fDevicesOutline->AddUnder(fDevices[i], iter->second);
@@ -234,7 +233,7 @@ DevicesView::RebuildDevicesOutline()
 void
 DevicesView::AddChildrenToOutlineByConnection(Device* parent)
 {
-	for (unsigned int i = 0; i < fDevices.size(); i++) {
+	for (size_t i = 0; i < fDevices.size(); i++) {
 		if (fDevices[i]->GetPhysicalParent() == parent) {
 			fDevicesOutline->AddUnder(fDevices[i], parent);
 			AddChildrenToOutlineByConnection(fDevices[i]);
@@ -246,7 +245,7 @@ DevicesView::AddChildrenToOutlineByConnection(Device* parent)
 void
 DevicesView::AddDeviceAndChildren(device_node_cookie *node, Device* parent)
 {
-	Attributes attributes;
+	AttributeMap attributes;
 	Device* newDevice = NULL;
 
 	// Copy all its attributes,
@@ -283,99 +282,88 @@ DevicesView::AddDeviceAndChildren(device_node_cookie *node, Device* parent)
 	}
 
 	// Determine what type of device it is and create it
-	for (unsigned int i = 0; i < attributes.size(); i++) {
+	for (size_t i = 0; i < attributes.size(); i++) {
 		// Devices Root
 		if (attributes[i].fName == B_DEVICE_PRETTY_NAME
 			&& attributes[i].fValue == "Devices Root") {
-			newDevice = new Device(parent, BUS_NONE,
-				CAT_COMPUTER, B_TRANSLATE("Computer"));
+			newDevice = new Device(B_TRANSLATE("Computer"), parent, BUS_NONE, CAT_COMPUTER);
 			break;
 		}
 
 		// ACPI Controller
 		if (attributes[i].fName == B_DEVICE_PRETTY_NAME
 			&& attributes[i].fValue == "ACPI") {
-			newDevice = new Device(parent, BUS_ACPI,
-				CAT_BUS, B_TRANSLATE("ACPI bus"));
+			newDevice = new Device(B_TRANSLATE("ACPI bus"), parent, BUS_ACPI, CAT_BUS);
 			break;
 		}
 
 		// PCI bus
 		if (attributes[i].fName == B_DEVICE_PRETTY_NAME
 			&& attributes[i].fValue == "PCI") {
-			newDevice = new Device(parent, BUS_PCI,
-				CAT_BUS, B_TRANSLATE("PCI bus"));
+			newDevice = new Device(B_TRANSLATE("PCI bus"), parent, BUS_PCI, CAT_BUS);
 			break;
 		}
 
 		// ISA bus
 		if (attributes[i].fName == B_DEVICE_BUS
 			&& attributes[i].fValue == "isa") {
-			newDevice = new Device(parent, BUS_ISA,
-				CAT_BUS, B_TRANSLATE("ISA bus"));
+			newDevice = new Device(B_TRANSLATE("ISA bus"), parent, BUS_ISA, CAT_BUS);
 			break;
 		}
 
 		// USB bus
 		if (attributes[i].fName == B_DEVICE_PRETTY_NAME
 			&& attributes[i].fValue == "USB") {
-			newDevice = new Device(parent, BUS_USB,
-				CAT_BUS, B_TRANSLATE("USB bus"));
+			newDevice = new Device(B_TRANSLATE("USB bus"), parent, BUS_USB, CAT_BUS);
 			break;
 		}
 
 		// PCI device
 		if (attributes[i].fName == B_DEVICE_BUS
 			&& attributes[i].fValue == "pci") {
-			newDevice = new DevicePCI(parent);
+			newDevice = new DevicePCI(B_TRANSLATE("Unknown PCI device"), parent, BUS_PCI);
 			break;
 		}
 
 		// ACPI device
 		if (attributes[i].fName == B_DEVICE_BUS
 			&& attributes[i].fValue == "acpi") {
-			newDevice = new DeviceACPI(parent);
+			newDevice = new DeviceACPI(B_TRANSLATE("Unknown ACPI device"), parent, BUS_ACPI);
 			break;
 		}
 
 		// USB device
 		if (attributes[i].fName == B_DEVICE_BUS
 			&& attributes[i].fValue == "usb") {
-			newDevice = new DeviceUSB(parent);
+			newDevice = new DeviceUSB(B_TRANSLATE("Unknown USB device"), parent, BUS_USB);
 			break;
 		}
 
 		// ATA / SCSI / IDE controller
 		if (attributes[i].fName == "controller_name") {
-			newDevice = new Device(parent, BUS_PCI,
-				CAT_MASS, attributes[i].fValue);
+			newDevice = new Device(attributes[i].fValue, parent, BUS_PCI, CAT_MASS);
 		}
 
 		// SCSI device node
 		if (attributes[i].fName == B_DEVICE_BUS
 			&& attributes[i].fValue == "scsi") {
-			newDevice = new DeviceSCSI(parent);
+			newDevice = new DeviceSCSI(B_TRANSLATE("Unknown SCSI device node"), parent, BUS_SCSI);
 			break;
 		}
 
 		// Last resort, lets look for a pretty name
 		if (attributes[i].fName == B_DEVICE_PRETTY_NAME) {
-			newDevice = new Device(parent, BUS_NONE,
-				CAT_NONE, attributes[i].fValue);
+			newDevice = new Device(attributes[i].fValue, parent);
 			break;
 		}
 	}
 
 	// A completely unknown device
-	if (newDevice == NULL) {
-		newDevice = new Device(parent, BUS_NONE,
-			CAT_NONE, B_TRANSLATE("Unknown device"));
-	}
+	if (newDevice == NULL)
+		newDevice = new Device(B_TRANSLATE("Unknown device"), parent);
 
-	// Add its attributes to the device, initialize it and add to the list.
-	for (unsigned int i = 0; i < attributes.size(); i++) {
-		newDevice->SetAttribute(attributes[i].fName, attributes[i].fValue);
-	}
+	// Add its attributes to the device, initialize, it and add to the list.
+	newDevice->SetAttributes(attributes);
 	newDevice->InitFromAttributes();
 	fDevices.push_back(newDevice);
 

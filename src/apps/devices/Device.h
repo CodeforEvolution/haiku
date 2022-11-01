@@ -33,8 +33,14 @@ typedef enum {
 struct Attribute {
 			Attribute(BString name, BString value)
 				{ fName = name; fValue = value; }
-	BString	fName;
-	BString	fValue;
+	BString		fName;
+	BString		fValue;
+
+	const char* PRETTY_DEVICE_NAME = B_TRANSLATE("Device name");
+	const char* PRETTY_DEVICE_MANUFACTURER = B_TRANSLATE("Manufacturer");
+	const char* PRETTY_DEVICE_DRIVER_NAME = B_TRANSLATE("Driver name");
+	const char* PRETTY_DEVICE_DRIVER_PATH = B_TRANSLATE("Driver path");
+	const char* PRETTY_DEVICE_PATHS = B_TRANSLATE("Device paths");
 };
 
 
@@ -74,50 +80,63 @@ extern const int kCategoryStringLength;
 
 class Device : public BStringItem {
 public:
-							Device(Device* physicalParent,
-								BusType busType = BUS_NONE,
-								Category category = CAT_NONE,
-								const BString& name = "unknown",
-								const BString& manufacturer = "unknown",
-								const BString& driverUsed = "unknown",
-								const BString& devPathsPublished = "unknown");
+							Device(const BString& deviceName,
+								Device* physicalParent
+								BusType busType = BUS_NONE
+								Category category = CAT_NONE);
 	virtual					~Device();
 
-	virtual BString			GetName();
-	virtual BString			GetManufacturer();
-	virtual BString			GetDriverUsed();
-	virtual BString			GetDevPathsPublished();
-	virtual Category		GetCategory() const
+	virtual void			SetAttributes(const Attributes& attributes);
+	virtual void 			SetAttribute(const BString& name, const BString& value);
+
+	virtual BString			GetDeviceName() const;
+	virtual BString			GetManufacturer() const;
+	virtual BString			GetDriverName() const;
+
+	virtual BString			GetDriverPath() const;
+	virtual BStringList		GetDevicePaths() const;
+
+			Category		GetCategory() const
 								{ return fCategory; }
-	virtual Device*			GetPhysicalParent() const
+			Device*			GetPhysicalParent() const
 								{ return fPhysicalParent; }
-	virtual BusType			GetBusType() const
+			BusType			GetBusType() const
 								{ return fBusType; }
 
-	virtual Attributes		GetBasicAttributes();
-	virtual Attributes		GetBusAttributes();
-	virtual Attributes		GetAllAttributes();
+	virtual Attributes		GetBasicAttributes() const;
+	virtual Attributes		GetBusAttributes() const;
+	virtual Attributes		GetAllAttributes() const;
 
-	virtual BString			GetBasicStrings();
-	virtual BString			GetBusStrings();
-	virtual BString			GetAllStrings();
+	virtual BString			GetBasicStrings() const;
+	virtual BString			GetBusStrings() const;
+	virtual BStringList		GetAllStrings() const;
 	
-	virtual BString			GetBusTabName();
+	virtual BString			GetBusTabName() const;
 
-	virtual Attribute		GetAttribute(const BString& name)
-								{ return Attribute(name.String(),
-									 fAttributeMap[name]); }
+	virtual Attribute		GetAttribute(const BString& name) const
+								{ return Attribute(name, fAttributeMap[name]); }
 
-	virtual void 			SetAttribute(const BString& name,
-								const BString& value);
-
-	virtual void			InitFromAttributes() { return; }
+protected:
+	virtual void			InitFromAttributes();
 
 protected:
 			AttributeMap	fAttributeMap;
+
+			Device*			fPhysicalParent;
 			BusType			fBusType;
 			Category		fCategory;
-			Device*			fPhysicalParent;
+
+// 			BString			fDeviceName;
+// 			BString			fManufacturerName;
+// 			BString			fDriverName;
+
+// 			BPath			fDriverModulePath;
+// 			BObjectList<BPath>	fDevicePaths;
+
+private:
+			BString			_ConvertToHex(uint16 number);
+			void			_CleanUpAttributes();
+			void			_SyncWithAttributes();
 };
 
 #endif /* DEVICE_H */

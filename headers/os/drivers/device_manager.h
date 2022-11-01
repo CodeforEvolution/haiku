@@ -131,7 +131,6 @@ struct driver_module_info {
 
 
 /* standard device node attributes */
-
 #define B_DEVICE_PRETTY_NAME		"device/pretty name"		/* string */
 #define B_DEVICE_MAPPING			"device/mapping"			/* string */
 #define B_DEVICE_BUS				"device/bus"				/* string */
@@ -140,14 +139,17 @@ struct driver_module_info {
 
 #define B_DEVICE_VENDOR_ID			"device/vendor"				/* uint16 */
 #define B_DEVICE_ID					"device/id"					/* uint16 */
-#define B_DEVICE_TYPE				"device/type"
-	/* uint16, PCI base class */
-#define B_DEVICE_SUB_TYPE			"device/subtype"
-	/* uint16, PCI sub type */
-#define B_DEVICE_INTERFACE			"device/interface"
-	/* uint16, PCI class API */
+#define B_DEVICE_TYPE				"device/type"				/* uint16, PCI base class */
+#define B_DEVICE_SUB_TYPE			"device/subtype"			/* uint16, PCI sub type */
+#define B_DEVICE_INTERFACE			"device/interface"			/* uint16, PCI class API */
 
 #define B_DEVICE_UNIQUE_ID			"device/unique id"			/* string */
+
+/* Device manager assigned node attributes */
+#define B_DEVICE_MODULE_NAME		"device/module name"		/* string */
+#define B_DEVICE_MODULE_IMAGE_PATH	"device/module image path"	/* string */
+#define B_DEVICE_PATH				"device/path"				/* string */
+
 
 /* device flags */
 #define B_FIND_CHILD_ON_DEMAND		0x01

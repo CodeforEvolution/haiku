@@ -39,75 +39,122 @@ const char* kCategoryString[] = {
 	B_TRANSLATE("Computer"),							// 0x12 (added later)
 	B_TRANSLATE("ACPI controller")						// 0x13 (added later)
 };
-const int kCategoryStringLength	= sizeof(kCategoryString)/sizeof(char *);
+const int kCategoryStringLength	= B_COUNT_OF(kCategoryString);
 
-// This list is only used to translate Device properties
-B_TRANSLATE_MARK_VOID("unknown");
+// This list is only used to translate device properties
+B_TRANSLATE_MARK_VOID("Unknown");
+B_TRANSLATE_MARK_VOID("None");
 B_TRANSLATE_MARK_VOID("Device");
 B_TRANSLATE_MARK_VOID("Computer");
+
 B_TRANSLATE_MARK_VOID("ACPI bus");
 B_TRANSLATE_MARK_VOID("PCI bus");
 B_TRANSLATE_MARK_VOID("ISA bus");
+B_TRANSLATE_MARK_VOID("SCSI bus");
 B_TRANSLATE_MARK_VOID("USB bus");
+
+B_TRANSLATE_MARK_VOID("Unknown ACPI device");
+B_TRANSLATE_MARK_VOID("Unknown PCI device");
+B_TRANSLATE_MARK_VOID("Unknown ISA device");
+B_TRANSLATE_MARK_VOID("Unknown SCSI device node");
+B_TRANSLATE_MARK_VOID("Unknown USB device");
 B_TRANSLATE_MARK_VOID("Unknown device");
 
+// This list is only used to translate pretty device attribute names
+B_TRANSLATE_MARK_VOID("Device name")
+B_TRANSLATE_MARK_VOID("Manufacturer");
+B_TRANSLATE_MARK_VOID("Driver name");
+B_TRANSLATE_MARK_VOID("Driver path");
+B_TRANSLATE_MARK_VOID("Device paths");
 
-Device::Device(Device* physicalParent, BusType busType, Category category,
-			const BString& name, const BString& manufacturer,
-			const BString& driverUsed, const BString& devPathsPublished)
+
+Device::Device(const BString& deviceName, Device* physicalParent, BusType busType,
+	Category category)
 	:
-	BStringItem(name.String()),
+	BStringItem(deviceName.String()),
+	fDeviceName(deviceName)
+	fPhysicalParent(physicalParent),
 	fBusType(busType),
-	fCategory(category),
-	fPhysicalParent(physicalParent)
+	fCategory(category)
+// 	fManufacturerName(),
+// 	fDriverName(),
+// 	fDriverPath(),
+// 	fDevicePaths()
 {
-	SetAttribute(B_TRANSLATE("Device name"), B_TRANSLATE(name));
-	SetAttribute(B_TRANSLATE("Manufacturer"), B_TRANSLATE(manufacturer));
-	SetAttribute(B_TRANSLATE("Driver used"), B_TRANSLATE(driverUsed));
-	SetAttribute(B_TRANSLATE("Device paths"), B_TRANSLATE(devPathsPublished));
+	SetAttribute(Attribute::PRETTY_DEVICE_NAME, deviceName);
+
+// 	_CleanUpAttributes();
 }
 
 
 Device::~Device()
 {
+
 }
 
 
 BString
 Device::GetName()
 {
-	return fAttributeMap[B_TRANSLATE("Device name")];
+	return fAttributeMap[Attribute::PRETTY_DEVICE_NAME];
 }
 
 
 BString
 Device::GetManufacturer()
 {
-	return fAttributeMap[B_TRANSLATE("Manufacturer")];
+	return fAttributeMap[Attribute::PRETTY_MANUFACTURER_NAME];
 }
 
 
 BString
-Device::GetDriverUsed()
+Device::GetDriverName()
 {
-	return fAttributeMap[B_TRANSLATE("Driver used")];
+	return fAttributeMap[Attribute::PRETTY_DEVICE_DRIVER_NAME];
 }
 
 
-BString
-Device::GetDevPathsPublished()
+BPath
+Device::GetDriverPath()
 {
-	return fAttributeMap[B_TRANSLATE("Device paths")];
+	return fDriverPath;
+}
+
+
+BObjectList<BPath>
+Device::GetDevicePaths()
+{
+	return fDevicePaths;
+}
+
+
+void
+Device::SetAttributes(const Attributes& attributes)
+{
+	fAttributeMap.insert(attributes);
 }
 
 
 void
 Device::SetAttribute(const BString& name, const BString& value)
 {
-	if (name == B_TRANSLATE("Device name")) {
-		SetText(value.String());
+	if (name == Attribute::PRETTY_DEVICE_NAME)) {
+		SetText(value);
+		fDeviceName = value;
+	} else if (name == Attribute::PRETTY_MANUFACTURER_NAME)
+		fManufacturerName = value;
+	else if (name == Attribute::PRETTY_DEVICE_DRIVER_NAME)
+		fDriverName = value;
+	else if (name == Attribute::PRETTY_DEVICE_DRIVER_PATH)
+		fDriverPath.SetTo(value);
+	else if (name == Attribute::PRETTY_DEVICE_PATHS) {
+		if (!fDevicesPaths.IsEmpty())
+			fDevicePaths.MakeEmpty();
+
+		fDevicePaths.AddItem(BPath(value));
+	} else {
+		fAttributeMap[name] = value;
 	}
-	fAttributeMap[name] = value;
 }
 
 
@@ -115,9 +162,12 @@ Attributes
 Device::GetBasicAttributes()
 {
 	Attributes attributes;
-	attributes.push_back(Attribute(B_TRANSLATE("Device name:"), GetName()));
-	attributes.push_back(Attribute(B_TRANSLATE("Manufacturer:"),
-		GetManufacturer()));
+	attributes.push_back(Attribute(Attribute::PRETTY_DEVICE_NAME, GetName()));
+	attributes.push_back(Attribute(Attribute::PRETTY_DEVICE_MANUFACTURER_NAME, GetManufacturerName()));
+	attributes.push_back(Attribute(Attribute::PRETTY_DEVICE_DRIVER_NAME, GetManufacturer()));
+	attributes.push_back(Attribute(Attribute::PRETTY_DEVICE_DRIVER_PATH, GetDriverPath().Path());
+	attributes.push_back(Attribute(Attribute::PRETTY_DEVICE_PATHS, GetDevicePaths().Get(0).Path());
+
 	return attributes;
 }
 
@@ -126,7 +176,8 @@ Attributes
 Device::GetBusAttributes()
 {
 	Attributes attributes;
-	attributes.push_back(Attribute("None", ""));
+	attributes.push_back(Attribute(B_TRANS"None", ""));
+
 	return attributes;
 }
 
@@ -134,35 +185,52 @@ Device::GetBusAttributes()
 Attributes
 Device::GetAllAttributes()
 {
-	Attributes attributes;
-	AttributeMapIterator iter;
-	for (iter = fAttributeMap.begin(); iter != fAttributeMap.end(); iter++) {
-		attributes.push_back(Attribute(iter->first, iter->second));
-	}
+	Attributes attributes(fAttributeMap.begin(), fAttributeMap.end());
+
+//	AttributeMapIterator iter;
+// 	for (iter = fAttributeMap.begin(); iter != fAttributeMap.end(); iter++) {
+// 		attributes.push_back(Attribute(iter->first, iter->second));
+// 	}
+
 	return attributes;
 }
 
 
-BString
+BStringList
 Device::GetBasicStrings()
 {
-	BString str(B_TRANSLATE("Device Name\t\t\t\t: %Name%\n"
+	BStringList basicStrings;
+	basicStrings.Add(ATTRIBUTE::PRETTY_DEVICE_NAME + " : " + GetDeviceName());
+	basicStrings.Add(ATTRIBUTE::PRETTY_DEVICE_MANUFACTURER + " : " + GetManufacturer());
+	basicStrings.Add(ATTRIBUTE::PRETTY_DEVICE_PATHS + " : " + GetDevicePaths().ItemAt(0));
+	basicStrings.Add(ATTRIBUTE::PRETTY_DRIVER_NAME + " : " + GetName());
+	basicStrings.Add(ATTRIBUTE::PRETTY_DRIVER_PATH + " : " + GetName());
+
+
+
+	BString str(B_TRANSLATE("Device name\t\t\t\t: %Name%\n"
 							"Manufacturer\t\t\t: %Manufacturer%\n"
-							"Driver used\t\t\t\t: %DriverUsed%\n"
+							"Driver name\t\t\t\t: %DriverName%\n"
+							"Driver path\t\t\t\t: %DriverPath%\n"
 							"Device paths\t: %DevicePaths%"));
 
 	str.ReplaceFirst("%Name%", GetName());
 	str.ReplaceFirst("%Manufacturer%", GetManufacturer());
-	str.ReplaceFirst("%DriverUsed%", GetDriverUsed());
+	str.ReplaceFirst("%DriverName%", GetDriverName());
+	str.ReplaceFirst("%DriverPath%", GetDriverPath());
 	str.ReplaceFirst("%DevicePaths%", GetDevPathsPublished());
 
 	return str;
 }
 
-BString
+
+BStringList
 Device::GetBusStrings()
 {
-	return B_TRANSLATE("None");
+	BStringList list;
+	list.Add(B_TRANSLATE("None"));
+
+	return list;
 }
 
 
@@ -173,13 +241,63 @@ Device::GetBusTabName()
 }
 
 
-BString
+BStringList
 Device::GetAllStrings()
 {
-	BString str;
+	BStringList list;
+
 	AttributeMapIterator iter;
-	for (iter = fAttributeMap.begin(); iter != fAttributeMap.end(); iter++) {
-		str << iter->first << " : " << iter->second << "\n";
+	for (iter = fAttributeMap.begin(); iter != fAttributeMap.end(); iter++)
+		list.Add(BString(iter->first + " : " + iter->second));
+
+	return list;
+}
+
+
+void
+Device::InitFromAttributes()
+{
+	_SyncWithAttributes();
+}
+
+
+// BString
+// Device::_ConvertToHex(uint16 number)
+// {
+// 	std::stringstream ss;
+// 	ss.flags(std::ios::hex | std::ios::showbase);
+// 	ss << number;
+// 	return BString(ss.str().c_str());
+// }
+//
+//
+// void
+// Device::_CleanUpAttributes()
+// {
+// 	// Looks better in Hex, so rewrite
+// 	fAttributeMap[B_DEVICE_TYPE] = _ConvertToHex(atoi(fAttributeMap[B_DEVICE_TYPE]));
+// 	fAttributeMap[B_DEVICE_SUB_TYPE] = _ConvertToHex(atoi(fAttributeMap[B_DEVICE_SUB_TYPE]));
+// 	fAttributeMap[B_DEVICE_INTERFACE] = _ConvertToHex(atoi(fAttributeMap[B_DEVICE_INTERFACE]));
+// 	fAttributeMap[B_DEVICE_VENDOR_ID] = _ConvertToHex(atoi(fAttributeMap[B_DEVICE_VENDOR_ID]));
+// 	fAttributeMap[B_DEVICE_ID] = _ConvertToHex(atoi(fAttributeMap[B_DEVICE_ID]));
+// }
+
+
+void
+Device::_SyncWithAttributes()
+{
+	fDeviceName = fAttributeMap[B_DEVICE_NAME];
+	fManufacturerName = fAttributeMap[B_DEVICE_MANUFACTURER];
+	fDriverName = fAttributeMap[B_DEVICE_MODULE_NAME];
+
+	BString driverPath = fAttributeMap[B_DEVICE_MODULE_PATH];
+	if (!driverPath.IsEmpty())
+		fDriverPath.SetTo(driverPath.String());
+
+	BString devicePath = fAttributeMap[B_DEVICE_PATH];
+	if (!devicePath.IsEmpty()) {
+		fDevicePaths.MakeEmpty();
+		fDevicePaths.AddItem(BPath(devicePath.String()));
 	}
-	return str;
+
 }

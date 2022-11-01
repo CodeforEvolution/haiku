@@ -761,21 +761,13 @@ publish_device(device_node *node, const char *path, const char *moduleName)
 
 	attr = new(std::nothrow) device_attr_private();
 	if (attr != NULL) {
-		char buf[256];
-		sprintf(buf, "dev/%" B_PRIdINO "/path", device->ID());
-		attr->name = strdup(buf);
-		attr->type = B_STRING_TYPE;
-		attr->value.string = strdup(path);
-		node->Attributes().Add(attr);
-	}
+		// FIXME: The device path may not be on this filesystem!
+		KPath devicePath("/dev/");
+		devicePath.Append(path);
 
-	attr = new(std::nothrow) device_attr_private();
-	if (attr != NULL) {
-		char buf[256];
-		sprintf(buf, "dev/%" B_PRIdINO "/driver", device->ID());
-		attr->name = strdup(buf);
+		attr->name = strdup(B_DEVICE_PATH);
 		attr->type = B_STRING_TYPE;
-		attr->value.string = strdup(moduleName);
+		attr->value.string = devicePath.DetachBuffer();
 		node->Attributes().Add(attr);
 	}
 
@@ -799,6 +791,12 @@ unpublish_device(device_node *node, const char *path)
 	Device* device = dynamic_cast<Device*>(baseDevice);
 	if (device == NULL || device->Node() != node)
 		return B_BAD_VALUE;
+
+	device_attr_private* devicePathAttr = find_attr(&node, B_DEVICE_PATH, false, B_STRING_TYPE);
+	if (devicePathAttr != NULL) {
+		fAttributes.Remove(devicePathAttr);
+		delete devicePathAttr;
+	}
 
 	return devfs_unpublish_device(device, true);
 }
@@ -1295,24 +1293,35 @@ device_node::device_node(const char* moduleName, const device_attr* attrs)
 	fDriver = NULL;
 	fDriverData = NULL;
 
-	// copy attributes
-
+	// Copy attributes
 	while (attrs != NULL && attrs->name != NULL) {
-		device_attr_private* attr
-			= new(std::nothrow) device_attr_private(*attrs);
-		if (attr == NULL)
+		device_attr_private* attr = new(std::nothrow) device_attr_private(*attrs);
+		if (attribute == NULL)
 			break;
 
 		fAttributes.Add(attr);
-		attrs++;
+		attribute++;
 	}
 
-	device_attr_private* attr = new(std::nothrow) device_attr_private();
-	if (attr != NULL) {
-		attr->name = strdup("device/driver");
-		attr->type = B_STRING_TYPE;
-		attr->value.string = strdup(fModuleName);
-		fAttributes.Add(attr);
+	// B_DEVICE_MODULE_NAME: The name of the module that this device_node is using.
+	device_attr_private* moduleNameAttrib = new(std::nothrow) device_attr_private();
+	if (moduleNameAttrib != NULL) {
+		moduleNameAttrib->name = strdup(B_DEVICE_MODULE_NAME);
+		moduleNameAttrib->type = B_STRING_TYPE;
+		moduleNameAttrib->value.string = strdup(fModuleName);
+		fAttributes.Add(moduleNameAttrib);
+	}
+
+	// B_DEVICE_MODULE_IMAGE_PATH: A path to the driver/image file that exports the module this
+	// device_node is using.
+	char imagePath[B_PATH_NAME_LENGTH];
+	status_t result = module_get_path(fModuleName, &imagePath);
+	device_attr_private* imagePathAttribute = new(std::nothrow) device_attr_private();
+	if (imagePathAttribute != NULL) {
+		imagePathAttribute->name = strdup(B_DEVICE_MODULE_IMAGE_PATH);
+		imagePathAttribute->type = B_STRING_TYPE;
+		imagePathAttribute->value.string = result == B_OK ? strdup(imagePath) : "<Built-In>";
+		node->Attributes().Add(imagePathAttribute);
 	}
 
 	get_attr_uint32(this, B_DEVICE_FLAGS, &fFlags, false);
@@ -2226,22 +2235,22 @@ device_node::AddDevice(Device* device)
 void
 device_node::RemoveDevice(Device* device)
 {
-	char attrName[256];
-	device_attr_private* attr;
+//	char attrName[256];
+//	device_attr_private* attr;
 
-	sprintf(attrName, "dev/%" B_PRIdINO "/path", device->ID());
-	attr = find_attr(this, attrName, false, B_STRING_TYPE);
-	if (attr != NULL) {
-		fAttributes.Remove(attr);
-		delete attr;
-	}
+// 	sprintf(attrName, "dev/%" B_PRIdINO "/path", device->ID());
+					// 	attr = find_attr(this, attrName, false, B_STRING_TYPE);
+					// 	if (attr != NULL) {
+					// 		fAttributes.Remove(attr);
+					// 		delete attr;
+					// 	}
 
-	sprintf(attrName, "dev/%" B_PRIdINO "/driver", device->ID());
-	attr = find_attr(this, attrName, false, B_STRING_TYPE);
-	if (attr != NULL) {
-		fAttributes.Remove(attr);
-		delete attr;
-	}
+// 	sprintf(attrName, "dev/%" B_PRIdINO "/driver", device->ID());
+// 	attr = find_attr(this, attrName, false, B_STRING_TYPE);
+// 	if (attr != NULL) {
+// 		fAttributes.Remove(attr);
+// 		delete attr;
+// 	}
 
 	fDevices.Remove(device);
 }
