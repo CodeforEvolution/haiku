@@ -45,7 +45,8 @@
 
 
 typedef NetBufferField<uint16, offsetof(hci_acl_header, alen)> AclLenField;
-DoublyLinkedList<L2capEndpoint> EndpointList;
+
+DoublyLinkedList<L2capEndpoint> gEndpointList;
 
 extern net_protocol_module_info gL2CAPModule;
 
@@ -63,13 +64,14 @@ l2cap_init_protocol(net_socket* socket)
 {
 	CALLED();
 
-	L2capEndpoint* protocol = new(std::nothrow) L2capEndpoint(socket);
-	if (protocol == NULL)
+	L2capEndpoint* endpoint = new(std::nothrow) L2capEndpoint(socket);
+	if (endpoint == NULL)
 		return NULL;
 
-	EndpointList.Add(protocol);
+	gEndpointList.Add(endpoint);
 
-	return protocol;
+	endpoint->Init();
+	return endpoint;
 }
 
 
@@ -78,14 +80,17 @@ l2cap_uninit_protocol(net_protocol* protocol)
 {
 	CALLED();
 
-	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
+	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
+	if (endpoint == NULL)
+		return B_BAD_TYPE;
 
 	// TODO: Some more checkins	/ uninit
-	EndpointList.Remove(endpoint);
+	gEndpointList.Remove(endpoint);
 
+	status_t result = endpoint->Uninit();
 	delete endpoint;
 
-	return B_OK;
+	return result;
 }
 
 
@@ -94,20 +99,20 @@ l2cap_open(net_protocol* protocol)
 {
 	CALLED();
 
-	return B_OK;
+	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
+
+	return endpoint->Open();
 }
 
 
 status_t
 l2cap_close(net_protocol* protocol)
 {
-	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
-
 	CALLED();
 
-	endpoint->Close();
+	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
 
-	return B_OK;
+	return endpoint->Close();
 }
 
 
@@ -329,7 +334,7 @@ l2cap_std_ops(int32 op, ...)
 			if (error != B_OK)
 				return error;
 
-			new (&EndpointList) DoublyLinkedList<L2capEndpoint>;
+			new (&gEndpointList) DoublyLinkedList<L2capEndpoint>;
 
 			error = InitializeConnectionPurgeThread();
 

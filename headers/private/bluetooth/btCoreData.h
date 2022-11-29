@@ -16,7 +16,8 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/HCI/btHCI.h>
 #include <bluetooth/HCI/btHCI_transport.h>
-#include <l2cap.h>
+
+#include <l2cap_definitions.h>
 
 
 #define BT_CORE_DATA_MODULE_NAME "bluetooth/btCoreData/v1"
@@ -63,13 +64,13 @@ struct HciConnection;
 #endif
 
 typedef enum _channel_status {
-	L2CAP_CHAN_CLOSED,				/* channel closed */
-	L2CAP_CHAN_W4_L2CAP_CON_RSP,	/* wait for L2CAP resp. */
-	L2CAP_CHAN_W4_L2CA_CON_RSP,		/* wait for upper resp. */
-	L2CAP_CHAN_CONFIG,				/* L2CAP configuration */
-	L2CAP_CHAN_OPEN,				/* channel open */
-	L2CAP_CHAN_W4_L2CAP_DISCON_RSP,	/* wait for L2CAP discon. */
-	L2CAP_CHAN_W4_L2CA_DISCON_RSP	/* wait for upper discon. */
+	L2CAP_CHAN_CLOSED,						/* channel not connected */
+	L2CAP_CHAN_WAIT_CONNECT_RSP,			/* wait for L2CAP resp. */
+	L2CAP_CHAN_WAIT_UPPER_CONNECT_RSP,		/* wait for upper resp. */
+	L2CAP_CHAN_CONFIG,						/* L2CAP configuration */
+	L2CAP_CHAN_OPEN,						/* channel open */
+	L2CAP_CHAN_WAIT_DISCONNECT_RSP,			/* wait for L2CAP discon. */
+	L2CAP_CHAN_WAIT_UPPER_DISCONNECT_RSP	/* wait for upper discon. */
 } channel_status;
 
 

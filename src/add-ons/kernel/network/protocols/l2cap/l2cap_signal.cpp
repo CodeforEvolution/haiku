@@ -41,7 +41,7 @@ typedef enum _option_status {
 } option_status;
 
 
-l2cap_flow_t default_qos = {
+const l2cap_flow_t default_qos = {
 		/* flags */ 0x0,
 		/* service_type */ HCI_SERVICE_TYPE_BEST_EFFORT,
 		/* token_rate */ 0xffffffff, /* maximum */
@@ -91,7 +91,7 @@ l2cap_process_cmd_rej(HciConnection* conn, uint8 ident, net_buffer* buffer);
  * is 0x1 that means we have received signaling command from peer's L2CAP layer.
  * So get command header, decode and process it.
  *
- * XXX do we need to check signaling MTU here?
+ * FIXME: Do we need to check signaling MTU here?
  */
 
 status_t

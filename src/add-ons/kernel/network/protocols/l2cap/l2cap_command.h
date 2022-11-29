@@ -7,7 +7,7 @@
 
 #include <NetBufferUtilities.h>
 
-#include <l2cap.h>
+#include <l2cap_definitions.h>
 
 
 extern net_buffer_module_info *gBufferModule;

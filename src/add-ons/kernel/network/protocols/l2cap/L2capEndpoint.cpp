@@ -32,6 +32,7 @@ L2capEndpoint::L2capEndpoint(net_socket* socket)
 	:
 	ProtocolSocket(socket),
 	fConfigurationSet(false),
+	fState(CLOSED),
 	fEstablishSemaphore(-1),
 	fPeerEndpoint(NULL),
 	fChannel(NULL)
@@ -40,24 +41,19 @@ L2capEndpoint::L2capEndpoint(net_socket* socket)
 
 	/* Set MTU and flow control settings to defaults */
 	fConfiguration.imtu = L2CAP_MTU_DEFAULT;
-	memcpy(&fConfiguration.iflow, &default_qos , sizeof(l2cap_flow_t) );
+	memcpy(&fConfiguration.iflow, &default_qos, sizeof(l2cap_flow_t));
 
 	fConfiguration.omtu = L2CAP_MTU_DEFAULT;
-	memcpy(&fConfiguration.oflow, &default_qos , sizeof(l2cap_flow_t) );
+	memcpy(&fConfiguration.oflow, &default_qos, sizeof(l2cap_flow_t));
 
 	fConfiguration.flush_timo = L2CAP_FLUSH_TIMO_DEFAULT;
 	fConfiguration.link_timo  = L2CAP_LINK_TIMO_DEFAULT;
-
-	// TODO: XXX not for listening endpoints, imtu should be known first
-	gStackModule->init_fifo(&fReceivingFifo, "l2cap recvfifo", L2CAP_MTU_DEFAULT);
 }
 
 
 L2capEndpoint::~L2capEndpoint()
 {
 	CALLED();
-
-	gStackModule->uninit_fifo(&fReceivingFifo);
 }
 
 
@@ -65,6 +61,9 @@ status_t
 L2capEndpoint::Init()
 {
 	CALLED();
+
+	// TODO: XXX not for listening endpoints, imtu should be known first
+	gStackModule->init_fifo(&fReceivingFifo, "l2cap recvfifo", L2CAP_MTU_DEFAULT);
 
 	return B_OK;
 }
@@ -75,6 +74,7 @@ L2capEndpoint::Uninit()
 {
 	CALLED();
 
+	gStackModule->uninit_fifo(&fReceivingFifo);
 }
 
 
@@ -146,7 +146,7 @@ L2capEndpoint::Bind(const struct sockaddr* _address)
 	if (_address == NULL)
 		return B_ERROR;
 
-	if (address->l2cap_family != AF_BLUETOOTH )
+	if (address->l2cap_family != AF_BLUETOOTH)
 		return EAFNOSUPPORT;
 
 	if (address->l2cap_len != sizeof(struct sockaddr_l2cap))
@@ -163,7 +163,7 @@ L2capEndpoint::Bind(const struct sockaddr* _address)
 	// the PSM field to be extended beyond 16 bits.
 	if ((address->l2cap_psm & 1) == 0)
 		return B_ERROR;
-
+d
 	memcpy(&socket->address, _address, sizeof(struct sockaddr_l2cap));
 	socket->address.ss_len = sizeof(struct sockaddr_l2cap);
 
@@ -209,8 +209,9 @@ L2capEndpoint::Listen(int backlog)
 status_t
 L2capEndpoint::Connect(const struct sockaddr* _address)
 {
-	const sockaddr_l2cap* address
-		= reinterpret_cast<const sockaddr_l2cap*>(_address);
+	CALLED();
+
+	const sockaddr_l2cap* address = reinterpret_cast<const sockaddr_l2cap*>(_address);
 
 	if (address->l2cap_len != sizeof(*address))
 		return EINVAL;
@@ -232,45 +233,42 @@ L2capEndpoint::Connect(const struct sockaddr* _address)
 
 	// Route, we must find a Connection descriptor with address->l2cap_address
 	hci_id hid = btCoreData->RouteConnection(address->l2cap_bdaddr);
+	if (hid <= 0)
+		return ENETUNREACH;
 
 	#if 0
 	TRACE("%s: %" B_PRId32 " for route %s\n", __func__, hid,
 		bdaddrUtils::ToString(address->l2cap_bdaddr).String());
 	#endif
 
-	if (hid > 0) {
-		HciConnection* connection = btCoreData->ConnectionByDestination(
-			address->l2cap_bdaddr, hid);
+	HciConnection* connection = btCoreData->ConnectionByDestination(
+		address->l2cap_bdaddr, hid);
 
-		L2capChannel* channel = btCoreData->AddChannel(connection,
-			address->l2cap_psm);
+	L2capChannel* channel = btCoreData->AddChannel(connection,
+		address->l2cap_psm);
 
-		if (channel == NULL)
-			return ENOMEM;
+	if (channel == NULL)
+		return ENOMEM;
 
-		// Send connection request
-		if (l2cap_upper_con_req(channel) == B_OK) {
-			fState = CONNECTING;
+	// Send connection request
+	if (l2cap_upper_connect_request(channel) == B_OK) {
+		fState = CONNECTING;
 
-			BindToChannel(channel);
+		BindToChannel(channel);
 
-			fEstablishSemaphore = create_sem(0, "l2cap client");
-			if (fEstablishSemaphore < B_OK) {
-				ERROR("%s: Semaphore could not be created\n", __func__);
-				return ENOBUFS;
-			}
-
-			bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
-
-			return acquire_sem_etc(fEstablishSemaphore, 1,
-				B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT, timeout);
-
-		} else {
-			return ECONNREFUSED;
+		fEstablishSemaphore = create_sem(0, "l2cap client");
+		if (fEstablishSemaphore < B_OK) {
+			ERROR("%s: Semaphore could not be created\n", __func__);
+			return ENOBUFS;
 		}
+
+		bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
+
+		return acquire_sem_etc(fEstablishSemaphore, 1,
+			B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT, timeout);
 	}
 
-	return ENETUNREACH;
+	return ECONNREFUSED;
 }
 
 

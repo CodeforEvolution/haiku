@@ -11,7 +11,7 @@
 struct sockaddr_l2cap {
 	uint8		l2cap_len;		/* total length */
 	uint8		l2cap_family;	/* address family */
-	uint16		l2cap_psm;		/* PSM (Protocol/Service Multiplexor) */
+	uint16		l2cap_psm;		/* PSM (Protocol/Service Multiplexer) */
 	bdaddr_t	l2cap_bdaddr;	/* address */
 };
 

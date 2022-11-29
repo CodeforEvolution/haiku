@@ -5,6 +5,7 @@
 #ifndef L2CAP_ENDPOINT_H
 #define L2CAP_ENDPOINT_H
 
+
 #include <sys/stat.h>
 
 #include <lock.h>
@@ -16,6 +17,7 @@
 #include <ProtocolUtilities.h>
 
 #include "l2cap_internal.h"
+
 
 extern net_stack_module_info* gStackModule;
 
@@ -78,10 +80,6 @@ public:
 		return fConfigurationSet;
 	}
 
-	ChannelConfiguration 	fConfiguration;
-	bool 					fConfigurationSet;
-	net_fifo		fReceivingFifo;
-
 private:
 	typedef enum {
 		// establishing a connection
@@ -102,6 +100,10 @@ private:
 		TIME_WAIT
 	} State;
 
+	ChannelConfiguration 	fConfiguration;
+	bool 					fConfigurationSet;
+	net_fifo				fReceivingFifo;
+
 	mutex			fLock;
 	State    		fState;
 	sem_id			fEstablishSemaphore;
@@ -111,6 +113,6 @@ private:
 };
 
 
-extern DoublyLinkedList<L2capEndpoint> EndpointList;
+extern DoublyLinkedList<L2capEndpoint> gEndpointList;
 
 #endif	// L2CAP_ENDPOINT_H

@@ -229,7 +229,7 @@ l2cap_discon_rsp_ind(L2capChannel* channel)
 
 
 status_t
-l2cap_upper_con_req(L2capChannel* channel)
+l2cap_upper_connect_request(L2capChannel* channel)
 {
 	channel->ident = btCoreData->ChannelAllocateIdent(channel->conn);
 
@@ -242,7 +242,7 @@ l2cap_upper_con_req(L2capChannel* channel)
 		return ENOMEM;
 	}
 
-	channel->state = L2CAP_CHAN_W4_L2CAP_CON_RSP;
+	channel->state = L2CAP_CHAN_WAIT_CONNECTION_RSP;
 
 	// Link command to the queue
 	SchedConnectionPurgeThread(channel->conn);
@@ -251,7 +251,7 @@ l2cap_upper_con_req(L2capChannel* channel)
 
 
 status_t
-l2cap_upper_dis_req(L2capChannel* channel)
+l2cap_upper_disconnect_request(L2capChannel* channel)
 {
 	channel->ident = btCoreData->ChannelAllocateIdent(channel->conn);
 

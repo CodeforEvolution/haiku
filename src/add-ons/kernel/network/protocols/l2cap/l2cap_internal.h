@@ -11,9 +11,9 @@
 
 extern l2cap_flow_t default_qos;
 
-extern bluetooth_core_data_module_info *btCoreData;
-extern net_buffer_module_info *gBufferModule;
-extern net_stack_module_info *gStackModule;
-extern net_socket_module_info *gSocketModule;
+extern bluetooth_core_data_module_info* btCoreData;
+extern net_buffer_module_info* gBufferModule;
+extern net_stack_module_info* gStackModule;
+extern net_socket_module_info* gSocketModule;
 
 #endif	// L2CAP_ADDRESS_H
