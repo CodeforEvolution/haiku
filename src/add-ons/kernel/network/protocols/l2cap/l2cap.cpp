@@ -41,8 +41,8 @@ l2cap_init_protocol(net_socket* socket)
 {
 	CALLED();
 
-	L2capEndpoint* protocol = new(std::nothrow) L2capEndpoint(socket);
-	if (protocol == NULL)
+	L2capEndpoint* endpoint = new(std::nothrow) L2capEndpoint(socket);
+	if (endpoint == NULL)
 		return NULL;
 
 	return protocol;
@@ -57,7 +57,7 @@ l2cap_uninit_protocol(net_protocol* protocol)
 	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
 	delete endpoint;
 
-	return B_OK;
+	return result;
 }
 
 

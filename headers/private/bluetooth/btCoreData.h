@@ -20,7 +20,8 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/HCI/btHCI.h>
 #include <bluetooth/HCI/btHCI_transport.h>
-#include <l2cap.h>
+
+#include <l2cap_definitions.h>
 
 
 #define BT_CORE_DATA_MODULE_NAME "bluetooth/btCoreData/v1"
