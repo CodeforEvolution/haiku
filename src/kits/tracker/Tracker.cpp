@@ -242,6 +242,7 @@ TTracker::TTracker()
 	:
 	BApplication(kTrackerSignature),
 	fMimeTypeList(NULL),
+	fDeskWindow(NULL),
 	fClipboardRefsWatcher(NULL),
 	fTrashWatcher(NULL),
 	fTaskLoop(NULL),
@@ -288,7 +289,6 @@ TTracker::TTracker()
 	gLaunchLooper->Run();
 
 	// open desktop window
-	BContainerWindow* deskWindow = NULL;
 	BDirectory deskDir;
 	if (FSGetDeskDir(&deskDir) == B_OK) {
 		// create desktop
@@ -297,10 +297,10 @@ TTracker::TTracker()
 		Model* model = new Model(&entry, true);
 		if (model->InitCheck() == B_OK) {
 			AutoLock<WindowList> lock(&fWindowList);
-			deskWindow = new BDeskWindow(&fWindowList);
-			AutoLock<BWindow> windowLock(deskWindow);
-			deskWindow->CreatePoseView(model);
-			deskWindow->Init();
+			fDeskWindow = new BDeskWindow(&fWindowList);
+			AutoLock<BWindow> windowLock(fDeskWindow);
+			fDeskWindow->CreatePoseView(model);
+			fDeskWindow->Init();
 
 			if (TrackerSettings().ShowDisksIcon()) {
 				// create model for root of everything
@@ -316,7 +316,7 @@ TTracker::TTracker()
 					message.AddInt64("directory",
 						model.EntryRef()->directory);
 					message.AddString("name", model.EntryRef()->name);
-					deskWindow->PostMessage(&message, deskWindow->PoseView());
+					fDeskWindow->PostMessage(&message, fDeskWindow->PoseView());
 				}
 			}
 		} else
@@ -1199,16 +1199,16 @@ TTracker::OpenInfoWindows(BMessage* message)
 BDeskWindow*
 TTracker::GetDeskWindow() const
 {
-	int32 count = fWindowList.CountItems();
-	for (int32 index = 0; index < count; index++) {
-		BDeskWindow* window = dynamic_cast<BDeskWindow*>(
-			fWindowList.ItemAt(index));
-		if (window != NULL)
-			return window;
-	}
-	TRESPASS();
+// 	int32 count = fWindowList.CountItems();
+// 	for (int32 index = 0; index < count; index++) {
+// 		BDeskWindow* window = dynamic_cast<BDeskWindow*>(
+// 			fWindowList.ItemAt(index));
+// 		if (window != NULL)
+// 			return window;
+// 	}
+// 	TRESPASS();
 
-	return NULL;
+	return fDeskWindow;
 }
 
 

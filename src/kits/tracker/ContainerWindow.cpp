@@ -785,7 +785,7 @@ BContainerWindow::Quit()
 	// This is a deadlock code sequence - need to change this
 	// to acquire the window list while this container window is unlocked
 	if (fWindowList != NULL) {
-		AutoLock<LockingList<BWindow> > lock(fWindowList);
+		AutoLock<LockingList<BWindow>> lock(fWindowList);
 		if (lock.IsLocked()) {
 			fWindowList->RemoveItem(this, false);
 			windowCount = fWindowList->CountItems();

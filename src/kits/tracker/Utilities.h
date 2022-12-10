@@ -554,6 +554,20 @@ extern const float kExactMatchScore;
 float ComputeTypeAheadScore(const char* text, const char* match,
 	bool wordMode = false);
 
+// Comparison functions for WindowList and MimeTypeList. This allows for binary searches!
+
+template <typename WindowType>
+inline int CompareContainerWindowByEntryRef(const WindowType* windowA, const WindowType* windowB) {
+	if (windowA->PoseView()->TargetModel()->EntryRef() < windowB->PoseView()->TargetModel()->EntryRef())
+		return -1;
+	else if (windowA->PoseView()->TargetModel()->EntryRef() == windowB->PoseView()->TargetModel()->EntryRef())
+		return 0;
+	else
+		return 1;
+}
+
+
+
 } // namespace BPrivate
 
 

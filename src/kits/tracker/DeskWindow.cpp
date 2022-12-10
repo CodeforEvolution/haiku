@@ -263,7 +263,7 @@ BDeskWindow::Init(const BMessage*)
 void
 BDeskWindow::InitAddonsList(bool update)
 {
-	AutoLock<LockingList<AddonShortcut> > lock(fAddonsList);
+	AutoLock<LockingList<AddonShortcut>> lock(fAddonsList);
 	if (lock.IsLocked()) {
 		if (update) {
 			for (int i = fAddonsList->CountItems() - 1; i >= 0; i--) {

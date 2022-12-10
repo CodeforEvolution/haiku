@@ -222,6 +222,7 @@ private:
 			const BMessage* messageToBundle = NULL);
 
 	MimeTypeList*			fMimeTypeList;
+	BDeskWindow*			fDeskWindow;
 	WindowList				fWindowList;
 	BClipboardRefsWatcher*	fClipboardRefsWatcher;
 	BTrashWatcher*			fTrashWatcher;
