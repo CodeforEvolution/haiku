@@ -345,7 +345,7 @@ _init_global_fonts_()
 	int32 code;
 	if (link.FlushWithReply(code) != B_OK
 		|| code != B_OK) {
-		printf("DEBUG: Couldn't initialize global fonts!\n");
+		fprintf(stderr, "DEBUG: Couldn't initialize global fonts!\n");
 		return;
 	}
 
@@ -521,6 +521,14 @@ BFont::BFont()
 }
 
 
+BFont::BFont(font_which which)
+{
+	status_t result = BFont::GetStandardFont(which, this);
+	if (result != B_OK)
+		*this = *be_plain_font;
+}
+
+
 BFont::BFont(const BFont& font)
 {
 	*this = font;
@@ -533,6 +541,55 @@ BFont::BFont(const BFont* font)
 		*this = *font;
 	else
 		*this = *be_plain_font;
+}
+
+
+/*static*/ status_t
+BFont::GetStandardFont(font_which which, BFont& intoFont)
+{
+	if (intoFont == NULL)
+		return B_BAD_VALUE;
+
+	if (which < 0 || which >= B_FONT_WHICH_COUNT)
+		return B_BAD_VALUE;
+
+	BPrivate::AppServerLink link;
+
+	link.StartMessage(AS_GET_STANDARD_FONT);
+	link.Attach<font_which>(which);
+
+	int32 status = B_ERROR;
+	if (link.FlushWithReply(status) != B_OK || status != B_OK)
+		return status;
+
+	link.Read<uint16>(&intoFont->fFamilyID);
+	link.Read<uint16>(&intoFont->fStyleID);
+	link.Read<float>(&intoFont->fSize);
+	link.Read<uint16>(&intoFont->fFace);
+	link.Read<uint32>(&intoFont->fFlags);
+
+	intoFont->fHeight.ascent = kUninitializedAscent;
+	intoFont->fExtraFlags = kUninitializedExtraFlags;
+}
+
+
+/*static*/ status_t
+BFont::SetStandardFont(font_which which, const BFont& fromFont)
+{
+	if (which < 0 || which >= B_FONT_WHICH_COUNT)
+		return B_BAD_VALUE;
+
+	BPrivate::AppServerLink link;
+
+	link.StartMessage(AS_SET_STANDARD_FONT);
+	link.Attach<font_which>(which);
+	link.Attach<uint16>(fromFont.fFamilyID);
+	link.Attach<uint16>(fromFont.fStyleID);
+	link.Attach<float>(fromFont.fSize);
+
+	int32 status = B_ERROR;
+	if (link.FlushWithReply(status) != B_OK || status != B_OK)
+		return status;
 }
 
 

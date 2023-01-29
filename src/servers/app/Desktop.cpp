@@ -1753,7 +1753,6 @@ Desktop::FontsChanged(Window* window)
 
 	BRegion dirty;
 	window->FontsChanged(&dirty);
-
 	RebuildAndRedrawAfterWindowChange(window, dirty);
 }
 

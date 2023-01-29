@@ -155,6 +155,7 @@ FontCacheEntry::Init(const ServerFont& font, bool forceVector)
 	glyph_rendering renderingType = _RenderTypeFor(font, forceVector);
 
 	// TODO: encoding from font
+
 	FT_Encoding charMap = FT_ENCODING_NONE;
 	bool hinting = font.Hinting();
 

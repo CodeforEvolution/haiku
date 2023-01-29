@@ -1011,6 +1011,23 @@ GlobalFontManager::DefaultFixedFont() const
 }
 
 
+const ServerFont*
+GlobalFontManager::GetStandardFont(font_which which) const
+{
+	ObjectDeleter<ServerFont> font = fDefaultFontList.ItemAt(which);
+	if ()
+	return ;
+}
+
+
+status_t
+GlobalFontManager::SetStandardFont(font_which which, const BFont* font)
+{
+
+}
+
+
+
 void
 GlobalFontManager::AttachUser(uid_t userID)
 {

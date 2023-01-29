@@ -177,6 +177,8 @@ class ServerFont {
 			FT_Byte* 			FontData() const
 									{ return fStyle->FontData(); }
 
+			FT_Encoding			FTEncoding() const;
+
 protected:
 	friend class FontStyle;
 

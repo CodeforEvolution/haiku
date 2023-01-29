@@ -1209,3 +1209,31 @@ ServerFont::SetFontData(FT_Byte* location, uint32 size)
 	if (fStyle != NULL)
 		fStyle->SetFontData(location, size);
 }
+
+
+FT_Encoding
+ServerFont::FTEncoding() const
+{
+	switch (fEncoding) {
+		case B_UNICODE_UTF8:
+		case B_ISO_8859_1:
+			return FT_ENCODING_UNICODE;
+
+		case B_MACINTOSH_ROMAN:
+			return FT_ENCODING_APPLE_ROMAN;
+
+		case B_SHIFT_JIS:
+			return FT_ENCODING_SJIS;
+
+		case B_EUC_KOREAN:
+			return FT_ENCODING_WANSUNG;
+
+		case B_BIG_5:
+			return FT_ENCODING_BIG5;
+
+		case B_GBK:
+			return FT_ENCODING_PRC;
+
+		default:
+			return FT_ENCODING_NONE;
+}

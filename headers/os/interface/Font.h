@@ -64,7 +64,24 @@ enum {
 	B_ISO_8859_8			= 8,
 	B_ISO_8859_9			= 9,
 	B_ISO_8859_10			= 10,
-	B_MACINTOSH_ROMAN		= 11
+	B_MACINTOSH_ROMAN		= 11,
+	B_SHIFT_JIS				= 12,
+	B_EUC_JAPANESE			= 13,	/*  EUC Packed Japanese */
+	B_JIS					= 14,	/*  JIS X 0208-1990 */
+	B_MS_WINDOWS			= 15,	/*  Windows Latin-1 Codepage 1252 */
+	B_UNICODE_2,					/*  Unicode 2.0, UCS-2 */
+	B_KOI8_R,						/*  KOI8-R */
+	B_MS_WINDOWS_1251,				/*  Windows Cyrillic Codepage 1251 */
+	B_MS_DOS_866,					/*  MS-DOS Codepage 866 */
+	B_MS_DOS_437,					/*  MS-DOS Codepage 437 */
+	B_EUC_KOREAN,					/*  EUC Korean */
+	B_ISO_8859_13,
+	B_ISO_8859_14,
+	B_ISO_8859_15,
+	B_BIG_5,						/*  Chinese Big5 */
+	B_GBK,							/*  Chinese GB18030 */
+	B_UNICODE_UTF16,				/*  Unicode UTF-16 */
+	B_MS_WINDOWS_1250				/*  Windows Central European Codepage */
 };
 
 
@@ -101,6 +118,20 @@ enum font_file_format {
 	B_TRUETYPE_WINDOWS		= 0,
 	B_POSTSCRIPT_TYPE1_WINDOWS = 1
 };
+
+
+enum font_which {
+	B_PLAIN_FONT			= 0,
+	B_BOLD_FONT				= 1,
+	B_FIXED_FONT			= 2,
+	B_MENU_FONT				= 3,
+	B_SERIF_FONT			= 4,
+	B_SANS_SERIF_FONT		= 5,
+	B_SYMBOL_FONT			= 6,
+
+	B_FONT_WHICH_COUNT
+};
+
 
 
 class unicode_block {
@@ -175,8 +206,12 @@ class BFontPrivate;
 class BFont {
 public:
 								BFont();
+								BFont(font_which which);
 								BFont(const BFont& font);
 								BFont(const BFont* font);
+
+	static	status_t			GetStandardFont(font_which which, BFont* intoFont);
+	static	status_t			SetStandardFont(font_which which, const BFont* fromFont);
 
 			status_t			SetFamilyAndStyle(const font_family family,
 									const font_style style);

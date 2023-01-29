@@ -56,6 +56,9 @@ public:
 			const ServerFont*	DefaultBoldFont() const;
 			const ServerFont*	DefaultFixedFont() const;
 
+			const ServerFont*	GetStandardFont(font_which which) const;
+			status_t			SetStandardFont(font_which which, const ServerFont& font);
+
 			void				AttachUser(uid_t userID);
 			void				DetachUser(uid_t userID);
 	virtual FontFamily*			GetFamily(uint16 familyID) const;
@@ -117,6 +120,8 @@ private:
 								fDefaultBoldFont;
 			ObjectDeleter<ServerFont>
 								fDefaultFixedFont;
+
+			typedef BObjectList<ObjectDeleter<ServerFont>>	fDefaultFontList;
 
 			bool				fScanned;
 
