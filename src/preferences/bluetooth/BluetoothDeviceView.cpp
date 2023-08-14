@@ -21,9 +21,9 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Device View"
 
-BluetoothDeviceView::BluetoothDeviceView(BluetoothDevice* bDevice, uint32 flags)
+BluetoothDeviceView::BluetoothDeviceView(BluetoothDevice* bDevice)
 	:
-	BView("BluetoothDeviceView", flags | B_WILL_DRAW),
+	BView("BluetoothDeviceView", B_WILL_DRAW),
 	fDevice(bDevice)
 {
 	fName = new BStringView("name", "");
@@ -93,61 +93,62 @@ BluetoothDeviceView::~BluetoothDeviceView()
 void
 BluetoothDeviceView::SetBluetoothDevice(BluetoothDevice* bDevice)
 {
-	if (bDevice != NULL) {
-		SetName(bDevice->GetFriendlyName().String());
+	if (bDevice == NULL)
+		return;
 
-		fName->SetText(bDevice->GetFriendlyName().String());
-		fBdaddr->SetText(bdaddrUtils::ToString(bDevice->GetBluetoothAddress()));
+	SetName(bDevice->GetFriendlyName().String());
 
-		BString string(B_TRANSLATE("Service classes: "));
-		bDevice->GetDeviceClass().GetServiceClass(string);
-		fClassService->SetText(string.String());
+	fName->SetText(bDevice->GetFriendlyName().String());
+	fBdaddr->SetText(bdaddrUtils::ToString(bDevice->GetBluetoothAddress()));
 
-		string = "";
-		bDevice->GetDeviceClass().GetMajorDeviceClass(string);
-		string << " / ";
-		bDevice->GetDeviceClass().GetMinorDeviceClass(string);
-		fClass->SetText(string.String());
+	BString tempString(B_TRANSLATE("Service classes: "));
+	bDevice->GetDeviceClass().GetServiceClass(tempString);
+	fClassService->SetText(tempString.String());
 
-		bDevice->GetDeviceClass().Draw(fIcon, BPoint(Bounds().left, Bounds().top));
+	tempString = "";
+	bDevice->GetDeviceClass().GetMajorDeviceClass(tempString);
+	tempString << " / ";
+	bDevice->GetDeviceClass().GetMinorDeviceClass(tempString);
+	fClass->SetText(tempString.String());
 
-		uint32 value;
+	bDevice->GetDeviceClass().Draw(fIcon, BPoint(Bounds().left, Bounds().top));
 
-		string = "";
-		if (bDevice->GetProperty("hci_version", &value) == B_OK)
-			string << "HCI ver: " << BluetoothHciVersion(value);
-		if (bDevice->GetProperty("hci_revision", &value) == B_OK)
-			string << " HCI rev: " << value ;
+	uint32 value;
 
-		fHCIVersionProperties->SetText(string.String());
+	tempString = "";
+	if (bDevice->GetProperty("hci_version", &value) == B_OK)
+		tempString << "HCI ver: " << BluetoothHciVersion(value);
+	if (bDevice->GetProperty("hci_revision", &value) == B_OK)
+		tempString << " HCI rev: " << value ;
 
-		string = "";
-		if (bDevice->GetProperty("lmp_version", &value) == B_OK)
-			string << "LMP ver: " << BluetoothLmpVersion(value);
-		if (bDevice->GetProperty("lmp_subversion", &value) == B_OK)
-			string << " LMP subver: " << value;
-		fLMPVersionProperties->SetText(string.String());
+	fHCIVersionProperties->SetText(tempString.String());
 
-		string = "";
-		if (bDevice->GetProperty("manufacturer", &value) == B_OK)
-			string << B_TRANSLATE("Manufacturer: ")
-			   	<< BluetoothManufacturer(value);
-		fManufacturerProperties->SetText(string.String());
+	tempString = "";
+	if (bDevice->GetProperty("lmp_version", &value) == B_OK)
+		tempString << "LMP ver: " << BluetoothLmpVersion(value);
+	if (bDevice->GetProperty("lmp_subversion", &value) == B_OK)
+		tempString << " LMP subver: " << value;
+	fLMPVersionProperties->SetText(tempString.String());
 
-		string = "";
-		if (bDevice->GetProperty("acl_mtu", &value) == B_OK)
-			string << "ACL mtu: " << value;
-		if (bDevice->GetProperty("acl_max_pkt", &value) == B_OK)
-			string << B_TRANSLATE(" packets: ") << value;
-		fACLBuffersProperties->SetText(string.String());
+	tempString = "";
+	if (bDevice->GetProperty("manufacturer", &value) == B_OK)
+		tempString << B_TRANSLATE("Manufacturer: ")
+		   	<< BluetoothManufacturer(value);
+	fManufacturerProperties->SetText(tempString.String());
 
-		string = "";
-		if (bDevice->GetProperty("sco_mtu", &value) == B_OK)
-			string << "SCO mtu: " << value;
-		if (bDevice->GetProperty("sco_max_pkt", &value) == B_OK)
-			string << B_TRANSLATE(" packets: ") << value;
-		fSCOBuffersProperties->SetText(string.String());
-	}
+	tempString = "";
+	if (bDevice->GetProperty("acl_mtu", &value) == B_OK)
+		tempString << "ACL mtu: " << value;
+	if (bDevice->GetProperty("acl_max_pkt", &value) == B_OK)
+		tempString << B_TRANSLATE(" packets: ") << value;
+	fACLBuffersProperties->SetText(tempString.String());
+
+	tempString = "";
+	if (bDevice->GetProperty("sco_mtu", &value) == B_OK)
+		tempString << "SCO mtu: " << value;
+	if (bDevice->GetProperty("sco_max_pkt", &value) == B_OK)
+		tempString << B_TRANSLATE(" packets: ") << value;
+	fSCOBuffersProperties->SetText(tempString.String());
 }
 
 
@@ -160,12 +161,6 @@ BluetoothDeviceView::SetTarget(BHandler* target)
 void
 BluetoothDeviceView::MessageReceived(BMessage* message)
 {
-	// If we received a dropped message, try to see if it has color data
-	// in it
-	if (message->WasDropped()) {
-
-	}
-
 	// The default
 	BView::MessageReceived(message);
 }

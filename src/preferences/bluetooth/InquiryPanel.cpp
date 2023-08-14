@@ -93,19 +93,17 @@ private:
 };
 
 
-InquiryPanel::InquiryPanel(BRect frame, LocalDevice* lDevice)
+InquiryPanel::InquiryPanel(LocalDevice* lDevice)
 	:
-	BWindow(frame, B_TRANSLATE_SYSTEM_NAME("Bluetooth"), B_FLOATING_WINDOW,
-	B_NOT_ZOOMABLE | B_AUTO_UPDATE_SIZE_LIMITS,	B_ALL_WORKSPACES ),
+	BWindow(BRect(), B_TRANSLATE_SYSTEM_NAME("Bluetooth"), B_FLOATING_WINDOW,
+		B_NOT_ZOOMABLE | B_AUTO_UPDATE_SIZE_LIMITS),
 	fMessenger(this),
  	fScanning(false),
  	fRetrieving(false),
 	fLocalDevice(lDevice)
-
 {
-	fScanProgress = new BStatusBar("status",
-		B_TRANSLATE("Scanning progress"), "");
-	activeColor = fScanProgress->BarColor();
+	fScanProgress = new BStatusBar("status", B_TRANSLATE("Scanning progress"), "");
+	fActiveColor = fScanProgress->BarColor();
 
 	if (fLocalDevice == NULL)
 		fLocalDevice = LocalDevice::GetLocalDevice();
@@ -117,10 +115,10 @@ InquiryPanel::InquiryPanel(BRect frame, LocalDevice* lDevice)
 	fMessage->MakeSelectable(false);
 
 	fInquiryButton = new BButton("Inquiry", B_TRANSLATE("Inquiry"),
-		new BMessage(kMsgInquiry), B_WILL_DRAW);
+		new BMessage(kMsgInquiry));
 
 	fAddButton = new BButton("add", B_TRANSLATE("Add device to list"),
-		new BMessage(kMsgAddToRemoteList), B_WILL_DRAW);
+		new BMessage(kMsgAddToRemoteList));
 	fAddButton->SetEnabled(false);
 
 	fRemoteList = new BListView("AttributeList", B_SINGLE_SELECTION_LIST);
@@ -131,17 +129,16 @@ InquiryPanel::InquiryPanel(BRect frame, LocalDevice* lDevice)
 
 	if (fLocalDevice != NULL) {
 		fMessage->SetText(B_TRANSLATE(
-			"Check that the Bluetooth capabilities of your"
-			" remote device are activated. Press 'Inquiry' to start scanning."
-			" The needed time for the retrieval of the names is unknown, "
-			"although should not take more than 3 seconds per device. "
-			"Afterwards you will be able to add them to your main list,"
-			" where you will be able to pair with them."));
+			"- Check that the Bluetooth capabilities of your remote device are activated.\n"
+			"- Press 'Inquiry' to start scanning. The needed time for the retrieval of the names is "
+			"unknown, although should not take more than 3 seconds per device.\n"
+			"- Afterwards you will be able to add them to your main list, where you will be able to "
+			"pair with them."));
 		fInquiryButton->SetEnabled(true);
 		fDiscoveryAgent = fLocalDevice->GetDiscoveryAgent();
 		fDiscoveryListener = new PanelDiscoveryListener(this);
 
-		SetTitle((const char*)(fLocalDevice->GetFriendlyName().String()));
+		SetTitle(fLocalDevice->GetFriendlyName().String());
 	} else {
 		fMessage->SetText(B_TRANSLATE("There isn't any Bluetooth LocalDevice "
 			"registered on the system."));
@@ -151,17 +148,20 @@ InquiryPanel::InquiryPanel(BRect frame, LocalDevice* lDevice)
 	fRetrieveMessage = new BMessage(kMsgRetrieve);
 	fSecondsMessage = new BMessage(kMsgSecond);
 
-	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
-		.SetInsets(B_USE_SMALL_SPACING)
-		.Add(fMessage, 0)
-		.Add(fScanProgress, 10)
-		.Add(fScrollView, 20)
-		.AddGroup(B_HORIZONTAL, 10)
+	BLayoutBuilder::Group<>(this, B_VERTICAL)
+		.SetInsets(B_USE_WINDOW_INSETS)
+		.Add(fMessage)
+		.Add(fScanProgress)
+		.Add(fScrollView)
+		.AddGroup(B_HORIZONTAL)
 			.Add(fAddButton)
 			.AddGlue()
 			.Add(fInquiryButton)
 		.End()
 	.End();
+
+	ResizeToPreferred();
+	UpdateSizeLimits();
 }
 
 
@@ -175,50 +175,55 @@ InquiryPanel::MessageReceived(BMessage* message)
 
 	switch (message->what) {
 		case kMsgInquiry:
-
+		{
 			fDiscoveryAgent->StartInquiry(BT_GIAC, fDiscoveryListener, GetInquiryTime());
 
 			timer = BT_BASE_INQUIRY_TIME * GetInquiryTime() + 1;
 			// does it works as expected?
 			fScanProgress->SetMaxValue(timer);
 
-		break;
+			break;
+		}
 
 		case kMsgAddListDevice:
 		{
 			DeviceListItem* listItem;
-
-			message->FindPointer("remoteItem", (void **)&listItem);
+			if (message->FindPointer("remoteItem", (void**)&listItem) != B_OK)
+				break;
 
 			fRemoteList->AddItem(listItem);
+			break;
 		}
-		break;
 
 		case kMsgAddToRemoteList:
 		{
 			message->PrintToStream();
+
 			int32 index = fRemoteList->CurrentSelection(0);
-			DeviceListItem* item = (DeviceListItem*) fRemoteList->RemoveItem(index);;
+			DeviceListItem* item = dynamic_cast<DeviceListItem*>(fRemoteList->RemoveItem(index));
+			if (item == NULL)
+				break;
 
 			BMessage message(kMsgAddToRemoteList);
 			message.AddPointer("device", item);
 
 			be_app->PostMessage(&message);
 			// TODO: all others listitems can be deleted
+
+			break;
 		}
-		break;
 
 		case kMsgSelected:
 			UpdateListStatus();
-		break;
+			break;
 
 		case kMsgStart:
+		{
 			fRemoteList->MakeEmpty();
 			fScanProgress->Reset();
 			fScanProgress->SetTo(1);
-			fScanProgress->SetTrailingText(B_TRANSLATE("Starting scan"
-				B_UTF8_ELLIPSIS));
-			fScanProgress->SetBarColor(activeColor);
+			fScanProgress->SetTrailingText(B_TRANSLATE("Starting scan" B_UTF8_ELLIPSIS));
+			fScanProgress->SetBarColor(fActiveColor);
 
 			fAddButton->SetEnabled(false);
 			fInquiryButton->SetEnabled(false);
@@ -228,22 +233,24 @@ InquiryPanel::MessageReceived(BMessage* message)
 			scanningTime = 1;
 			fScanning = true;
 
-		break;
+			break;
+		}
 
 		case kMsgFinish:
-
+		{
 			retrievalIndex = 0;
 			fScanning = false;
 			fRetrieving = true;
 			labelPlaced = false;
 			fScanProgress->SetTo(100);
-			fScanProgress->SetTrailingText(B_TRANSLATE("Retrieving names"
-				B_UTF8_ELLIPSIS));
+			fScanProgress->SetTrailingText(B_TRANSLATE("Retrieving names" B_UTF8_ELLIPSIS));
 			BMessageRunner::StartSending(fMessenger, fRetrieveMessage, 1000000, 1);
 
-		break;
+			break;
+		}
 
 		case kMsgSecond:
+		{
 			if (fScanning && scanningTime < timer) {
 				// TODO time formatting could use Locale Kit
 
@@ -259,28 +266,24 @@ InquiryPanel::MessageReceived(BMessage* message)
 
 				scanningTime = scanningTime + 1;
 			}
-		break;
+			break;
+		}
 
 		case kMsgRetrieve:
-
+		{
 			if (fRetrieving) {
-
 				if (retrievalIndex < fDiscoveryAgent->RetrieveDevices(0).CountItems()) {
-
 					if (!labelPlaced) {
-
 						labelPlaced = true;
 						BString progressText(B_TRANSLATE("Retrieving name of %1"));
 
 						BString namestr;
-						namestr << bdaddrUtils::ToString(fDiscoveryAgent
-							->RetrieveDevices(0).ItemAt(retrievalIndex)
-							->GetBluetoothAddress());
+						namestr << bdaddrUtils::ToString(fDiscoveryAgent->RetrieveDevices(0)
+							.ItemAt(retrievalIndex)->GetBluetoothAddress());
 						progressText.ReplaceFirst("%1", namestr.String());
 						fScanProgress->SetTrailingText(progressText.String());
-
 					} else {
-						// Really erally expensive operation should be done in a separate thread
+						// Really really expensive operation should be done in a separate thread
 						// once Haiku gets a BarberPole in API replacing the progress bar
 						((DeviceListItem*)fRemoteList->ItemAt(retrievalIndex))
 							->SetDevice((BluetoothDevice*) fDiscoveryAgent
@@ -292,22 +295,19 @@ InquiryPanel::MessageReceived(BMessage* message)
 					}
 
 					BMessageRunner::StartSending(fMessenger, fRetrieveMessage, 500000, 1);
-
 				} else {
-
 					fRetrieving = false;
 					retrievalIndex = 0;
 
-					fScanProgress->SetBarColor(
-						ui_color(B_PANEL_BACKGROUND_COLOR));
-					fScanProgress->SetTrailingText(
-						B_TRANSLATE("Scanning completed."));
+					fScanProgress->SetBarColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+					fScanProgress->SetTrailingText(B_TRANSLATE("Scanning completed."));
 					fInquiryButton->SetEnabled(true);
 					UpdateListStatus();
 				}
 			}
 
-		break;
+			break;
+		}
 
 		default:
 			BWindow::MessageReceived(message);
@@ -317,7 +317,7 @@ InquiryPanel::MessageReceived(BMessage* message)
 
 
 void
-InquiryPanel::UpdateListStatus(void)
+InquiryPanel::UpdateListStatus()
 {
 	if (fRemoteList->CurrentSelection() < 0 || fScanning || fRetrieving)
 		fAddButton->SetEnabled(false);
@@ -327,8 +327,7 @@ InquiryPanel::UpdateListStatus(void)
 
 
 bool
-InquiryPanel::QuitRequested(void)
+InquiryPanel::QuitRequested()
 {
-
-	return true;
+	return BWindow::QuitRequested();
 }

@@ -22,33 +22,30 @@
 #include <Invoker.h>
 
 
-class RemoteDevicesView : public BView
-{
+class RemoteDevicesView : public BView {
 public:
-			RemoteDevicesView(const char *name, uint32 flags);
-			~RemoteDevicesView(void);
-	void	AttachedToWindow(void);
+			RemoteDevicesView(const char *name);
+			~RemoteDevicesView();
+	void	AttachedToWindow();
 	void	MessageReceived(BMessage *msg);
 
-	void	LoadSettings(void);
-	bool	IsDefaultable(void);
+	void	LoadSettings();
+	bool	IsDefaultable();
 
-protected:
-
+private:
 	void	SetCurrentColor(rgb_color color);
 	void	UpdateControls();
 	void	UpdateAllColors();
 
-	BButton*		addButton;
-	BButton*		removeButton;
-	BButton*		pairButton;
-	BButton*		disconnectButton;
-//	BButton*		blockButton;
-//	BButton*		availButton;
+private:
+	BButton*		fAddButton;
+	BButton*		fRemoveButton;
+	BButton*		fPairButton;
+	BButton*		fDisconnectButton;
+//	BButton*		fBlockButton;
+//	BButton*		fAvailButton;
 	BListView*		fDeviceList;
 	BScrollView*	fScrollView;
-
-
 };
 
 #endif

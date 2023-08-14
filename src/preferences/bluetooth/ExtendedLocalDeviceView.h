@@ -22,8 +22,7 @@ class BCheckBox;
 class ExtendedLocalDeviceView : public BView
 {
 public:
-	ExtendedLocalDeviceView(LocalDevice* bDevice,
-		uint32 flags = B_WILL_DRAW);
+	ExtendedLocalDeviceView(LocalDevice* bDevice);
 	~ExtendedLocalDeviceView();
 
 	void SetLocalDevice(LocalDevice* lDevice);

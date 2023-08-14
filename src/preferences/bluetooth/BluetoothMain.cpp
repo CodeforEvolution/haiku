@@ -6,8 +6,8 @@
 
 #include <Alert.h>
 #include <Catalog.h>
-#include <MessageRunner.h>
 #include <Roster.h>
+
 #include <private/interface/AboutWindow.h>
 
 #include "BluetoothMain.h"
@@ -20,48 +20,21 @@
 
 BluetoothApplication::BluetoothApplication()
 	:
-	BApplication(BLUETOOTH_APP_SIGNATURE)
+	BApplication(BLUETOOTH_APP_SIGNATURE),
+	fWindow(NULL)
 {
+	be_roster->StartWatching(be_app_messenger, B_REQUEST_LAUNCHED);
+	CheckBluetoothServer();
 }
 
 
 void
 BluetoothApplication::ReadyToRun()
 {
-	if (!be_roster->IsRunning(BLUETOOTH_SIGNATURE)) {
-		BAlert* alert = new BAlert("Services not running",
-			B_TRANSLATE("The Bluetooth services are not currently running "
-				"on this system."),
-			B_TRANSLATE("Launch now"), B_TRANSLATE("Quit"), "",
-			B_WIDTH_AS_USUAL, B_WARNING_ALERT);
-		alert->SetShortcut(1, B_ESCAPE);
-		int32 choice = alert->Go();
-
-		switch (choice) {
-			case 0:
-			{
-				status_t error;
-				error = be_roster->Launch(BLUETOOTH_SIGNATURE);
-				printf("kMsgStartServices: %s\n", strerror(error));
-				// TODO: This is temporal
-				// BMessage handcheck: use the version of Launch()
-				// that includes a BMessage	in that message include
-				// a BMessenger to yourself and the BT server could
-				// use that messenger to send back a reply indicating
-				// when it's ready and you could just create window
-				BMessageRunner::StartSending(be_app_messenger,
-					new BMessage('Xtmp'), 2 * 1000000, 1);
-				break;
-			}
-			case 1:
-				PostMessage(B_QUIT_REQUESTED);
-				break;
-		}
-
+	if (be_roster->IsRunning(BLUETOOTH_SIGNATURE)) {
+		BluetoothServerLaunched();
 		return;
 	}
-
-	PostMessage(new BMessage('Xtmp'));
 }
 
 
@@ -73,16 +46,16 @@ BluetoothApplication::MessageReceived(BMessage* message)
 			fWindow->PostMessage(message);
 			break;
 
-		case 'Xtmp':
-			if (!be_roster->IsRunning(BLUETOOTH_SIGNATURE)) {
-				// Give another chance
-				BMessageRunner::StartSending(be_app_messenger,
-					new BMessage('Xtmp'), 2 * 1000000, 1);
-			} else {
-				fWindow = new BluetoothWindow(BRect(100, 100, 750, 420));
-				fWindow->Show();
+		case B_SOME_APP_LAUNCHED:
+		{
+			BString mimeSignature;
+			if (message->FindString("mime_sig", &mimeSignature) == B_OK &&
+				mimeSignature == BLUETOOTH_SIGNATURE) {
+				BluetoothServerLaunched();
 			}
+
 			break;
+		}
 
 		default:
 			BApplication::MessageReceived(message);
@@ -127,6 +100,53 @@ BluetoothApplication::AboutRequested()
 		" - the yellowTAB team"));
 	about->Show();
 }
+
+
+bool
+BluetoothApplication::QuitRequested()
+{
+	be_roster->StopWatching(be_app_messenger);
+	return BApplication::QuitRequested();
+}
+
+
+void
+BluetoothApplication::CheckBluetoothServer()
+{
+	BAlert* alert = new BAlert("Services not running",
+		B_TRANSLATE("The Bluetooth services are not currently running "
+			"on this system."),
+		B_TRANSLATE("Launch now"), B_TRANSLATE("Quit"), "",
+		B_WIDTH_AS_USUAL, B_WARNING_ALERT);
+	alert->SetShortcut(1, B_ESCAPE);
+	int32 choice = alert->Go();
+
+	switch (choice) {
+		case 0:
+		{
+			status_t error;
+			error = be_roster->Launch(BLUETOOTH_SIGNATURE);
+			printf("kMsgStartServices: %s\n", strerror(error));
+
+			break;
+		}
+		case 1:
+			PostMessage(B_QUIT_REQUESTED);
+			break;
+	}
+}
+
+
+void
+BluetoothApplication::BluetoothServerLaunched()
+{
+	if (fWindow != NULL)
+		return;
+
+	fWindow = new BluetoothWindow();
+	fWindow->Show();
+}
+
 
 
 int

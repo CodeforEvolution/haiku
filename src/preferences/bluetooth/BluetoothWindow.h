@@ -19,7 +19,7 @@ class RemoteDevicesView;
 
 class BluetoothWindow : public BWindow {
 public:
-			BluetoothWindow(BRect frame);
+			BluetoothWindow();
 	bool	QuitRequested();
 	void	MessageReceived(BMessage *message);
 

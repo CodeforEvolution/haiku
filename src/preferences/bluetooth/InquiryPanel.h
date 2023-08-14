@@ -22,12 +22,14 @@ class DiscoveryAgent;
 class DiscoveryListener;
 }
 
-class InquiryPanel : public BWindow
-{
+class InquiryPanel : public BWindow {
 public:
-			InquiryPanel(BRect frame, LocalDevice* lDevice = NULL);
-	bool	QuitRequested(void);
+			InquiryPanel(LocalDevice* lDevice = NULL);
+	bool	QuitRequested();
 	void	MessageReceived(BMessage *message);
+
+private:
+	void	UpdateListStatus();
 
 private:
 	BStatusBar*				fScanProgress;
@@ -46,9 +48,7 @@ private:
 	Bluetooth::DiscoveryAgent* fDiscoveryAgent;
 	Bluetooth::DiscoveryListener* fDiscoveryListener;
 
-	void UpdateListStatus(void);
-
-	rgb_color				activeColor;
+	rgb_color				fActiveColor;
 };
 
 #endif

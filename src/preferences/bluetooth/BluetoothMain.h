@@ -16,6 +16,11 @@ public:
 	virtual void ReadyToRun();
 	virtual void MessageReceived(BMessage*);
 	virtual void AboutRequested();
+	virtual bool QuitRequested();
+
+private:
+			void CheckBluetoothServer();
+			void BluetoothServerLaunched();
 
 private:
 	BluetoothWindow*	fWindow;

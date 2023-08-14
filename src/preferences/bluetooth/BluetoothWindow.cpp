@@ -31,13 +31,13 @@ static const uint32 kMsgRevert = 'rvrt';
 static const uint32 kMsgStartServices = 'SrSR';
 static const uint32 kMsgStopServices = 'StST';
 
-LocalDevice* ActiveLocalDevice = NULL;
+LocalDevice* gActiveLocalDevice = NULL;
 
 
-BluetoothWindow::BluetoothWindow(BRect frame)
+BluetoothWindow::BluetoothWindow()
 	:
-	BWindow(frame, B_TRANSLATE_SYSTEM_NAME("Bluetooth"), B_TITLED_WINDOW,
-		B_NOT_ZOOMABLE | B_AUTO_UPDATE_SIZE_LIMITS)
+	BWindow(BRect(), B_TRANSLATE_SYSTEM_NAME("Bluetooth"), B_TITLED_WINDOW,
+		B_AUTO_UPDATE_SIZE_LIMITS | B_QUIT_ON_WINDOW_CLOSE)
 {
 	fDefaultsButton = new BButton("defaults", B_TRANSLATE("Defaults"),
 		new BMessage(kMsgSetDefaults), B_WILL_DRAW);
@@ -48,33 +48,31 @@ BluetoothWindow::BluetoothWindow(BRect frame)
 	fRevertButton->SetEnabled(false);
 
 	// Add the menu bar
-	fMenubar = new BMenuBar(Bounds(), "menu_bar");
+	fMenubar = new BMenuBar("menu_bar");
+	SetKeyMenuBar(fMenubar);
 
-	// Add File menu to menu bar
-	BMenu* menu = new BMenu(B_TRANSLATE("Server"));
-	menu->AddItem(new BMenuItem(
-		B_TRANSLATE("Start bluetooth services" B_UTF8_ELLIPSIS),
-		new BMessage(kMsgStartServices), 0));
-	menu->AddItem(new BMenuItem(
-		B_TRANSLATE("Stop bluetooth services" B_UTF8_ELLIPSIS),
-		new BMessage(kMsgStopServices), 0));
-	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem(
-		B_TRANSLATE("Refresh local devices" B_UTF8_ELLIPSIS),
-		new BMessage(kMsgRefresh), 0));
-	fMenubar->AddItem(menu);
-
-	menu = new BMenu(B_TRANSLATE("Help"));
-	menu->AddItem(new BMenuItem(B_TRANSLATE("About Bluetooth" B_UTF8_ELLIPSIS),
-		new BMessage(B_ABOUT_REQUESTED), 0));
-	fMenubar->AddItem(menu);
+	// Add menus to menu bar
+	BLayoutBuilder::Menu<>(fMenubar)
+		.AddMenu(B_TRANSLATE("Server"))
+			.AddItem(B_TRANSLATE("Start bluetooth services" B_UTF8_ELLIPSIS),
+				new BMessage(kMsgStartServices))
+			.AddItem(B_TRANSLATE("Stop bluetooth services" B_UTF8_ELLIPSIS),
+				new BMessage(kMsgStopServices))
+			.AddSeparator()
+			.AddItem(B_TRANSLATE("Refresh local devices" B_UTF8_ELLIPSIS),
+				new BMessage(kMsgRefresh))
+		.End()
+		.AddMenu(B_TRANSLATE("Help"))
+			.AddItem(B_TRANSLATE("About Bluetooth" B_UTF8_ELLIPSIS),
+				new BMessage(B_ABOUT_REQUESTED))
+		.End()
+	.End();
 
 	BTabView* tabView = new BTabView("tabview", B_WIDTH_FROM_LABEL);
 	tabView->SetBorder(B_NO_BORDER);
 
 	fSettingsView = new BluetoothSettingsView(B_TRANSLATE("Settings"));
-	fRemoteDevices = new RemoteDevicesView(
-		B_TRANSLATE("Remote devices"), B_WILL_DRAW);
+	fRemoteDevices = new RemoteDevicesView(B_TRANSLATE("Remote devices"));
 
 	tabView->AddTab(fRemoteDevices);
 	tabView->AddTab(fSettingsView);
@@ -87,13 +85,16 @@ BluetoothWindow::BluetoothWindow(BRect frame)
 		.AddStrut(B_USE_HALF_ITEM_SPACING)
 		.Add(new BSeparatorView(B_HORIZONTAL))
 		.AddGroup(B_HORIZONTAL)
-			.SetInsets(B_USE_WINDOW_SPACING, B_USE_DEFAULT_SPACING,
-				B_USE_WINDOW_SPACING, B_USE_WINDOW_SPACING)
+			.SetInsets(B_USE_WINDOW_INSETS, B_USE_WINDOW_INSETS,
+				B_USE_WINDOW_INSETS, B_USE_WINDOW_INSETS)
 			.Add(fDefaultsButton)
 			.Add(fRevertButton)
 			.AddGlue()
 		.End()
 	.End();
+
+	UpdateSizeLimits();
+	CenterOnScreen();
 }
 
 
@@ -154,6 +155,5 @@ BluetoothWindow::MessageReceived(BMessage* message)
 bool
 BluetoothWindow::QuitRequested()
 {
-	be_app->PostMessage(B_QUIT_REQUESTED);
-	return true;
+	return BWindow::QuitRequested();
 }

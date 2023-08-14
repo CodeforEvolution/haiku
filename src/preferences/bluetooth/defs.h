@@ -36,6 +36,6 @@ static const int32 kMsgSetDeviceClass = 'sDC0';
 static const int32 kMsgSetInquiryTime = 'afEa';
 static const int32 kMsgLocalSwitched = 'lDsW';
 
-extern LocalDevice* ActiveLocalDevice;
+extern LocalDevice* gActiveLocalDevice;
 
 #endif
