@@ -8,8 +8,6 @@
 
 #include <BluetoothIconView.h>
 
-#include <stdio.h>
-
 namespace Bluetooth {
 
 BBitmap* 	BluetoothIconView::fBitmap = NULL;
@@ -22,8 +20,8 @@ BluetoothIconView::BluetoothIconView()
 	if (fRefCount == 0) {
 		fBitmap = new BBitmap(BRect(0, 0, 64, 64), 0, B_RGBA32);
 
-		uint8* tempIcon;
-		size_t tempSize;
+		uint8* tempIcon = NULL;
+		size_t tempSize = 0;
 
 		BMimeType mime("application/x-vnd.Haiku-bluetooth_server");
 		mime.GetIcon(&tempIcon, &tempSize);
@@ -35,7 +33,7 @@ BluetoothIconView::BluetoothIconView()
 		fRefCount++;
 	}
 
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 	SetDrawingMode(B_OP_ALPHA);
 	SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_OVERLAY);
 }

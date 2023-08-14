@@ -82,7 +82,6 @@ RemoteDevice::GetFriendlyName(bool alwaysAsk)
 
 	request.AddInt16("eventExpected",  HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE);
 
-
 	if (fMessenger->SendMessage(&request, &reply) == B_OK) {
 		BString name;
 		int8 status;
@@ -146,7 +145,7 @@ RemoteDevice::Authenticate()
 
 	bdaddrUtils::Copy(createConnection->bdaddr, fBdaddr);
 	createConnection->pscan_rep_mode = fPageRepetitionMode;
-	createConnection->pscan_mode = fScanMode; // Reserved in spec 2.1
+	createConnection->reserved = 0x00; // Reserved in spec 2.1, formerly Page_Scan_Mode
 	createConnection->clock_offset = fClockOffset | 0x8000; // substract!
 
 	uint32 roleSwitch;
@@ -203,8 +202,9 @@ RemoteDevice::Authenticate()
 	if (btStatus == BT_OK) {
 		reply.FindInt16("handle", (int16*)&fHandle);
 		return true;
-	} else
-		return false;
+	}
+
+	return false;
 }
 
 
@@ -298,7 +298,9 @@ RemoteDevice::RemoteDevice(const bdaddr_t address, uint8 record[3])
 	:
 	BluetoothDevice(),
 	fDiscovererLocalDevice(NULL),
-	fHandle(invalidConnectionHandle)
+	fHandle(invalidConnectionHandle),
+	fPageRepetitionMode(0x00),
+	fClockOffset(0x0000)
 {
 	CALLED();
 	fBdaddr = address;
@@ -311,10 +313,12 @@ RemoteDevice::RemoteDevice(const BString& address)
 	:
 	BluetoothDevice(),
 	fDiscovererLocalDevice(NULL),
-	fHandle(invalidConnectionHandle)
+	fHandle(invalidConnectionHandle),
+	fPageRepetitionMode(0x00),
+	fClockOffset(0x0000)
 {
 	CALLED();
-	fBdaddr = bdaddrUtils::FromString((const char*)address.String());
+	fBdaddr = bdaddrUtils::FromString(address.String());
 	fMessenger = _RetrieveBluetoothMessenger();
 }
 
