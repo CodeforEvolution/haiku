@@ -6,17 +6,14 @@
  * Authors:
  * 		Tri-Edge AI <triedgeai@gmail.com>
  */
-
 #ifndef _CONNECTION_VIEW_H_
 #define _CONNECTION_VIEW_H_
 
-#include <Window.h>
+
 #include <View.h>
 #include <StringView.h>
-#include <GroupLayout.h>
-#include <GroupLayoutBuilder.h>
-#include <Font.h>
 #include <String.h>
+
 
 namespace Bluetooth {
 
@@ -24,15 +21,14 @@ class BluetoothIconView;
 
 class ConnectionView : public BView {
 public:
-						ConnectionView(BRect frame,
-							BString device, BString address);
+						ConnectionView(BString device, BString address);
 
 	void				Pulse();
 
 private:
-	BString				strMessage;
+	BString				fMessageStr;
 	BluetoothIconView*	fIcon;
-	BStringView* 		fMessage;
+	BStringView* 		fMessageText;
 	BStringView*		fDeviceLabel;
 	BStringView*		fDeviceText;
 	BStringView*		fAddressLabel;
