@@ -24,10 +24,9 @@
 #undef B_TRANSLATION_CONTEXT
 #define B_TRANSLATION_CONTEXT "Extended local device view"
 
-ExtendedLocalDeviceView::ExtendedLocalDeviceView(LocalDevice* bDevice,
-	uint32 flags)
+ExtendedLocalDeviceView::ExtendedLocalDeviceView(LocalDevice* bDevice)
 	:
-	BView("ExtendedLocalDeviceView", flags | B_WILL_DRAW),
+	BView("ExtendedLocalDeviceView", B_WILL_DRAW),
 	fDevice(bDevice),
 	fScanMode(0)
 {

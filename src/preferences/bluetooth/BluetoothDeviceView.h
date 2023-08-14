@@ -20,8 +20,7 @@ class BitmapView;
 class BluetoothDeviceView : public BView
 {
 public:
-	BluetoothDeviceView(BluetoothDevice* bDevice,
-		uint32 flags = B_WILL_DRAW);
+	BluetoothDeviceView(BluetoothDevice* bDevice);
 	~BluetoothDeviceView();
 
 			void SetBluetoothDevice(BluetoothDevice* bDevice);
