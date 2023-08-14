@@ -13,8 +13,8 @@ resource app_version {
 	variety = B_APPV_ALPHA,
 	internal = 0,
 
-	short_info = "bluetooth_pref",
-	long_info = "bluetooth_pref ©2007-2009 Haiku"
+	short_info = "Bluetooth Preflet",
+	long_info = "Bluetooth Preflet ©2007-2023 Haiku"
 };
 
 resource vector_icon array {
