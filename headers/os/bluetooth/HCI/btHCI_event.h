@@ -24,8 +24,7 @@ struct hci_event_header {
 struct inquiry_info {
 	bdaddr_t	bdaddr;
 	uint8		pscan_rep_mode;
-	uint8		pscan_period_mode;
-	uint8		pscan_mode;
+	uint16		reserved; // Formerly Page_Scan_Period_Mode, and Page_Scan_Mode
 	uint8		dev_class[3];
 	uint16		clock_offset;
 } __attribute__ ((packed));
