@@ -73,48 +73,45 @@ DiscoveryListener::MessageReceived(BMessage* message)
 	switch (message->what) {
 		case BT_MSG_INQUIRY_DEVICE:
 		{
-			const struct inquiry_info* inquiryInfo;
-			ssize_t	size;
+			struct inquiry_info* inquiryInfo = NULL;
+			ssize_t	size = 0;
 			RemoteDevice* rd = NULL;
-			bool duplicatedFound = false;
+			bool duplicateFound = false;
 
-			//  TODO: Loop for all inquiryInfo!
-			if (message->FindData("info", B_ANY_TYPE, 0,
-					(const void**)&inquiryInfo, &size) == B_OK) {
+			uint8 infoCount = 0;
+			if (message->FindUInt8("count", &infoCount) != B_OK)
+				infoCount = 1;
+
+			for (uint8 infoIndex = 0; infoIndex < infoCount; infoIndex++) {
+				if (message->FindData("info", B_ANY_TYPE, infoIndex, (const void**)&inquiryInfo,
+					&size) != B_OK)
+					continue;
+
 				// Skip duplicated replies
-				for (int32 index = 0 ; index < fRemoteDevicesList.CountItems();
-					index++) {
-					bdaddr_t b1 = fRemoteDevicesList.ItemAt(index)
-						->GetBluetoothAddress();
+				for (int32 index = 0 ; index < fRemoteDevicesList.CountItems(); index++) {
+					bdaddr_t b1 = fRemoteDevicesList.ItemAt(index)->GetBluetoothAddress();
 
 					if (bdaddrUtils::Compare(inquiryInfo->bdaddr, b1)) {
 						// update these values
 						fRemoteDevicesList.ItemAt(index)->fPageRepetitionMode
 							= inquiryInfo->pscan_rep_mode;
-						fRemoteDevicesList.ItemAt(index)->fScanPeriodMode
-							= inquiryInfo->pscan_period_mode;
-						fRemoteDevicesList.ItemAt(index)->fScanMode
-							= inquiryInfo->pscan_mode;
 						fRemoteDevicesList.ItemAt(index)->fClockOffset
 							= inquiryInfo->clock_offset;
 
-						duplicatedFound = true;
+						duplicateFound = true;
 						break;
 					}
 				}
 
-				if (!duplicatedFound) {
-					rd = new RemoteDevice(inquiryInfo->bdaddr,
-						(uint8*)inquiryInfo->dev_class);
+				if (!duplicateFound) {
+					rd = new RemoteDevice(inquiryInfo->bdaddr, (uint8*)inquiryInfo->dev_class);
 					fRemoteDevicesList.AddItem(rd);
 					// keep all inquiry reported data
 					rd->SetLocalDeviceOwner(fLocalDevice);
 					rd->fPageRepetitionMode = inquiryInfo->pscan_rep_mode;
-					rd->fScanPeriodMode = inquiryInfo->pscan_period_mode;
-					rd->fScanMode = inquiryInfo->pscan_mode;
 					rd->fClockOffset = inquiryInfo->clock_offset;
 
-					DeviceDiscovered( rd, rd->GetDeviceClass());
+					DeviceDiscovered(rd, rd->GetDeviceClass());
 				}
 			}
 			break;
