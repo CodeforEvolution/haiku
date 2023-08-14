@@ -43,25 +43,26 @@ static const uint32 kMsgDisconnectDevice = 'dsDv';
 
 using namespace Bluetooth;
 
-RemoteDevicesView::RemoteDevicesView(const char* name, uint32 flags)
- :	BView(name, flags)
+RemoteDevicesView::RemoteDevicesView(const char* name)
+	:
+	BView(name, B_WILL_DRAW)
 {
-	addButton = new BButton("add", B_TRANSLATE("Add" B_UTF8_ELLIPSIS),
+	fAddButton = new BButton("add", B_TRANSLATE("Add" B_UTF8_ELLIPSIS),
 		new BMessage(kMsgAddDevices));
 
-	removeButton = new BButton("remove", B_TRANSLATE("Remove"),
+	fRemoveButton = new BButton("remove", B_TRANSLATE("Remove"),
 		new BMessage(kMsgRemoveDevice));
 
-	pairButton = new BButton("pair", B_TRANSLATE("Pair" B_UTF8_ELLIPSIS),
+	fPairButton = new BButton("pair", B_TRANSLATE("Pair" B_UTF8_ELLIPSIS),
 		new BMessage(kMsgPairDevice));
 
-	disconnectButton = new BButton("disconnect", B_TRANSLATE("Disconnect"),
+	fDisconnectButton = new BButton("disconnect", B_TRANSLATE("Disconnect"),
 		new BMessage(kMsgDisconnectDevice));
 /*
-	blockButton = new BButton("block", B_TRANSLATE("As blocked"),
+	fBlockButton = new BButton("block", B_TRANSLATE("As blocked"),
 		new BMessage(kMsgBlockDevice));
 
-	availButton = new BButton("check", B_TRANSLATE("Refresh" B_UTF8_ELLIPSIS),
+	fAvailButton = new BButton("check", B_TRANSLATE("Refresh" B_UTF8_ELLIPSIS),
 		new BMessage(kMsgRefreshDevices));
 */
 	// Set up device list
@@ -75,14 +76,14 @@ RemoteDevicesView::RemoteDevicesView(const char* name, uint32 flags)
 		//.Add(BSpaceLayoutItem::CreateHorizontalStrut(5))
 		.AddGroup(B_VERTICAL)
 			.SetInsets(0, 15, 0, 15)
-			.Add(addButton)
-			.Add(removeButton)
+			.Add(fAddButton)
+			.Add(fRemoveButton)
 			.AddGlue()
-//			.Add(availButton)
+//			.Add(fAvailButton)
 	//		.AddGlue()
-			.Add(pairButton)
-			.Add(disconnectButton)
-//			.Add(blockButton)
+			.Add(fPairButton)
+			.Add(fDisconnectButton)
+//			.Add(fBlockButton)
 			.AddGlue()
 		.End()
 	.End();
@@ -91,22 +92,22 @@ RemoteDevicesView::RemoteDevicesView(const char* name, uint32 flags)
 }
 
 
-RemoteDevicesView::~RemoteDevicesView(void)
+RemoteDevicesView::~RemoteDevicesView()
 {
 
 }
 
 
 void
-RemoteDevicesView::AttachedToWindow(void)
+RemoteDevicesView::AttachedToWindow()
 {
 	fDeviceList->SetTarget(this);
-	addButton->SetTarget(this);
-	removeButton->SetTarget(this);
-	pairButton->SetTarget(this);
-	disconnectButton->SetTarget(this);
-//	blockButton->SetTarget(this);
-//	availButton->SetTarget(this);
+	fAddButton->SetTarget(this);
+	fRemoveButton->SetTarget(this);
+	fPairButton->SetTarget(this);
+	fDisconnectButton->SetTarget(this);
+//	fBlockButton->SetTarget(this);
+//	fAvailButton->SetTarget(this);
 
 	LoadSettings();
 	fDeviceList->Select(0);
@@ -119,8 +120,13 @@ RemoteDevicesView::MessageReceived(BMessage* message)
 	switch (message->what) {
 		case kMsgAddDevices:
 		{
-			InquiryPanel* inquiryPanel= new InquiryPanel(
-				BRect(100, 100, 450, 450), ActiveLocalDevice);
+			InquiryPanel* inquiryPanel = new InquiryPanel(gActiveLocalDevice);
+			if (Window() != NULL) {
+				Window()->AddToSubset(inquiryPanel);
+				inquiryPanel->CenterIn(Window()->Frame());
+			} else
+				inquiryPanel->CenterOnScreen();
+
 			inquiryPanel->Show();
 			break;
 		}
@@ -128,10 +134,13 @@ RemoteDevicesView::MessageReceived(BMessage* message)
 		case kMsgRemoveDevice:
 			fDeviceList->RemoveItem(fDeviceList->CurrentSelection(0));
 			break;
+
 		case kMsgAddToRemoteList:
 		{
-			BListItem* device;
-			message->FindPointer("device", (void**)&device);
+			BListItem* device = NULL;
+			if (message->FindPointer("device", (void**)&device) != B_OK)
+				break;
+
 			fDeviceList->AddItem(device);
 			fDeviceList->Invalidate();
 			break;
@@ -139,8 +148,8 @@ RemoteDevicesView::MessageReceived(BMessage* message)
 
 		case kMsgPairDevice:
 		{
-			DeviceListItem* device = static_cast<DeviceListItem*>(fDeviceList
-				->ItemAt(fDeviceList->CurrentSelection(0)));
+			DeviceListItem* device = static_cast<DeviceListItem*>(
+				fDeviceList->ItemAt(fDeviceList->CurrentSelection(0)));
 			if (device == NULL)
 				break;
 
@@ -152,10 +161,11 @@ RemoteDevicesView::MessageReceived(BMessage* message)
 
 			break;
 		}
+
 		case kMsgDisconnectDevice:
 		{
-			DeviceListItem* device = static_cast<DeviceListItem*>(fDeviceList
-				->ItemAt(fDeviceList->CurrentSelection(0)));
+			DeviceListItem* device = static_cast<DeviceListItem*>(
+				fDeviceList->ItemAt(fDeviceList->CurrentSelection(0)));
 			if (device == NULL)
 				break;
 
@@ -175,13 +185,15 @@ RemoteDevicesView::MessageReceived(BMessage* message)
 }
 
 
-void RemoteDevicesView::LoadSettings(void)
+void
+RemoteDevicesView::LoadSettings()
 {
 
 }
 
 
-bool RemoteDevicesView::IsDefaultable(void)
+bool
+RemoteDevicesView::IsDefaultable()
 {
 	return true;
 }
