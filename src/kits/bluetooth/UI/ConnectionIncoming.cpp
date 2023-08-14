@@ -9,43 +9,56 @@
 
 
 #include <ConnectionIncoming.h>
+
+#include <LayoutBuilder.h>
+
 #include <ConnectionView.h>
 
-namespace Bluetooth
-{
+namespace Bluetooth {
 
 ConnectionIncoming::ConnectionIncoming(bdaddr_t address)
 	:
-	BWindow(BRect(600, 100, 1000, 180), "Incoming Connection..",
+	BWindow(BRect(), "Incoming Connection..",
 		B_FLOATING_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-			B_NOT_ZOOMABLE | B_NOT_RESIZABLE)
-					// 400x80
+		B_NOT_ZOOMABLE | B_NOT_RESIZABLE | B_AUTO_UPDATE_SIZE_LIMITS)
 {
 	SetPulseRate(1 * 1000 * 1000);
 		// 1 second
-	fView = new ConnectionView(BRect(0, 0, 400, 80), "<unknown_device>",
+	fView = new ConnectionView("<unknown_device>",
 		bdaddrUtils::ToString(address));
-	AddChild(fView);
+
+	BLayoutBuilder::Group<>(this)
+		.Add(fView)
+	.End();
+
+	UpdateSizeLimits();
+	CenterOnScreen();
 }
 
 
 ConnectionIncoming::ConnectionIncoming(RemoteDevice* rDevice)
 	:
-	BWindow(BRect(600, 100, 1000, 180), "Incoming Connection",
+	BWindow(BRect(), "Incoming Connection",
 		B_FLOATING_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-		B_NOT_ZOOMABLE | B_NOT_RESIZABLE)
+		B_NOT_ZOOMABLE | B_NOT_RESIZABLE | B_AUTO_UPDATE_SIZE_LIMITS)
 {
 	SetPulseRate(1 * 1000 * 1000);
 		// 1 second
 
-	if (rDevice != NULL)
-		fView = new ConnectionView(BRect(0, 0, 400, 80), rDevice->GetFriendlyName(),
+	if (rDevice != NULL) {
+		fView = new ConnectionView(rDevice->GetFriendlyName(),
 					bdaddrUtils::ToString(rDevice->GetBluetoothAddress()));
-	else
-		fView = new ConnectionView(BRect(0, 0, 400, 80), "<unknown_device>",
+	} else {
+		fView = new ConnectionView("<unknown_device>",
 					bdaddrUtils::ToString(bdaddrUtils::NullAddress()));
+	}
 
-	AddChild(fView);
+	BLayoutBuilder::Group<>(this)
+		.Add(fView)
+	.End();
+
+	UpdateSizeLimits();
+	CenterOnScreen();
 }
 
 
