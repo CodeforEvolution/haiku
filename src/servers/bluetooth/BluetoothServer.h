@@ -36,7 +36,7 @@ typedef enum {
 #define BLACKBOARD_LD(X) (BLACKBOARD_END+X-HCI_DEVICE_INDEX_OFFSET)
 
 typedef BObjectList<LocalDeviceImpl> LocalDevicesList;
-typedef PortListener<struct hci_event_header, 
+typedef PortListener<struct hci_event_header,
 	HCI_MAX_EVENT_SIZE, // Event Body can hold max 255 + 2 header
 	24					// Some devices have sent chunks of 24 events(inquiry result)
 	> BluetoothPortListener;
@@ -56,17 +56,17 @@ public:
 	virtual void MessageReceived(BMessage *message);
 
 	static int32 SDPServerThread(void* data);
-	
+
 	/* Messages reply */
 	status_t	HandleLocalDevicesCount(BMessage* message, BMessage* reply);
 	status_t    HandleAcquireLocalDevice(BMessage* message, BMessage* reply);
-	
+
 	status_t    HandleGetProperty(BMessage* message, BMessage* reply);
 	status_t    HandleSimpleRequest(BMessage* message, BMessage* reply);
 
 
     LocalDeviceImpl*    LocateLocalDeviceImpl(hci_id hid);
-	
+
 private:
 
 	LocalDeviceImpl*	LocateDelegateFromMessage(BMessage* message);
@@ -80,14 +80,14 @@ private:
 
 
 	// Notification system
-	BluetoothPortListener*	fEventListener2;
-	
+	BluetoothPortListener*	fEventListener;
+
 	DeviceManager*			fDeviceManager;
-	
+
 	BPoint 					fCenter;
-	
+
 	thread_id				fSDPThreadID;
-	
+
 	bool					fIsShuttingDown;
 };
 
