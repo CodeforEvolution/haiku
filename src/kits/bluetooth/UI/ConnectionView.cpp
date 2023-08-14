@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, Haiku, Inc.
+ * Copyright 2023, Haiku, Inc.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -7,74 +7,76 @@
  */
 
 #include <ConnectionView.h>
+
+#include <LayoutBuilder.h>
+
 #include <BluetoothIconView.h>
 
-namespace Bluetooth
-{
 
-ConnectionView::ConnectionView(BRect frame, BString device, BString address)
+namespace Bluetooth {
+
+ConnectionView::ConnectionView(BString device, BString address)
 	:
-	BView(frame, "ConnectionView", 0, B_PULSE_NEEDED)
+	BView("ConnectionView", B_WILL_DRAW | B_PULSE_NEEDED)
 {
-	SetLayout(new BGroupLayout(B_HORIZONTAL));
-	SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+	SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 
 	fIcon = new BluetoothIconView();
 
-	strMessage = "A new connection is incoming..";
+	fMessageStr = "A new connection is incoming...";
 
-	fMessage = new BStringView(frame, "", strMessage, B_FOLLOW_LEFT);
-	fMessage->SetAlignment(B_ALIGN_LEFT);
+	fMessageText = new BStringView("MessageText", fMessageStr);
+	fMessageText->SetAlignment(B_ALIGN_LEFT);
 
-	fDeviceLabel = new BStringView(frame, "", "Device Name:", B_FOLLOW_LEFT);
+	fDeviceLabel = new BStringView("DeviceLabel", "Device Name:");
 	fDeviceLabel->SetFont(be_bold_font);
 
-	fDeviceText = new BStringView(frame, "", device, B_FOLLOW_RIGHT);
+	fDeviceText = new BStringView("DeviceText", device);
 	fDeviceText->SetAlignment(B_ALIGN_RIGHT);
 
-	fAddressLabel = new BStringView(frame, "", "MAC Address:", B_FOLLOW_LEFT);
+	fAddressLabel = new BStringView("AddressLabel", "MAC Address:");
 	fAddressLabel->SetFont(be_bold_font);
 
-	fAddressText = new BStringView(frame, "", address, B_FOLLOW_RIGHT);
+	fAddressText = new BStringView("AddressText", address);
 	fAddressText->SetAlignment(B_ALIGN_RIGHT);
 
-	AddChild(BGroupLayoutBuilder(B_HORIZONTAL, 0)
-			.Add(BGroupLayoutBuilder(B_VERTICAL, 8)
-				.Add(fIcon)
-			)
-			.Add(BGroupLayoutBuilder(B_VERTICAL, 0)
-				.Add(fMessage)
-				.AddGlue()
-				.Add(BGroupLayoutBuilder(B_HORIZONTAL, 10)
-					.Add(fDeviceLabel)
-					.AddGlue()
-					.Add(fDeviceText)
-				)
-				.Add(BGroupLayoutBuilder(B_HORIZONTAL, 10)
-					.Add(fAddressLabel)
-					.AddGlue()
-					.Add(fAddressText)
-				)
-				.AddGlue()
-			)
+	BLayoutBuilder::Group<>(this, B_HORIZONTAL)
+		.SetInsets(B_USE_SMALL_INSETS)
+		.AddGroup(B_VERTICAL, 8)
+			.Add(fIcon)
+		.End()
+		.AddGroup(B_VERTICAL)
+			.Add(fMessageText)
 			.AddGlue()
-			.SetInsets(8, 8, 8, 8)
-	);
+			.AddGroup(B_HORIZONTAL, 10)
+				.Add(fDeviceLabel)
+				.AddGlue()
+				.Add(fDeviceText)
+			.End()
+			.AddGroup(B_HORIZONTAL, 10)
+				.Add(fAddressLabel)
+				.AddGlue()
+				.Add(fAddressText)
+			.End()
+			.AddGlue()
+		.End()
+		.AddGlue()
+	.End();
 }
 
 
 void
 ConnectionView::Pulse()
 {
-	static int pulses = 0;
+	static uint8 pulses = 0;
 
 	pulses++;
 
 	if (pulses >= 5) {
 		Window()->PostMessage(B_QUIT_REQUESTED);
 	} else {
-		strMessage += ".";
-		fMessage->SetText(strMessage);
+		fMessageStr += ".";
+		fMessageText->SetText(fMessageStr);
 	}
 }
 

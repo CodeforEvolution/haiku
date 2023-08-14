@@ -17,7 +17,7 @@
 #include <Application.h>
 
 #include <Button.h>
-#include <GroupLayoutBuilder.h>
+#include <LayoutBuilder.h>
 #include <InterfaceDefs.h>
 #include <SpaceLayoutItem.h>
 #include <StringView.h>
@@ -36,8 +36,6 @@
 #include <CommandManager.h>
 
 
-#define H_SEPARATION  15
-#define V_SEPARATION  10
 #define BD_ADDR_LABEL "BD_ADDR: "
 
 
@@ -49,9 +47,10 @@ namespace Bluetooth
 {
 
 PincodeWindow::PincodeWindow(bdaddr_t address, hci_id hid)
-	: BWindow(BRect(700, 200, 1000, 400), "PIN Code Request",
+	:
+	BWindow(BRect(), "PIN Code Request",
 		B_FLOATING_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-		B_NOT_ZOOMABLE | B_NOT_RESIZABLE),
+		B_NOT_ZOOMABLE | B_NOT_RESIZABLE | B_AUTO_UPDATE_SIZE_LIMITS),
 		fBdaddr(address),
 		fHid(hid)
 {
@@ -60,27 +59,32 @@ PincodeWindow::PincodeWindow(bdaddr_t address, hci_id hid)
 	// TODO: Get more info about device" ote name/features/encry/auth... etc
 	SetBDaddr(bdaddrUtils::ToString(fBdaddr));
 
+	UpdateSizeLimits();
+	CenterOnScreen();
 }
 
 
 PincodeWindow::PincodeWindow(RemoteDevice* rDevice)
-	: BWindow(BRect(700, 200, 1000, 400), "PIN Code Request",
+	:
+	BWindow(BRect(), "PIN Code Request",
 		B_FLOATING_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-		B_NOT_ZOOMABLE | B_NOT_RESIZABLE)
+		B_NOT_ZOOMABLE | B_NOT_RESIZABLE | B_AUTO_UPDATE_SIZE_LIMITS),
+	fBdaddr(rDevice->GetBluetoothAddress()),
+	fHid(rDevice->GetLocalDeviceOwner()->ID())
 {
 	InitUI();
 
 	// TODO: Get more info about device" ote name/features/encry/auth... etc
-	SetBDaddr(bdaddrUtils::ToString(rDevice->GetBluetoothAddress()));
-	fHid = (rDevice->GetLocalDeviceOwner())->ID();
+	SetBDaddr(bdaddrUtils::ToString(fBdaddr));
+
+	UpdateSizeLimits();
+	CenterOnScreen();
 }
 
 
 void
 PincodeWindow::InitUI()
 {
-	SetLayout(new BGroupLayout(B_HORIZONTAL));
-
 	fIcon = new BluetoothIconView();
 
 	fMessage = new BStringView("fMessage", "Input the PIN code to pair with");
@@ -106,37 +110,37 @@ PincodeWindow::InitUI()
 	fCancelButton = new BButton("fCancelButton", "Cancel",
 		new BMessage(skMessageCancelButton));
 
-	AddChild(BGroupLayoutBuilder(B_VERTICAL, 0)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 0)
-			.Add(BGroupLayoutBuilder(B_HORIZONTAL, 8)
+	BLayoutBuilder::Group<>(this, B_VERTICAL)
+		.SetInsets(B_USE_SMALL_INSETS)
+		.AddGroup(B_HORIZONTAL)
+			.AddGroup(B_HORIZONTAL, 8)
 				.Add(fIcon)
-			)
-			.Add(BGroupLayoutBuilder(B_VERTICAL, 0)
+			.End()
+			.AddGroup(B_VERTICAL)
 				.Add(fMessage)
 				.Add(fMessage2)
 				.AddGlue()
-			)
-		)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 0)
+			.End()
+		.End()
+		.AddGroup(B_HORIZONTAL)
 			.Add(fDeviceLabel)
 			.AddGlue()
 			.Add(fDeviceText)
-		)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 0)
+		.End()
+		.AddGroup(B_HORIZONTAL)
 			.Add(fAddressLabel)
 			.AddGlue()
 			.Add(fAddressText)
-		)
+		.End()
 		.AddGlue()
 		.Add(fPincodeText)
 		.AddGlue()
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, 10)
+		.AddGroup(B_HORIZONTAL, 10)
 			.AddGlue()
 			.Add(fCancelButton)
 			.Add(fAcceptButton)
-		)
-		.SetInsets(8, 8, 8, 8)
-	);
+		.End()
+	.End();
 }
 
 
