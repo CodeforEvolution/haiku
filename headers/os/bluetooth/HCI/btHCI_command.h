@@ -206,10 +206,10 @@ struct hci_command_header {
 
 	#define OCF_CREATE_CONN				0x0005
 	struct hci_cp_create_conn {
-		bdaddr_t	bdaddr;
+		bdaddr_t bdaddr;
 		uint16		pkt_type;
 		uint8		pscan_rep_mode;
-		uint8		reserved;
+		uint8		pscan_mode;
 		uint16		clock_offset;
 		uint8		role_switch;
 	} __attribute__ ((packed));

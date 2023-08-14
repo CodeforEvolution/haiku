@@ -26,14 +26,11 @@ public:
 	static const int WAIT = B_BT_WAIT;
 	static const int SUCCEEDED = B_BT_SUCCEEDED;
 
-	RemoteDevice(const BString& address);
-	RemoteDevice(const bdaddr_t address, uint8 record[3]);
-
 	virtual ~RemoteDevice();
 
 	bool IsTrustedDevice();
 	BString GetFriendlyName(bool alwaysAsk); /* Throwing */
-	BString GetFriendlyName(); /* Throwing */
+	BString GetFriendlyName(void); /* Throwing */
 	bdaddr_t GetBluetoothAddress();
 	DeviceClass GetDeviceClass();
 
@@ -53,18 +50,25 @@ public:
 
 	LocalDevice* GetLocalDeviceOwner();
 
+	RemoteDevice(const BString& address);
+	RemoteDevice(const bdaddr_t address, uint8 record[3]);
+
 protected:
 	/* called by Discovery[Listener|Agent] */
 	void SetLocalDeviceOwner(LocalDevice* ld);
 	friend class DiscoveryListener;
 
 private:
+
 	LocalDevice* fDiscovererLocalDevice;
 	BMessenger*	 fMessenger;
 
 	uint16		fHandle;
 	uint8		fPageRepetitionMode;
+	uint8		fScanPeriodMode;
+	uint8		fScanMode;
 	uint16		fClockOffset;
+
 };
 
 }
