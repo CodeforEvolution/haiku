@@ -315,7 +315,7 @@ LocalDeviceImpl::HandleEvent(struct hci_event_header* event)
 			break;
 		}
 		default:
-			TRACE_BT("LocalDeviceImpl: Incoming %s event\n", BluetoothEvent(event->ecode));
+			TRACE_BT("LocalDeviceImpl: Incoming %s event, code: %i\n", BluetoothEvent(event->ecode), event->ecode);
 
 			request = FindPetition(event->ecode);
 			if (request != NULL)
@@ -788,20 +788,18 @@ LocalDeviceImpl::InquiryResult(uint8* numberOfResponses, BMessage* request)
 
 	// skipping here the number of responses
 	reply.AddData("info", B_ANY_TYPE, numberOfResponses + 1,
-		(*numberOfResponses) * sizeof(struct inquiry_info) );
+		(*numberOfResponses) * sizeof(struct inquiry_info));
 
-	reply.AddInt8("count", *numberOfResponses);
+	reply.AddUInt8("count", *numberOfResponses);
 
 	TRACE_BT("LocalDeviceImpl: %s #responses=%d\n",
 		__FUNCTION__, *numberOfResponses);
 
-	struct inquiry_info* info = JumpEventHeader<struct inquiry_info, uint8>
-		(numberOfResponses);
+	struct inquiry_info* info = JumpEventHeader<struct inquiry_info, uint8>(numberOfResponses);
 
 	while (responses > 0) {
-		TRACE_BT("LocalDeviceImpl: page_rep=%d scan_period=%d, scan=%d clock=%d\n",
-			info->pscan_rep_mode, info->pscan_period_mode, info->pscan_mode,
-			info->clock_offset);
+		TRACE_BT("LocalDeviceImpl: page_rep=%d, clock=%d\n",
+			info->pscan_rep_mode, info->clock_offset);
 		responses--;
 		info++;
 	}

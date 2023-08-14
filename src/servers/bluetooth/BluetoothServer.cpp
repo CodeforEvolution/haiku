@@ -59,23 +59,24 @@ DispatchEvent(struct hci_event_header* header, int32 code, size_t size)
 BluetoothServer::BluetoothServer()
 	:
 	BApplication(BLUETOOTH_SIGNATURE),
+	fLocalDevicesList(5, true),
+	fEventListener(NULL),
+	fDeviceManager(NULL),
+	fCenter(),
 	fSDPThreadID(-1),
 	fIsShuttingDown(false)
 {
 	fDeviceManager = new DeviceManager();
 	fLocalDevicesList.MakeEmpty();
 
-	fEventListener2 = new BluetoothPortListener(BT_USERLAND_PORT_NAME,
+	fEventListener = new BluetoothPortListener(BT_USERLAND_PORT_NAME,
 		(BluetoothPortListener::port_listener_func)&DispatchEvent);
 }
 
 
 bool BluetoothServer::QuitRequested(void)
 {
-	LocalDeviceImpl* lDeviceImpl = NULL;
-	while ((lDeviceImpl = (LocalDeviceImpl*)
-		fLocalDevicesList.RemoveItemAt(0)) != NULL)
-		delete lDeviceImpl;
+	fLocalDevicesList.MakeEmpty(true);
 
 	_RemoveDeskbarIcon();
 
@@ -87,7 +88,7 @@ bool BluetoothServer::QuitRequested(void)
 	TRACE_BT("BluetoothServer server thread exited with: %s\n",
 		strerror(threadReturnStatus));
 
-	delete fEventListener2;
+	delete fEventListener;
 	TRACE_BT("Shutting down bluetooth_server.\n");
 
 	return BApplication::QuitRequested();
@@ -110,7 +111,7 @@ void BluetoothServer::ReadyToRun(void)
 	fDeviceManager->StartMonitoringDevice("bluetooth/h4");
 	fDeviceManager->StartMonitoringDevice("bluetooth/h5");
 
-	if (fEventListener2->Launch() != B_OK)
+	if (fEventListener->Launch() != B_OK)
 		TRACE_BT("General: Bluetooth event listener failed\n");
 	else
 		TRACE_BT("General: Bluetooth event listener Ready\n");
@@ -202,10 +203,6 @@ void BluetoothServer::MessageReceived(BMessage* message)
 			const char* signature;
 
 			if (message->FindString("be:signature", &signature) == B_OK) {
-				printf("input_server : %s\n", signature);
-				if (strcmp(signature, "application/x-vnd.Be-TSKB") == 0) {
-
-				}
 			}
 			return;
 		}
@@ -457,7 +454,7 @@ BluetoothServer::HandleGetProperty(BMessage* message, BMessage* reply)
 int32
 BluetoothServer::SDPServerThread(void* data)
 {
-	const BluetoothServer* server = (BluetoothServer*)data;
+	const BluetoothServer* server = static_cast<BluetoothServer*>(data);
 
 	// Set up the SDP socket
 	struct sockaddr_l2cap loc_addr = { 0 };
