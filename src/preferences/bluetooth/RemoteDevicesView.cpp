@@ -67,6 +67,8 @@ RemoteDevicesView::RemoteDevicesView(const char* name)
 */
 	// Set up device list
 	fDeviceList = new BListView("DeviceList", B_SINGLE_SELECTION_LIST);
+	fDeviceList->SetSelectionMessage(new BMessage(kMsgDeviceListSelection));
+	fDeviceList->SetInvocationMessage(new BMessage(kMsgDeviceListInvocation));
 
 	fScrollView = new BScrollView("ScrollView", fDeviceList, 0, false, true);
 

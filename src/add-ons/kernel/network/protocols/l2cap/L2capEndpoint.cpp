@@ -163,7 +163,7 @@ L2capEndpoint::Bind(const struct sockaddr* _address)
 	// the PSM field to be extended beyond 16 bits.
 	if ((address->l2cap_psm & 1) == 0)
 		return B_ERROR;
-d
+
 	memcpy(&socket->address, _address, sizeof(struct sockaddr_l2cap));
 	socket->address.ss_len = sizeof(struct sockaddr_l2cap);
 

@@ -136,7 +136,7 @@ l2cap_connect(net_protocol* protocol, const struct sockaddr* address)
 	if (address->sa_family != AF_BLUETOOTH)
 		return EAFNOSUPPORT;
 
-	return ((L2capEndpoint*)protocol)->Connect(address);;
+	return ((L2capEndpoint*)protocol)->Connect(address);
 }
 
 
