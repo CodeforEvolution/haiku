@@ -5,7 +5,7 @@
 #ifndef _DISCOVERY_LISTENER_H
 #define _DISCOVERY_LISTENER_H
 
-#include <Looper.h>
+#include <Handler.h>
 #include <ObjectList.h>
 
 #include <bluetooth/DeviceClass.h>
@@ -23,7 +23,7 @@ typedef BObjectList<RemoteDevice> RemoteDevicesList;
 
 class LocalDevice;
 
-class DiscoveryListener : public BLooper {
+class DiscoveryListener : public BHandler {
 
 public:
 
