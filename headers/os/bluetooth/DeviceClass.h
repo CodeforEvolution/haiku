@@ -13,11 +13,9 @@ namespace Bluetooth {
 #define UNKNOWN_CLASS_OF_DEVICE 0x000000
 
 class DeviceClass {
-
 public:
-
-	static const uint8 PixelsForIcon = 32;
-	static const uint8 IconInsets = 5; 
+	static const uint8 kPixelsForIcon = 32;
+	static const uint8 kIconInsets = 5;
 
 	DeviceClass(uint8 record[3])
 	{
@@ -38,7 +36,7 @@ public:
 
 	void SetRecord(uint8 record[3])
 	{
-		fRecord = record[0]|record[1]<<8|record[2]<<16;
+		fRecord = record[0] | record[1] << 8 | record[2] << 16;
 	}
 
 	void SetRecord(uint8 major, uint8 minor, uint16 service)
@@ -55,7 +53,7 @@ public:
 	}
 
 	uint8 MajorDeviceClass()
-	{				
+	{
 		return (fRecord & 0x00001F00) >> 8;
 	}
 
@@ -63,7 +61,7 @@ public:
 	{
 		return (fRecord & 0x000000FF) >> 2;
 	}
-	
+
 	uint32 Record()
 	{
 		return fRecord;
@@ -77,17 +75,16 @@ public:
 	void GetServiceClass(BString&);
 	void GetMajorDeviceClass(BString&);
 	void GetMinorDeviceClass(BString&);
-	
+
 	void DumpDeviceClass(BString&);
-	
+
 	void Draw(BView* view, const BPoint& point);
 
 private:
 	uint32 fRecord;
-
 };
 
-}
+} // namespace Bluetooth
 
 #ifndef _BT_USE_EXPLICIT_NAMESPACE
 using Bluetooth::DeviceClass;

@@ -11,7 +11,7 @@
 
 // https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers
 
-const char* bluetoothManufacturers[] = {
+const char* kBluetoothManufacturers[] = {
 	"Ericsson Technology Licensing",
 	"Nokia Mobile Phones",
 	"Intel Corp.",

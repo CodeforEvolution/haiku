@@ -20,7 +20,7 @@ void
 DeviceClass::GetServiceClass(BString& serviceClass)
 {
 	CALLED();
-	static const char *services[] = {
+	static const char* kServices[] = {
 		B_TRANSLATE_MARK("Positioning"),
 		B_TRANSLATE_MARK("Networking"),
 		B_TRANSLATE_MARK("Rendering"),
@@ -34,18 +34,16 @@ DeviceClass::GetServiceClass(BString& serviceClass)
 	if (ServiceClass() != 0) {
 		bool first = true;
 
-		for (uint s = 0; s < (sizeof(services) / sizeof(*services)); s++) {
+		for (uint s = 0; s < B_COUNT_OF(kServices); s++) {
 			if (ServiceClass() & (1 << s)) {
 				if (first) {
 					first = false;
-					serviceClass << services[s];
+					serviceClass << kServices[s];
 				} else {
-					serviceClass << ", " << services[s];
+					serviceClass << ", " << kServices[s];
 				}
-					
 			}
 		}
-
 	} else
 		serviceClass << B_TRANSLATE("Unspecified");
 }
@@ -55,7 +53,7 @@ void
 DeviceClass::GetMajorDeviceClass(BString& majorClass)
 {
 	CALLED();
-	static const char *major_devices[] = {
+	static const char* kMajorDevices[] = {
 		B_TRANSLATE_MARK("Miscellaneous"),
 		B_TRANSLATE_MARK("Computer"),
 		B_TRANSLATE_MARK("Phone"),
@@ -66,10 +64,10 @@ DeviceClass::GetMajorDeviceClass(BString& majorClass)
 		B_TRANSLATE_MARK("Uncategorized")
 	};
 
-	if (MajorDeviceClass() >= sizeof(major_devices) / sizeof(*major_devices))
+	if (MajorDeviceClass() >= B_COUNT_OF(kMajorDevices))
 		majorClass << B_TRANSLATE("Invalid device class!\n");
 	else
-		majorClass << major_devices[MajorDeviceClass()];
+		majorClass << kMajorDevices[MajorDeviceClass()];
 
 }
 
@@ -80,7 +78,7 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 	CALLED();
 	uint major = MajorDeviceClass();
 	uint minor = MinorDeviceClass();
-	
+
 	switch (major) {
 		case 0:	/* misc */
 			minorClass << " -";
@@ -89,10 +87,10 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 			switch(minor) {
 				case 0:
 					minorClass << B_TRANSLATE("Uncategorized");
-					break;	
+					break;
 				case 1:
 					minorClass << B_TRANSLATE("Desktop workstation");
-					break;	
+					break;
 				case 2:
 					minorClass << B_TRANSLATE("Server");
 					break;
@@ -103,12 +101,10 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 					minorClass << B_TRANSLATE("Handheld");
 					break;
 				case 5:
-					minorClass << B_TRANSLATE_COMMENT("Palm", 
-						"A palm-held device");
+					minorClass << B_TRANSLATE_COMMENT("Palm", "A palm-held device");
 					break;
 				case 6:
-					minorClass << B_TRANSLATE_COMMENT("Wearable",
-						"A wearable computer");
+					minorClass << B_TRANSLATE_COMMENT("Wearable", "A wearable computer");
 					break;
 				}
 			break;
@@ -227,7 +223,7 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 			}
 			break;
 		case 5:	/* peripheral */
-		{		
+		{
 			switch(minor & 48) {
 				case 16:
 					minorClass << B_TRANSLATE("Keyboard");
@@ -242,10 +238,10 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 				case 48:
 					minorClass << B_TRANSLATE("Combo keyboard/pointing device");
 					if (minor & 15)
-						minorClass << "/";							
+						minorClass << "/";
 					break;
 			}
-			
+
 			switch(minor & 15) {
 				case 0:
 					break;
@@ -290,7 +286,7 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 					break;
 				case 2:
 					minorClass << B_TRANSLATE_COMMENT("Pager",
-					"A small radio device to receive short text messages");
+						"A small radio device to receive short text messages");
 					break;
 				case 3:
 					minorClass << B_TRANSLATE("Jacket");
@@ -307,7 +303,7 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 			switch(minor) {
 				case 1:
 					minorClass << B_TRANSLATE("Robot");
-					break;	
+					break;
 				case 2:
 					minorClass << B_TRANSLATE("Vehicle");
 					break;
@@ -333,18 +329,18 @@ DeviceClass::GetMinorDeviceClass(BString& minorClass)
 
 
 void
-DeviceClass::DumpDeviceClass(BString& string)
+DeviceClass::DumpDeviceClass(BString& deviceClass)
 {
 	CALLED();
-	string << B_TRANSLATE("Service classes: ");
-	GetServiceClass(string);
-	string << " | ";
-	string << B_TRANSLATE("Major class: ");
-	GetMajorDeviceClass(string);
-	string << " | ";
-	string << B_TRANSLATE("Minor class: ");
-	GetMinorDeviceClass(string);
-	string << ".";
+	deviceClass << B_TRANSLATE("Service classes: ");
+	GetServiceClass(deviceClass);
+	deviceClass << " | ";
+	deviceClass << B_TRANSLATE("Major class: ");
+	GetMajorDeviceClass(deviceClass);
+	deviceClass << " | ";
+	deviceClass << B_TRANSLATE("Minor class: ");
+	GetMinorDeviceClass(deviceClass);
+	deviceClass << ".";
 }
 
 
@@ -352,84 +348,83 @@ void
 DeviceClass::Draw(BView* view, const BPoint& point)
 {
 	CALLED();
-	rgb_color	kBlack = { 0,0,0,0 };
-	rgb_color	kBlue = { 28,110,157,0 };
-	rgb_color	kWhite = { 255,255,255,0 };
-
+	rgb_color kBlack = { 0, 0, 0, 0 };
+	rgb_color kBlue = { 28, 110, 157, 0 };
+	rgb_color kWhite = { 255, 255, 255, 0 };
 
 	view->SetHighColor(kBlue);
-	view->FillRoundRect(BRect(point.x + IconInsets, point.y + IconInsets, 
-		point.x + IconInsets + PixelsForIcon, point.y + IconInsets + PixelsForIcon), 5, 5);
+	view->FillRoundRect(BRect(point.x + kIconInsets, point.y + kIconInsets, point.x + kIconInsets +
+		kPixelsForIcon, point.y + kIconInsets + kPixelsForIcon), 5, 5);
 
 	view->SetHighColor(kWhite);
 
 	switch (MajorDeviceClass()) {
 
 		case 2: // phone
-			view->StrokeRoundRect(BRect(point.x + IconInsets + uint(PixelsForIcon/4),
-				 point.y + IconInsets + 6,
-				 point.x + IconInsets + uint(PixelsForIcon*3/4),
-			 	 point.y + IconInsets + PixelsForIcon - 2), 2, 2);
-			view->StrokeRect(BRect(point.x + IconInsets + uint(PixelsForIcon/4) + 4,
-			 	 point.y + IconInsets + 10,
-				 point.x + IconInsets + uint(PixelsForIcon*3/4) - 4,
-			 	 point.y + IconInsets + uint(PixelsForIcon*3/4)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4) + 4,
-				 point.y + IconInsets + PixelsForIcon - 6), 
-				 BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4) - 4,
-				 point.y + IconInsets + PixelsForIcon - 6));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4) + 4,
-				 point.y + IconInsets + PixelsForIcon - 4), 
-				 BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4) - 4,
-				 point.y + IconInsets + PixelsForIcon - 4));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4) + 4,
-				 point.y + IconInsets + 2), 
-				 BPoint(point.x + IconInsets + uint(PixelsForIcon/4) + 4,
-				 point.y + IconInsets + 6));
+			view->StrokeRoundRect(BRect(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				 point.y + kIconInsets + 6,
+				 point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+			 	 point.y + kIconInsets + kPixelsForIcon - 2), 2, 2);
+			view->StrokeRect(BRect(point.x + kIconInsets + uint(kPixelsForIcon/4) + 4,
+			 	 point.y + kIconInsets + 10,
+				 point.x + kIconInsets + uint(kPixelsForIcon*3/4) - 4,
+			 	 point.y + kIconInsets + uint(kPixelsForIcon*3/4)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4) + 4,
+				 point.y + kIconInsets + kPixelsForIcon - 6),
+				 BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4) - 4,
+				 point.y + kIconInsets + kPixelsForIcon - 6));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4) + 4,
+				 point.y + kIconInsets + kPixelsForIcon - 4),
+				 BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4) - 4,
+				 point.y + kIconInsets + kPixelsForIcon - 4));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4) + 4,
+				 point.y + kIconInsets + 2),
+				 BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4) + 4,
+				 point.y + kIconInsets + 6));
 			break;
 		case 3: // LAN
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4),
-				 point.y + IconInsets + uint(PixelsForIcon*3/8)),
-				BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon*3/8)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*5/8),
-				 point.y + IconInsets + uint(PixelsForIcon/8)));			
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon*5/8)),
-				BPoint(point.x + IconInsets + uint(PixelsForIcon/4),
-				 point.y + IconInsets + uint(PixelsForIcon*5/8)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/8),
-				 point.y + IconInsets + uint(PixelsForIcon*7/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/8)),
+				BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*5/8),
+				 point.y + kIconInsets + uint(kPixelsForIcon/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*5/8)),
+				BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*5/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/8),
+				 point.y + kIconInsets + uint(kPixelsForIcon*7/8)));
 			break;
 		case 4: // audio/video
-			view->StrokeRect(BRect(point.x + IconInsets + uint(PixelsForIcon/4),
-				 point.y + IconInsets + uint(PixelsForIcon*3/8),
-				 point.x + IconInsets + uint(PixelsForIcon*3/8),
-			 	 point.y + IconInsets + uint(PixelsForIcon*5/8)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/8),
-				 point.y + IconInsets + uint(PixelsForIcon*3/8)),
-				BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon/8)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon*7/8)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/8),
-				 point.y + IconInsets + uint(PixelsForIcon*5/8)));
-			break;			
-		default: // Bluetooth Logo
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4),
-				 point.y + IconInsets + uint(PixelsForIcon*3/4)),
-				BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon/4)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/2),
-				 point.y + IconInsets +2));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/2),
-				 point.y + IconInsets + PixelsForIcon - 2));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon*3/4),
-				 point.y + IconInsets + uint(PixelsForIcon*3/4)));
-			view->StrokeLine(BPoint(point.x + IconInsets + uint(PixelsForIcon/4), 
-				point.y + IconInsets + uint(PixelsForIcon/4)));
+			view->StrokeRect(BRect(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/8),
+				 point.x + kIconInsets + uint(kPixelsForIcon*3/8),
+			 	 point.y + kIconInsets + uint(kPixelsForIcon*5/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/8),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/8)),
+				BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*7/8)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/8),
+				 point.y + kIconInsets + uint(kPixelsForIcon*5/8)));
 			break;
-	}	
+		default: // Bluetooth Logo
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/4)),
+				BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon/4)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/2),
+				 point.y + kIconInsets +2));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/2),
+				 point.y + kIconInsets + kPixelsForIcon - 2));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon*3/4),
+				 point.y + kIconInsets + uint(kPixelsForIcon*3/4)));
+			view->StrokeLine(BPoint(point.x + kIconInsets + uint(kPixelsForIcon/4),
+				point.y + kIconInsets + uint(kPixelsForIcon/4)));
+			break;
+	}
 	view->SetHighColor(kBlack);
 }
 

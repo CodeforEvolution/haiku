@@ -576,12 +576,10 @@ LocalDevice::LocalDevice(hci_id hid)
 	_ReadLinkKeys();
 
 	// Uncomment this if you want your device to have a nicer default name
-	 BString name("HaikuBluetooth");
-	 SetFriendlyName(name);
-
+	 const BString defaultName("HaikuBluetooth");
+	 SetFriendlyName(defaultName);
 
 	uint32 value;
-
 	// HARDCODE -> move this to addons
 	if (GetProperty("manufacturer", &value) == B_OK
 		&& value == 15) {

@@ -103,7 +103,7 @@ DeviceManager::AddDirectory(node_ref *nref)
 	entry_ref ref;
 	status_t error;
 	while ((error =	directory.GetNextRef(&ref))	== B_OK) {
-		// its suposed to be devices ...
+		// its supposed to be devices ...
 		AddDevice(&ref);
 	}
 
