@@ -14,14 +14,13 @@
 
 
 inline void*
-buildCommand(uint8 ogf, uint8 ocf, void** param, size_t psize,
-	size_t* outsize)
+buildCommand(uint8 ogf, uint8 ocf, void** param, size_t psize, size_t* outsize)
 {
 	CALLED();
-	struct hci_command_header* header;
 
-	header = (struct hci_command_header*) malloc(psize
-		+ sizeof(struct hci_command_header));
+	struct hci_command_header* header = (struct hci_command_header*)malloc(psize +
+		sizeof(struct hci_command_header));
+
 	*outsize = psize + sizeof(struct hci_command_header);
 
 	if (header != NULL) {
@@ -32,6 +31,7 @@ buildCommand(uint8 ogf, uint8 ocf, void** param, size_t psize,
 			*param = ((uint8*)header) + sizeof(struct hci_command_header);
 		}
 	}
+
 	return header;
 }
 
@@ -57,8 +57,7 @@ NonParameterCommandRequest(uint8 ofg, uint8 ocf, int32* result, hci_id hId,
 	BMessage reply;
 
 	request.AddInt32("hci_id", hId);
-	request.AddData("raw command", B_ANY_TYPE,
-		simpleCommand.Data(), simpleCommand.Size());
+	request.AddData("raw command", B_ANY_TYPE, simpleCommand.Data(), simpleCommand.Size());
 	request.AddInt16("eventExpected",  HCI_EVENT_CMD_COMPLETE);
 	request.AddInt16("opcodeExpected", PACK_OPCODE(ofg, ocf));
 
@@ -81,8 +80,7 @@ void*
 buildReset(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_CONTROL_BASEBAND, OCF_RESET,
-		NULL, 0, outsize);
+	return buildCommand(OGF_CONTROL_BASEBAND, OCF_RESET, NULL, 0, outsize);
 }
 
 
@@ -90,8 +88,7 @@ void*
 buildReadLocalName(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_LOCAL_NAME,
-		NULL, 0, outsize);
+	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_LOCAL_NAME, NULL, 0, outsize);
 }
 
 
@@ -99,8 +96,7 @@ void*
 buildReadClassOfDevice(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_CLASS_OF_DEV,
-	NULL, 0, outsize);
+	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_CLASS_OF_DEV, NULL, 0, outsize);
 }
 
 
@@ -108,8 +104,7 @@ void*
 buildReadScan(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_SCAN_ENABLE,
-	NULL, 0, outsize);
+	return buildCommand(OGF_CONTROL_BASEBAND, OCF_READ_SCAN_ENABLE, NULL, 0, outsize);
 }
 
 
@@ -118,13 +113,11 @@ buildWriteScan(uint8 scanmode, size_t* outsize)
 {
 	CALLED();
 	struct hci_write_scan_enable* param;
-	void* command = buildCommand(OGF_CONTROL_BASEBAND, OCF_WRITE_SCAN_ENABLE,
-		(void**) &param, sizeof(struct hci_write_scan_enable), outsize);
+	void* command = buildCommand(OGF_CONTROL_BASEBAND, OCF_WRITE_SCAN_ENABLE, (void**)&param,
+		sizeof(struct hci_write_scan_enable), outsize);
 
-
-	if (command != NULL) {
+	if (command != NULL)
 		param->scan = scanmode;
-	}
 
 	return command;
 }
@@ -141,8 +134,8 @@ buildRemoteNameRequest(bdaddr_t bdaddr, uint8 pscan_rep_mode,
 {
 	CALLED();
 	struct hci_remote_name_request* param;
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_REMOTE_NAME_REQUEST,
-		(void**)&param, sizeof(struct hci_remote_name_request), outsize);
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_REMOTE_NAME_REQUEST, (void**)&param,
+		sizeof(struct hci_remote_name_request), outsize);
 
 	if (command != NULL) {
 		param->bdaddr = bdaddr;
@@ -160,11 +153,10 @@ buildInquiry(uint32 lap, uint8 length, uint8 num_rsp, size_t* outsize)
 {
 	CALLED();
 	struct hci_cp_inquiry* param;
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_INQUIRY,
-		(void**) &param, sizeof(struct hci_cp_inquiry), outsize);
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_INQUIRY, (void**)&param,
+		sizeof(struct hci_cp_inquiry), outsize);
 
 	if (command != NULL) {
-
 		param->lap[2] = (lap >> 16) & 0xFF;
 		param->lap[1] = (lap >>  8) & 0xFF;
 		param->lap[0] = (lap >>  0) & 0xFF;
@@ -189,13 +181,13 @@ buildPinCodeRequestReply(bdaddr_t bdaddr, uint8 length, char pincode[16],
 	size_t* outsize)
 {
 	CALLED();
-	struct hci_cp_pin_code_reply* param;
 
 	if (length > HCI_PIN_SIZE)  // PinCode cannot be longer than 16
 		return NULL;
 
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_PIN_CODE_REPLY,
-		(void**)&param, sizeof(struct hci_cp_pin_code_reply), outsize);
+	struct hci_cp_pin_code_reply* param;
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_PIN_CODE_REPLY, (void**)&param,
+		sizeof(struct hci_cp_pin_code_reply), outsize);
 
 	if (command != NULL) {
 		param->bdaddr = bdaddr;
@@ -211,16 +203,13 @@ void*
 buildPinCodeRequestNegativeReply(bdaddr_t bdaddr, size_t* outsize)
 {
 	CALLED();
+
 	struct hci_cp_pin_code_neg_reply* param;
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_PIN_CODE_NEG_REPLY, (void**)&param,
+		sizeof(struct hci_cp_pin_code_neg_reply), outsize);
 
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_PIN_CODE_NEG_REPLY,
-		(void**) &param, sizeof(struct hci_cp_pin_code_neg_reply), outsize);
-
-	if (command != NULL) {
-
+	if (command != NULL)
 		param->bdaddr = bdaddr;
-
-	}
 
 	return command;
 }
@@ -230,10 +219,10 @@ void*
 buildAcceptConnectionRequest(bdaddr_t bdaddr, uint8 role, size_t* outsize)
 {
 	CALLED();
-	struct hci_cp_accept_conn_req* param;
 
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_ACCEPT_CONN_REQ,
-		(void**) &param, sizeof(struct hci_cp_accept_conn_req), outsize);
+	struct hci_cp_accept_conn_req* param;
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_ACCEPT_CONN_REQ, (void**)&param,
+		sizeof(struct hci_cp_accept_conn_req), outsize);
 
 	if (command != NULL) {
 		param->bdaddr = bdaddr;
@@ -250,13 +239,11 @@ buildRejectConnectionRequest(bdaddr_t bdaddr, size_t* outsize)
 	CALLED();
 	struct hci_cp_reject_conn_req* param;
 
-	void* command = buildCommand(OGF_LINK_CONTROL, OCF_REJECT_CONN_REQ,
-		(void**)&param, sizeof(struct hci_cp_reject_conn_req),
-		outsize);
+	void* command = buildCommand(OGF_LINK_CONTROL, OCF_REJECT_CONN_REQ, (void**)&param,
+		sizeof(struct hci_cp_reject_conn_req), outsize);
 
-	if (command != NULL) {
+	if (command != NULL)
 		param->bdaddr = bdaddr;
-	}
 
 	return command;
 }
@@ -271,8 +258,7 @@ void*
 buildReadLocalVersionInformation(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_LOCAL_VERSION,
-		NULL, 0, outsize);
+	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_LOCAL_VERSION, NULL, 0, outsize);
 }
 
 
@@ -280,8 +266,7 @@ void*
 buildReadBufferSize(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_BUFFER_SIZE,
-		NULL, 0, outsize);
+	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_BUFFER_SIZE, NULL, 0, outsize);
 }
 
 
@@ -289,12 +274,11 @@ void*
 buildReadBdAddr(size_t* outsize)
 {
 	CALLED();
-	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_BD_ADDR,
-		NULL, 0, outsize);
+	return buildCommand(OGF_INFORMATIONAL_PARAM, OCF_READ_BD_ADDR, NULL, 0, outsize);
 }
 
 
-const char* linkControlCommands[] = {
+const char* kLinkControlCommands[] = {
 	"Inquiry",
 	"Inquiry Cancel",
 	"Periodic Inquiry Mode",
@@ -350,7 +334,7 @@ const char* linkControlCommands[] = {
 };
 
 
-const char* linkPolicyCommands[] = {
+const char* kLinkPolicyCommands[] = {
 	"Hold Mode",
 	"Reserved",
 	"Sniff Mode",
@@ -371,7 +355,7 @@ const char* linkPolicyCommands[] = {
 };
 
 
-const char* controllerBasebandCommands[] = {
+const char* kControllerBasebandCommands[] = {
 	"Set Event Mask",
 	"Reserved",
 	"Reset",
@@ -471,7 +455,7 @@ const char* controllerBasebandCommands[] = {
 };
 
 
-const char* informationalParametersCommands[] = {
+const char* kInformationalParametersCommands[] = {
 	"Read Local Version Information",
 	"Read Local Supported Commands",
 	"Read Local Supported Features",
@@ -484,7 +468,7 @@ const char* informationalParametersCommands[] = {
 };
 
 
-const char* statusParametersCommands[] = {
+const char* kStatusParametersCommands[] = {
 	"Read Failed Contact Counter",
 	"Reset Failed Contact Counter",
 	"Read Link Quality",
@@ -495,7 +479,7 @@ const char* statusParametersCommands[] = {
 };
 
 
-const char* testingCommands[] = {
+const char* kTestingCommands[] = {
 	"Read Loopback Mode",
 	"Write Loopback Mode",
 	"Enable Device Under Test Mode",
@@ -503,7 +487,7 @@ const char* testingCommands[] = {
 };
 
 
-const char* bluetoothEvents[] = {
+const char* kBluetoothEvents[] = {
 	"Inquiry Complete",
 	"Inquiry Result",
 	"Conn Complete",
@@ -568,7 +552,7 @@ const char* bluetoothEvents[] = {
 };
 
 
-const char* bluetoothErrors[] = {
+const char* kBluetoothErrors[] = {
 	"No Error",
 	"Unknown Command",
 	"No Connection",
@@ -627,11 +611,11 @@ const char* bluetoothErrors[] = {
 	"Host Busy Pairing"
 };
 
+const char* kHciVersion[] = { "1.0B" , "1.1" , "1.2" , "2.0" , "2.1", "3.0", "4.0", "4.1", "4.2",
+	"5.0", "5.1", "5.2", "5.3", "5.4" };
 
-const char* hciVersion[] = { "1.0B" , "1.1" , "1.2" , "2.0" , "2.1",
-	"3.0", "4.0", "4.1", "4.2", "5.0", "5.1", "5.2", "5.3", "5.4" };
-const char* lmpVersion[] = { "1.0" , "1.1" , "1.2" , "2.0" , "2.1",
-	"3.0", "4.0", "4.1", "4.2", "5.0", "5.1", "5.2", "5.3", "5.4" };
+const char* kLmpVersion[] = { "1.0" , "1.1" , "1.2" , "2.0" , "2.1", "3.0", "4.0", "4.1", "4.2",
+	"5.0", "5.1", "5.2", "5.3", "5.4" };
 
 #if 0
 #pragma mark -
@@ -642,7 +626,7 @@ const char*
 BluetoothHciVersion(uint16 ver)
 {
 	CALLED();
-	return hciVersion[ver];
+	return kHciVersion[ver];
 }
 
 
@@ -650,7 +634,7 @@ const char*
 BluetoothLmpVersion(uint16 ver)
 {
 	CALLED();
-	return lmpVersion[ver];
+	return kLmpVersion[ver];
 }
 
 
@@ -665,36 +649,37 @@ BluetoothCommandOpcode(uint16 opcode)
 	// our control.
 	switch (GET_OPCODE_OGF(opcode)) {
 		case OGF_LINK_CONTROL:
-			return linkControlCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kLinkControlCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
 
 		case OGF_LINK_POLICY:
-			return linkPolicyCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kLinkPolicyCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
 
 		case OGF_CONTROL_BASEBAND:
-			return controllerBasebandCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kControllerBasebandCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
 
 		case OGF_INFORMATIONAL_PARAM:
-			return informationalParametersCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kInformationalParametersCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
 
 		case OGF_STATUS_PARAM:
-			return statusParametersCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kStatusParametersCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
 
 		case OGF_TESTING_CMD:
-			return testingCommands[GET_OPCODE_OCF(opcode) - 1];
+			return kTestingCommands[GET_OPCODE_OCF(opcode) - 1];
 			break;
+
 		case OGF_VENDOR_CMD:
 			return "Vendor specific command";
 			break;
+
 		default:
 			return "Unknown command";
 			break;
 	}
-
 }
 
 
@@ -702,8 +687,8 @@ const char*
 BluetoothEvent(uint8 event)
 {
 	CALLED();
-	if (event < sizeof(bluetoothEvents) / sizeof(const char*))
-		return bluetoothEvents[event - 1];
+	if (event < sizeof(kBluetoothEvents) / sizeof(const char*))
+		return kBluetoothEvents[event - 1];
 	else
 		return "Event out of Range!";
 }
@@ -713,8 +698,8 @@ const char*
 BluetoothManufacturer(uint16 manufacturer)
 {
 	CALLED();
-	if (manufacturer < sizeof(bluetoothManufacturers) / sizeof(const char*))
-		return bluetoothManufacturers[manufacturer];
+	if (manufacturer < sizeof(kBluetoothManufacturers) / sizeof(const char*))
+		return kBluetoothManufacturers[manufacturer];
 	else if (manufacturer == 0xFFFF)
 		return "internal use";
 	else
@@ -726,8 +711,8 @@ const char*
 BluetoothError(uint8 error)
 {
 	CALLED();
-	if (error < sizeof(bluetoothErrors) / sizeof(const char*))
-		return bluetoothErrors[error];
+	if (error < sizeof(kBluetoothErrors) / sizeof(const char*))
+		return kBluetoothErrors[error];
 	else
 		return "not specified";
 }

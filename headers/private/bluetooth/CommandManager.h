@@ -22,20 +22,19 @@
 
 #define typed_command(type) type, sizeof(type)
 
-template <typename Type = void, int paramSize = 0,
-	int HeaderSize = HCI_COMMAND_HDR_SIZE>
+template <typename Type = void, int paramSize = 0, int HeaderSize = HCI_COMMAND_HDR_SIZE>
 class BluetoothCommand {
-
 public:
 	BluetoothCommand(uint8 ogf, uint8 ocf)
 	{
-		fHeader = (struct hci_command_header*) fBuffer;
+		fHeader = static_cast<struct hci_command_header*>(fBuffer);
 
 		if (paramSize != 0)
-			fContent = (Type*)(fHeader + 1);
-		else
+			fContent = static_cast<Type*>(fHeader + 1);
+		else {
 			// avoid pointing outside in case of not having parameters
-			fContent = (Type*)fHeader;
+			fContent = static_cast<Type*>(fHeader);
+		}
 
 		fHeader->opcode = B_HOST_TO_LENDIAN_INT16(PACK_OPCODE(ogf, ocf));
 		fHeader->clen = paramSize;
@@ -50,10 +49,11 @@ public:
 	void*
 	Data() const
 	{
-		return (void*)fBuffer;
+		return static_cast<void*>(fBuffer);
 	}
 
-	size_t Size() const
+	size_t
+	Size() const
 	{
 		return HeaderSize + paramSize;
 	}
@@ -66,18 +66,16 @@ private:
 
 
 status_t
-NonParameterCommandRequest(uint8 ofg, uint8 ocf, int32* result, hci_id hId,
-	BMessenger* messenger);
+NonParameterCommandRequest(uint8 ofg, uint8 ocf, int32* result, hci_id hId, BMessenger* messenger);
 
 template<typename PARAMETERCONTAINER, typename PARAMETERTYPE>
 status_t
-SingleParameterCommandRequest(uint8 ofg, uint8 ocf, PARAMETERTYPE parameter,
-	int32* result, hci_id hId, BMessenger* messenger)
+SingleParameterCommandRequest(uint8 ofg, uint8 ocf, PARAMETERTYPE parameter, int32* result,
+	hci_id hId, BMessenger* messenger)
 {
 	int8 bt_status = BT_ERROR;
 
-	BluetoothCommand<typed_command(PARAMETERCONTAINER)>
-		simpleCommand(ofg, ocf);
+	BluetoothCommand<typed_command(PARAMETERCONTAINER)> simpleCommand(ofg, ocf);
 
 	simpleCommand->param = parameter;
 
@@ -87,8 +85,7 @@ SingleParameterCommandRequest(uint8 ofg, uint8 ocf, PARAMETERTYPE parameter,
 	simpleCommand->param = parameter;
 
 	request.AddInt32("hci_id", hId);
-	request.AddData("raw command", B_ANY_TYPE, simpleCommand.Data(),
-		simpleCommand.Size());
+	request.AddData("raw command", B_ANY_TYPE, simpleCommand.Data(), simpleCommand.Size());
 	request.AddInt16("eventExpected",  HCI_EVENT_CMD_COMPLETE);
 	request.AddInt16("opcodeExpected", PACK_OPCODE(ofg, ocf));
 
@@ -110,15 +107,13 @@ void* buildWriteScan(uint8 scanmode, size_t* outsize);
 void* buildReadClassOfDevice(size_t* outsize);
 
 /* LINK CONTROL */
-void* buildRemoteNameRequest(bdaddr_t bdaddr, uint8 pscan_rep_mode,
-	uint16 clock_offset, size_t* outsize);
+void* buildRemoteNameRequest(bdaddr_t bdaddr, uint8 pscan_rep_mode, uint16 clock_offset,
+	size_t* outsize);
 void* buildInquiry(uint32 lap, uint8 length, uint8 num_rsp, size_t* outsize);
 void* buildInquiryCancel(size_t* outsize);
-void* buildPinCodeRequestReply(bdaddr_t bdaddr, uint8 length, char pincode[16],
-	size_t* outsize);
+void* buildPinCodeRequestReply(bdaddr_t bdaddr, uint8 length, char pincode[16], size_t* outsize);
 void* buildPinCodeRequestNegativeReply(bdaddr_t bdaddr, size_t* outsize);
-void* buildAcceptConnectionRequest(bdaddr_t bdaddr, uint8 role,
-	size_t* outsize);
+void* buildAcceptConnectionRequest(bdaddr_t bdaddr, uint8 role, size_t* outsize);
 void* buildRejectConnectionRequest(bdaddr_t bdaddr, size_t* outsize);
 
 /* OGF_INFORMATIONAL_PARAM */

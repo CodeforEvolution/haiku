@@ -84,7 +84,7 @@ get_expected_size(net_buffer* nbuf)
 {
 
 	if (nbuf == NULL)
-		panic("Analizing NULL packet");
+		panic("Analyzing NULL packet");
 
 	switch (nbuf->protocol) {
 
