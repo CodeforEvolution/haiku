@@ -23,7 +23,7 @@
 
 extern struct bluetooth_core_data_module_info* btCoreData;
 
-struct net_protocol_module_info* L2cap = NULL;
+net_protocol_module_info* gL2CAPModule = NULL;
 
 extern void RegisterConnection(hci_id hid, uint16 handle);
 extern void unRegisterConnection(hci_id hid, uint16 handle);
@@ -50,7 +50,6 @@ AclAssembly(net_buffer* nbuf, hci_id hid)
 		gBufferModule->free(nbuf);
 		return ENOBUFS;
 	}
-
 
 	// Get ACL connection handle, PB flag and payload length
 	aclHeader->handle = le16toh(aclHeader->handle);
@@ -169,14 +168,14 @@ AclAssembly(net_buffer* nbuf, hci_id hid)
 status_t
 PostToUpper(HciConnection* conn, net_buffer* buf)
 {
-	if (L2cap == NULL)
+	if (gL2CAPModule == NULL) {
+		if (get_module(NET_BLUETOOTH_L2CAP_NAME, (module_info**)&gL2CAPModule) != B_OK) {
+			ERROR("%s: cannot get module \"%s\"\n", __func__,
+				NET_BLUETOOTH_L2CAP_NAME);
+			return B_ERROR;
+		}
+	}
 
-	if (get_module(NET_BLUETOOTH_L2CAP_NAME, (module_info**)&L2cap) != B_OK) {
-		ERROR("%s: cannot get module \"%s\"\n", __func__,
-			NET_BLUETOOTH_L2CAP_NAME);
-		return B_ERROR;
-	} // TODO: someone put it
-
-	return L2cap->receive_data((net_buffer*)conn);// XXX pass handle in type
-
+	// FIXME: This is a VERY VERY bad way to pass in our handle...
+	return gL2CAPModule->receive_data(reinterpret_cast<net_buffer*>(conn));// XXX pass handle in type
 }

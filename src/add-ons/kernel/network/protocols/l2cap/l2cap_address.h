@@ -8,6 +8,6 @@
 #ifndef L2CAP_ADDRESS_H
 #define L2CAP_ADDRESS_H
 
-extern struct net_address_module_info gL2cap4AddressModule;
+extern struct net_address_module_info gL2capAddressModule;
 
 #endif	// L2CAP_ADDRESS_H

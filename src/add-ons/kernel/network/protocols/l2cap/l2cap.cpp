@@ -80,17 +80,17 @@ l2cap_uninit_protocol(net_protocol* protocol)
 {
 	CALLED();
 
-	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
+	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
 	if (endpoint == NULL)
 		return B_BAD_TYPE;
 
 	// TODO: Some more checkins	/ uninit
 	gEndpointList.Remove(endpoint);
 
-	status_t result = endpoint->Uninit();
+	endpoint->Uninit();
 	delete endpoint;
 
-	return result;
+	return B_OK;
 }
 
 
@@ -99,8 +99,7 @@ l2cap_open(net_protocol* protocol)
 {
 	CALLED();
 
-	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
-
+	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
 	return endpoint->Open();
 }
 
@@ -110,8 +109,7 @@ l2cap_close(net_protocol* protocol)
 {
 	CALLED();
 
-	L2capEndpoint* endpoint = dynamic_cast<L2capEndpoint*>(protocol);
-
+	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
 	return endpoint->Close();
 }
 
@@ -136,7 +134,7 @@ l2cap_connect(net_protocol* protocol, const struct sockaddr* address)
 	if (address->sa_family != AF_BLUETOOTH)
 		return EAFNOSUPPORT;
 
-	return ((L2capEndpoint*)protocol)->Connect(address);
+	return static_cast<L2capEndpoint*>(protocol)->Connect(address);
 }
 
 
@@ -144,7 +142,7 @@ status_t
 l2cap_accept(net_protocol* protocol, struct net_socket** _acceptedSocket)
 {
 	CALLED();
-	return ((L2capEndpoint*)protocol)->Accept(_acceptedSocket);
+	return static_cast<L2capEndpoint*>(protocol)->Accept(_acceptedSocket);
 }
 
 
@@ -171,7 +169,7 @@ l2cap_setsockopt(net_protocol* protocol, int level, int option,
 	const void* value, int length)
 {
 	CALLED();
-	((L2capEndpoint*)protocol)->fConfigurationSet = true;
+	// static_cast<L2capEndpoint*>(protocol)->fConfigurationSet = true;
 	return B_OK;
 }
 
@@ -180,7 +178,7 @@ status_t
 l2cap_bind(net_protocol* protocol, const struct sockaddr* address)
 {
 	CALLED();
-	return ((L2capEndpoint*)protocol)->Bind(address);
+	return static_cast<L2capEndpoint*>(protocol)->Bind(address);
 }
 
 
@@ -196,7 +194,7 @@ status_t
 l2cap_listen(net_protocol* protocol, int count)
 {
 	CALLED();
-	return ((L2capEndpoint*)protocol)->Listen(count);
+	return static_cast<L2capEndpoint*>(protocol)->Listen(count);
 }
 
 
@@ -216,7 +214,7 @@ l2cap_send_data(net_protocol* protocol, net_buffer* buffer)
 	if (buffer == NULL)
 		return ENOBUFS;
 
-	return ((L2capEndpoint*)protocol)->SendData(buffer);
+	return static_cast<L2capEndpoint*>(protocol)->SendData(buffer);
 }
 
 
@@ -242,7 +240,7 @@ l2cap_read_data(net_protocol* protocol, size_t numBytes, uint32 flags,
 	net_buffer** _buffer)
 {
 	CALLED();
-	return ((L2capEndpoint*)protocol)->ReadData(numBytes, flags, _buffer);
+	return static_cast<L2capEndpoint*>(protocol)->ReadData(numBytes, flags, _buffer);
 }
 
 
@@ -273,7 +271,7 @@ l2cap_get_mtu(net_protocol* protocol, const struct sockaddr* address)
 status_t
 l2cap_receive_data(net_buffer* buffer)
 {
-	HciConnection* conn = (HciConnection*)buffer;
+	HciConnection* conn = reinterpret_cast<HciConnection*>(buffer);
 	TRACE("%s: received some data, buffer length %" B_PRIu32 "\n", __func__,
 		conn->currentRxPacket->size);
 
@@ -315,38 +313,33 @@ l2cap_std_ops(int32 op, ...)
 	switch (op) {
 		case B_MODULE_INIT:
 		{
-			error = gStackModule->register_domain_protocols(AF_BLUETOOTH,
-				SOCK_STREAM, BLUETOOTH_PROTO_L2CAP,
-				"network/protocols/l2cap/v1",
-				NULL);
+			error = gStackModule->register_domain_protocols(AF_BLUETOOTH, SOCK_STREAM,
+				BLUETOOTH_PROTO_L2CAP, "network/protocols/l2cap/v1", NULL);
 			if (error != B_OK)
 				return error;
 
-			error = gStackModule->register_domain_receiving_protocol(
-				AF_BLUETOOTH,
-				BLUETOOTH_PROTO_L2CAP,
-				"network/protocols/l2cap/v1");
+			error = gStackModule->register_domain_receiving_protocol(AF_BLUETOOTH,
+				BLUETOOTH_PROTO_L2CAP, "network/protocols/l2cap/v1");
 			if (error != B_OK)
 				return error;
 
-			error = gStackModule->register_domain(AF_BLUETOOTH, "l2cap",
-				&gL2CAPModule, &gL2cap4AddressModule, &sDomain);
+			error = gStackModule->register_domain(AF_BLUETOOTH, "l2cap", &gL2CAPModule,
+				&gL2capAddressModule, &sDomain);
 			if (error != B_OK)
 				return error;
 
 			new (&gEndpointList) DoublyLinkedList<L2capEndpoint>;
 
 			error = InitializeConnectionPurgeThread();
-
-			return B_OK;
+			return error;
 		}
 
 		case B_MODULE_UNINIT:
-
+		{
 			error = QuitConnectionPurgeThread();
 			gStackModule->unregister_domain(sDomain);
-
-			return B_OK;
+			return error;
+		}
 
 		default:
 			return B_ERROR;

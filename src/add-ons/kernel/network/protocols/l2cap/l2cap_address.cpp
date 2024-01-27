@@ -409,7 +409,7 @@ l2cap_checksum_address(struct Checksum *checksum, const sockaddr *address)
 }
 
 
-net_address_module_info gL2cap4AddressModule = {
+net_address_module_info gL2capAddressModule = {
 	{
 		NULL,
 		0,

@@ -1,6 +1,6 @@
 /*
  * Copyright 2007 Oliver Ruiz Dorantes, oliver.ruiz.dorantes_at_gmail.com
- * Copyright 2022 Jacob Secunda
+ * Copyright 2022-2024 Jacob Secunda, secundaja@gmail.com
  * All rights reserved. Distributed under the terms of the MIT License.
  *
  */
@@ -30,13 +30,6 @@
 
 
 #include <bluetooth/bluetooth.h>
-
-
-// TODO: from BSD compatibility layer
-// #define htole16(x) (x)
-// #define le16toh(x) (x)
-// #define le32toh(x) (x)
-// #define htole32(x) (x)
 
 #define HZ	1000000 // us per second TODO: move somewhere more generic
 #define bluetooth_l2cap_ertx_timeout (60 * HZ)
@@ -105,29 +98,39 @@
 #define L2CAP_PSM_AVCTP		0x0017	/* AVCTP */
 #define L2CAP_PSM_AVDTP		0x0019	/* AVDTP */
 /*  < 0x1000 - reserved for future use */
-/*  0x1001 < x < 0xFFFF dinamically assigned */
+/*  0x1001 < x < 0xFFFF dynamically assigned */
 
-/* L2CAP Connection response command result codes */
-#define L2CAP_SUCCESS		0x0000
-#define L2CAP_PENDING		0x0001
-#define L2CAP_PSM_NOT_SUPPORTED	0x0002
-#define L2CAP_SEQUIRY_BLOCK	0x0003
-#define L2CAP_NO_RESOURCES	0x0004
-#define L2CAP_TIMEOUT		0xeeee
-#define L2CAP_UNKNOWN		0xffff
-/* 0x0005 - 0xffff - reserved for future use */
+/* L2CAP Connection response (L2CAP_CONNECTION_RSP) result codes */
+enum l2cap_connection_rsp_result {
+	L2CAP_CONN_SUCCESS = 0x0000,
+	L2CAP_CONN_PENDING = 0x0001,
+	L2CAP_CONN_REFUSED_PSM_NOT_SUPPORTED = 0x0002,
+	L2CAP_CONN_REFUSED_SECURITY_BLOCK = 0x0003,
+	L2CAP_CONN_REFUSED_NO_RESOURCES = 0x0004,
+	// 0x0005 - Reserved for future use
+	L2CAP_CONN_REFUSED_INVALID_SOURCE_CID = 0x0006,
+	L2CAP_CONN_REFUSED_SOURCE_CID_ALREADY_ALLOCATED = 0x0007
+	/* 0x0008 - 0xFFFF - reserved for future use */
+};
 
-/* L2CAP Connection response status codes */
-#define L2CAP_NO_INFO		0x0000
-#define L2CAP_AUTH_PENDING		0x0001
-#define L2CAP_AUTZ_PENDING		0x0002
-/* 0x0003 - 0xffff - reserved for future use */
+/* L2CAP Connection response (L2CAP_CONNECTION_RSP) status codes */
+enum l2cap_connection_rsp_status {
+	L2CAP_NO_INFO = 0x0000,
+	L2CAP_AUTH_PENDING = 0x0001,
+	L2CAP_AUTZ_PENDING = 0x0002
+	/* 0x0003 - 0xFFFF - reserved for future use */
+};
 
-/* L2CAP Configuration response result codes */
-#define L2CAP_UNACCEPTABLE_PARAMS	0x0001
-#define L2CAP_REJECT			0x0002
-#define L2CAP_UNKNOWN_OPTION		0x0003
-/* 0x0003 - 0xffff - reserved for future use */
+/* L2CAP Configuration response (L2CAP_CONFIGURATION_RSP) result codes */
+enum l2cap_cfg_rsp_result {
+	L2CAP_CFG_SUCCESS = 0x0000,
+	L2CAP_CFG_FAIL_UNACCEPTABLE_PARAMS = 0x0001,
+	L2CAP_CFG_FAIL_REJECTED = 0x0002,
+	L2CAP_CFG_FAIL_UNKNOWN_OPTION = 0x0003,
+	L2CAP_CFG_PENDING = 0x0004,
+	L2CAP_CFG_FAIL_FLOW_SPEC_REJECTED = 0x0005
+	/* 0x0006 - 0xFFFF - reserved for future use */
+};
 
 /* L2CAP Configuration options */
 #define L2CAP_OPT_CFLAG_BIT		0x0001
@@ -149,14 +152,20 @@
 #define	L2CAP_CFG_IN_SENT	(1 << 2)	/* L2CAP ConfigReq sent */
 #define	L2CAP_CFG_OUT_SENT	(1 << 3)	/* ---/--- */
 
-/* L2CAP Information request type codes */
-#define L2CAP_CONNLESS_MTU		0x0001
-#define L2CAP_EXTENDED_MASK	0x0002
-/* 0x0003 - 0xffff - reserved for future use */
+/* L2CAP Information request (L2CAP_INFORMATION_REQ) info type codes */
+enum l2cap_information_request_info_type {
+	L2CAP_CONNLESS_MTU = 0x0001,
+	L2CAP_EXTENDED_FEATURES_SUPPORTED = 0x0002,
+	L2CAP_FIXED_CHAN_SUPPORT_OVER_BR_EDR = 0x0003
+	/* 0x0004 - 0xFFFF - reserved for future use */
+};
 
-/* L2CAP Information response codes */
-#define L2CAP_NOT_SUPPORTED		0x0001
-/* 0x0002 - 0xffff - reserved for future use */
+/* L2CAP Information response (L2CAP_INFORMATION_RSP) result codes */
+enum l2cap_information_response_result {
+	L2CAP_SUCCESS = 0x0000,
+	L2CAP_NOT_SUPPORTED = 0x0001
+	/* 0x0002 - 0xffff - reserved for future use */
+};
 
 /* L2CAP flow (QoS) */
 typedef struct {
@@ -179,18 +188,21 @@ typedef struct {
 /* Basic L2CAP header (Vol 3 - Sec 3.1) */
 // - Header for Basic information frames (B-frames)
 // - Commences header for all other frame types too
-typedef struct l2cap_basic_header {
-	uint16	pdu_length;	/* Protocol data unit length (2 octets) */
-	uint16	dest_cid;	/* Destination channel endpoint ID (2 octets) */
+typedef struct {
+	uint16	pduLength;	/* Protocol data unit length (2 octets) */
+	uint16	destCID;	/* Destination channel endpoint ID (2 octets) */
 } _PACKED l2cap_basic_header_t;
 
 
 /* L2CAP Connectionless Traffic (Vol 3 - Sec 3.2) */
 // - Header for Group frames (G-frames)
 // - Only if destination channel ID is L2CAP_CONNECTIONLESS_CID
+/*
 typedef struct l2cap_clt_header : l2cap_basic_header {
-	uint16	psm;	/* Protocol/Service Multiplexer (minimum of 2 octets) */
+	uint16	psm;
+		// Protocol/Service Multiplexer (minimum of 2 octets)
 } _PACKED l2cap_clt_header_t;
+*/
 
 #define L2CAP_CLT_MTU_MAXIMUM (L2CAP_MTU_MAXIMUM - sizeof(l2cap_clt_header_t))
 
@@ -198,32 +210,33 @@ typedef struct l2cap_clt_header : l2cap_basic_header {
 /* L2CAP Control Field (Vol 3 - Sec 3.3.2) */
 
 enum l2cap_frame_type {
-	L2CAP_INFORMATION_FRAME	= 0x0,
-	L2CAP_SUPERVISORY_FRAME	= 0x1
+	L2CAP_INFORMATION_FRAME = 0x0,
+	L2CAP_SUPERVISORY_FRAME = 0x1
 };
 
 enum l2cap_retransmission_state {
-	L2CAP_NORMAL_RETRANSMISSION		= 0x0,
-	L2CAP_POSTPONE_RETRANSMISSION	= 0x1
+	L2CAP_NORMAL_RETRANSMISSION = 0x0,
+	L2CAP_POSTPONE_RETRANSMISSION = 0x1
 };
 
 enum l2cap_segementation_flags {
-	L2CAP_UNSEGMENTED_SDU	= 0x0;
-	L2CAP_START_SDU			= 0x1;
-	L2CAP_END_SDU			= 0x2;
-	L2CAP_CONTINUE_SDU		= 0x3;
+	L2CAP_UNSEGMENTED_SDU = 0x0,
+	L2CAP_START_SDU = 0x1,
+	L2CAP_END_SDU = 0x2,
+	L2CAP_CONTINUE_SDU = 0x3
 };
 
 enum l2cap_supervisory_function {
-	L2CAP_RECEIVER_READY		= 0x0;
-	L2CAP_REJECT				= 0x1;
-	L2CAP_RECEIVER_NOT_READY	= 0x2;
-	L2CAP_SELECTIVE_REJECT		= 0x3;
+	L2CAP_RECEIVER_READY = 0x0,
+	L2CAP_REJECT = 0x1,
+	L2CAP_RECEIVER_NOT_READY = 0x2,
+	L2CAP_SELECTIVE_REJECT = 0x3
 };
 
 
 // L2CAP Standard/Enhanced Control Field for I-frames & S-frames
-typedef struct l2cap_control_field {
+/*
+typedef struct {
 	uint8 frame_type : 1;
 		// 0: Information (I-frame), 1: Supervisory (S-frame)
 
@@ -258,10 +271,12 @@ typedef struct l2cap_control_field {
 			// S-frame
 	};
 } _PACKED l2cap_control_field_t;
+*/
 
 
 // L2CAP Extended Control Field for I-frames & S-frames
-typedef struct l2cap_extended_control_field {
+/*
+typedef struct {
 	uint8 frame_type			: 1;
 		// 0: Information (I-Frame), 1: Supervisory (S-Frame)
 
@@ -282,17 +297,18 @@ typedef struct l2cap_extended_control_field {
 			uint16	_reserved : 13;
 		} _PACKED;
 } _PACKED l2cap_extended_control_field_t;
+*/
 
 
 /* L2CAP Segmented Data Unit (SDU) length field  (Vol 3 - Sec 3.3.3) */
 // - Only used in I-frames where SAR = L2CAP_START_SDU (0x1);
-typedef struct l2cap_sdu_length_field {
+typedef struct {
 	uint16 sdu_length;
 } _PACKED l2cap_sdu_length_field_t;
 
 
 /* L2CAP Frame Check Sequence (FCS) field (Vol 3 - Sec 3.3.5) */
-typedef struct l2cap_fcs_field {
+typedef struct {
 	uint16 frame_check_sequence;
 } _PACKED l2cap_fcs_field_t;
 
@@ -302,11 +318,11 @@ typedef struct l2cap_fcs_field {
 /***********************************************/
 
 /* Sec 4.0 - L2CAP command header */
-typedef struct l2cap_cmd_header {
+typedef struct {
 	uint8	code;		// A signaling command code
 	uint8	identifier;	// Matches responses with requests
-	uint16	dataLength;	// Command parameters length
-} _PACKED l2cap_cmd_header_t;
+	uint16	dataLength;	// Size of data field following this header
+} _PACKED l2cap_command_header_t;
 
 // Table 4.2 - Signaling command codes
 enum l2cap_signaling_command_code {
@@ -332,14 +348,14 @@ enum l2cap_signaling_command_code {
 	L2CAP_CREDIT_BASED_RECONFIGURE_REQ = 0x19,
 	L2CAP_CREDIT_BASED_RECONFIGURE_RSP = 0x1A
 	/* Other codes - Reserved */
-}
+};
 
 
 /* Sec 4.1 - L2CAP Command Reject */
 typedef struct {
-	uint16	reason; // Reason to reject command
-	uint8	data[]; // Reason data (optional, depends on reason)
-} _PACKED l2cap_cmd_reject_rsp_packet;
+	uint16 reason; // Reason to reject command
+	uint8* data; // Reason data (optional, depends on reason)
+} _PACKED l2cap_command_reject_response_packet_t;
 
 // Reject reason codes
 enum l2cap_reject_reason_code {
@@ -353,32 +369,31 @@ enum l2cap_reject_reason_code {
 typedef union {
  	// L2CAP_REJECT_SIGNALING_MTU_EXCEEDED
 	struct {
-		uint16	mtu;	// Actual signaling MTU
+		uint16 mtu;	// Actual signaling MTU
 	} _PACKED mtu;
 
 	// L2CAP_REJECT_INVALID_CID
 	struct {
-		uint16	sourceCID;	// Local channel ID
-		uint16	destCID;	// Remote channel ID
+		uint16 sourceCID;	// Local channel ID
+		uint16 destCID;	// Remote channel ID
 	} _PACKED cid;
-} l2cap_cmd_reject_data;
-typedef l2cap_cmd_reject_data* l2cap_cmd_reject_data_p;
+} l2cap_command_reject_data_u;
 
 
 /* Sec 4.2 - L2CAP Connection Request */
 typedef struct {
-	uint16	psm;		// Protocol/Service Multiplexor
-	uint16	sourceCID;	// Source channel ID
-} _PACKED l2cap_connection_request_packet;
+	uint16 psm; // Protocol/Service Multiplexor
+	uint16 sourceCID; // Source channel ID
+} _PACKED l2cap_connection_request_packet_t;
 
 
 /* Sec 4.3 - L2CAP Connection Response */
 typedef struct {
-	uint16	destCID;	// Destination channel ID
-	uint16	sourceCID;	// Source channel ID
-	uint16	result;		// 0x00 - success
-	uint16	status;		// More info if result != 0x00
-} _PACKED l2cap_connection_response_packet;
+	uint16 destCID;	// Destination channel ID
+	uint16 sourceCID;	// Source channel ID
+	uint16 result; // 0x00 - success
+	uint16 status; // More info if result != 0x00
+} _PACKED l2cap_connection_response_packet_t;
 
 // Table 4.6 - Result values for L2CAP Connection Respones
 enum l2cap_connection_response_result {
@@ -407,7 +422,7 @@ typedef struct {
 	uint16	destCID;	// Destination channel ID
 	uint16	flags;		// Flags
 	uint8	options[];	// Options
-} _PACKED l2cap_config_request_packet;
+} _PACKED l2cap_configuration_request_packet_t;
 
 
 /* L2CAP Configuration Response */
@@ -416,33 +431,32 @@ typedef struct {
 	uint16	flags;  // flags
 	uint16	result; // 0x00 - success
 	uint8	options[]; // Options
-} _PACKED l2cap_cfg_response_packet;
+} _PACKED l2cap_configuration_response_packet_t;
 
 // L2CAP Configuration Option
 typedef struct {
-	uint8	type;
-	uint8	length;
-	uint8	value[]; // Option value (depends on type)
-} _PACKED l2cap_config_option_t;
-typedef l2cap_config_option_t* l2cap_config_option_p;
+	uint8 type;
+	uint8 length;
+	uint8* value; // Option value (depends on type)
+} _PACKED l2cap_configuration_option_t;
 
-// L2CAP configuration option value
+// L2CAP Configuration Option Value
 typedef union {
-	uint16		mtu;		/* L2CAP_OPT_MTU */
-	uint16		flush_timo;	/* L2CAP_OPT_FLUSH_TIMO */
-	l2cap_flow_t	flow;		/* L2CAP_OPT_QOS */
-} l2cap_config_option_val_t;
-typedef l2cap_config_option_val_t* l2cap_config_option_val_p;
+	uint16 mtu;			/* L2CAP_OPT_MTU */
+	uint16 flush_timo;	/* L2CAP_OPT_FLUSH_TIMO */
+	l2cap_flow_t flow;	/* L2CAP_OPT_QOS */
+} l2cap_configuration_option_value_t;
 
 
 /* Sec 4.6 - L2CAP Disconnection Request */
 typedef struct {
-	uint16	destCID; /* destination channel ID */
-	uint16	sourceCID; /* source channel ID */
-} _PACKED l2cap_disconnect_request_packet;
+	uint16 destCID; /* destination channel ID */
+	uint16 sourceCID; /* source channel ID */
+} _PACKED l2cap_disconnection_request_packet_t;
+
 
 /* Sec 4.7 - L2CAP Disconnection Response */
-typedef l2cap_discon_request_packet	l2cap_discon_response_packet;
+typedef l2cap_disconnection_request_packet_t l2cap_disconnection_response_packet_t;
 
 
 /* Sec 4.8 - L2CAP Echo Request */
@@ -458,16 +472,16 @@ typedef l2cap_discon_request_packet	l2cap_discon_response_packet;
 /* Sec 4.10 - L2CAP Information Request */
 typedef struct {
 	uint16	type; // Requested information type
-} _PACKED l2cap_info_request_packet;
+} _PACKED l2cap_info_request_packet_t;
 
 
 /* Sec 4.11 - L2CAP Information Response */
 typedef struct {
-	uint16	type;	// Requested information type
-	uint16	result;	// 0x00 - success
-	uint8	info[];	// Info data (depends on type)
+	uint16 type;	// Requested information type
+	uint16 result;	// 0x00 - success
+	uint8* info;	// Info data (depends on type)
 		// L2CAP_CONNLESS_MTU - 2 bytes connectionless MTU
-} _PACKED l2cap_info_response_packet;
+} _PACKED l2cap_info_response_packet_t;
 
 #define IS_SIGNAL_REQ(code) ((code & 1) == 0)
 #define IS_SIGNAL_RSP(code) ((code & 1) == 1)
@@ -475,26 +489,24 @@ typedef struct {
 typedef union {
  	/* L2CAP_CONNLESS_MTU */
 	struct {
-		uint16	mtu;
+		uint16 mtu;
 	} _PACKED mtu;
-} l2cap_info_response_data_t;
-typedef l2cap_info_response_data_t*	l2cap_info_response_data_p;
+} l2cap_info_response_data_u;
 
 
 /* Sec 4.20 - L2CAP Connection Parameter Update Request */
 typedef struct {
-	uint16	intervalMin;
-	uint16	intervalMax;
-	uint16	latency;
-	uint16	timeout;
-} _PACKED l2cap_connection_parameter_update_request;
+	uint16 intervalMin;
+	uint16 intervalMax;
+	uint16 latency;
+	uint16 timeout;
+} _PACKED l2cap_connection_parameter_update_request_t;
 
 
 /* Sec 4.21 - L2CAP Connection Parameter Update Response */
 typedef struct {
-	uint16	result; // 0x0000 - All connections successful
-} _PACKED l2cap_connection_parameter_update_response;
+	uint16 result; // 0x0000 - All connections successful
+} _PACKED l2cap_connection_parameter_update_response_t;
 
 
 #endif
-

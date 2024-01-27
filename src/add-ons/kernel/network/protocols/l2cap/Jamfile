@@ -15,5 +15,5 @@ KernelAddon l2cap :
 ;
 
 # Installation
-HaikuInstall install-networking : /boot/home/config/add-ons/kernel/haiku_network/protocols
+HaikuInstall install-networking : /boot/home/config/add-ons/kernel/network/protocols
 	: l2cap ;

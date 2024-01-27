@@ -2,6 +2,10 @@
  * Copyright 2008 Oliver Ruiz Dorantes, oliver.ruiz.dorantes_at_gmail.com
  * All rights reserved. Distributed under the terms of the MIT License.
  */
+
+
+#include "l2cap_upper.h"
+
 #include <KernelExport.h>
 #include <NetBufferUtilities.h>
 
@@ -16,7 +20,7 @@
 #define SUBMODULE_NAME "upper"
 #define SUBMODULE_COLOR 36
 #include <btDebug.h>
-#include <l2cap.h>
+#include <l2cap_definitions.h>
 
 
 #if 0
@@ -38,9 +42,9 @@ l2cap_l2ca_con_ind(L2capChannel* channel)
 	endpoint->BindNewEnpointToChannel(channel);
 
 	net_buffer* buf = l2cap_con_rsp(channel->ident, channel->scid, channel->dcid,
-		L2CAP_SUCCESS, L2CAP_NO_INFO);
-	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf,
-		channel->ident, L2CAP_CON_RSP);
+		L2CAP_CONN_SUCCESS, L2CAP_NO_INFO);
+	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf, channel->ident,
+		L2CAP_CONNECTION_RSP);
 	if (cmd == NULL) {
 		gBufferModule->free(buf);
 		return ENOMEM;
@@ -68,8 +72,7 @@ l2cap_con_rsp_ind(HciConnection* conn, L2capChannel* channel)
 	// is a step further but still configuration pending
 
 	// Check channel state
-	if (channel->state != L2CAP_CHAN_OPEN
-		&& channel->state != L2CAP_CHAN_CONFIG) {
+	if (channel->state != L2CAP_CHAN_OPEN && channel->state != L2CAP_CHAN_CONFIG) {
 		ERROR("%s: unexpected L2CA_Config request message. Invalid channel"
 			" state, state=%d, lcid=%d\n", __func__, channel->state, channel->scid);
 		return EINVAL;
@@ -78,22 +81,24 @@ l2cap_con_rsp_ind(HciConnection* conn, L2capChannel* channel)
 	// Set requested channel configuration options
 	net_buffer* options = NULL;
 
-	if (channel->endpoint->fConfigurationSet) {
+	if (channel->endpoint->RequiresConfiguration()) {
 		// Compare channel settings with defaults
 		if (channel->configuration->imtu != L2CAP_MTU_DEFAULT)
 			mtu = &channel->configuration->imtu;
+
 		if (channel->configuration->flush_timo != L2CAP_FLUSH_TIMO_DEFAULT)
 			flush_timo = &channel->configuration->flush_timo;
+
 		if (memcmp(&default_qos, &channel->configuration->oflow,
 			sizeof(channel->configuration->oflow)) != 0)
 			flow = &channel->configuration->oflow;
 
-			// Create configuration options
-			if (mtu != NULL || flush_timo != NULL || flow!=NULL)
-				options = l2cap_build_cfg_options(mtu, flush_timo, flow);
+		// Create configuration options
+		if (mtu != NULL || flush_timo != NULL || flow!=NULL)
+			options = l2cap_build_cfg_options(mtu, flush_timo, flow);
 
-			if (options == NULL)
-				return ENOBUFS;
+		if (options == NULL)
+			return ENOBUFS;
 	}
 
 	// Send Configuration Request
@@ -107,8 +112,8 @@ l2cap_con_rsp_ind(HciConnection* conn, L2capChannel* channel)
 	if (buffer == NULL)
 		return ENOBUFS;
 
-	L2capFrame* command = btCoreData->SpawnSignal(conn, channel, buffer,
-		channel->ident, L2CAP_CFG_REQ);
+	L2capFrame* command = btCoreData->SpawnSignal(conn, channel, buffer, channel->ident,
+		L2CAP_CONFIGURATION_REQ);
 	if (command == NULL) {
 		gBufferModule->free(buffer);
 		channel->state = L2CAP_CHAN_CLOSED;
@@ -152,10 +157,9 @@ l2cap_cfg_req_ind(L2capChannel* channel)
 		// TODO: check if we can handle this conf
 
 		// send config_rsp
-		net_buffer* buf = l2cap_cfg_rsp(channel->ident, channel->dcid, 0,
-			L2CAP_SUCCESS, NULL);
-		L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf,
-			channel->ident, L2CAP_CFG_RSP);
+		net_buffer* buf = l2cap_cfg_rsp(channel->ident, channel->dcid, 0, L2CAP_CFG_SUCCESS, NULL);
+		L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf, channel->ident,
+			L2CAP_CONFIGURATION_RSP);
 		if (cmd == NULL) {
 			gBufferModule->free(buf);
 			channel->state = L2CAP_CHAN_CLOSED;
@@ -184,7 +188,7 @@ l2cap_cfg_req_ind(L2capChannel* channel)
 			channel->ident = btCoreData->ChannelAllocateIdent(channel->conn);
 			net_buffer* buf = l2cap_cfg_req(channel->ident, channel->dcid, 0, NULL);
 			L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf,
-				channel->ident, L2CAP_CFG_REQ);
+				channel->ident, L2CAP_CONFIGURATION_REQ);
 			if (cmd == NULL) {
 				gBufferModule->free(buf);
 				channel->state = L2CAP_CHAN_CLOSED;
@@ -212,15 +216,12 @@ l2cap_discon_req_ind(L2capChannel* channel)
 status_t
 l2cap_discon_rsp_ind(L2capChannel* channel)
 {
-	if (channel->state == L2CAP_CHAN_W4_L2CA_DISCON_RSP) {
+	if (channel->state == L2CAP_CHAN_WAIT_UPPER_DISCONNECT_RSP) {
 		channel->endpoint->MarkClosed();
 	}
 
 	return B_OK;
 }
-
-
-
 
 
 #if 0
@@ -229,20 +230,20 @@ l2cap_discon_rsp_ind(L2capChannel* channel)
 
 
 status_t
-l2cap_upper_connect_request(L2capChannel* channel)
+l2cap_upper_con_req(L2capChannel* channel)
 {
 	channel->ident = btCoreData->ChannelAllocateIdent(channel->conn);
 
 	net_buffer* buf = l2cap_con_req(channel->ident, channel->psm, channel->scid);
-	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf,
-		channel->ident, L2CAP_CON_REQ);
+	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf, channel->ident,
+		L2CAP_CONNECTION_REQ);
 
 	if (cmd == NULL) {
 		gBufferModule->free(buf);
 		return ENOMEM;
 	}
 
-	channel->state = L2CAP_CHAN_WAIT_CONNECTION_RSP;
+	channel->state = L2CAP_CHAN_WAIT_CONNECT_RSP;
 
 	// Link command to the queue
 	SchedConnectionPurgeThread(channel->conn);
@@ -251,20 +252,19 @@ l2cap_upper_connect_request(L2capChannel* channel)
 
 
 status_t
-l2cap_upper_disconnect_request(L2capChannel* channel)
+l2cap_upper_dis_req(L2capChannel* channel)
 {
 	channel->ident = btCoreData->ChannelAllocateIdent(channel->conn);
 
-	net_buffer* buf = l2cap_discon_req(channel->ident, channel->dcid,
-		channel->scid);
-	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf,
-		channel->ident, L2CAP_DISCON_REQ);
+	net_buffer* buf = l2cap_discon_req(channel->ident, channel->dcid, channel->scid);
+	L2capFrame* cmd = btCoreData->SpawnSignal(channel->conn, channel, buf, channel->ident,
+		L2CAP_DISCONNECTION_REQ);
 	if (cmd == NULL) {
 		gBufferModule->free(buf);
 		return ENOMEM;
 	}
 
-	channel->state = L2CAP_CHAN_W4_L2CA_DISCON_RSP;
+	channel->state = L2CAP_CHAN_WAIT_UPPER_DISCONNECT_RSP;
 
 	// Link command to the queue
 	SchedConnectionPurgeThread(channel->conn);
@@ -296,8 +296,7 @@ l2cap_co_receive(HciConnection* conn, net_buffer* buffer, uint16 dcid)
 		return B_ERROR;
 	}
 
-	return gStackModule->fifo_enqueue_buffer(
-		&channel->endpoint->fReceivingFifo, buffer);
+	return channel->endpoint->EnqueueBuffer(buffer);
 }
 
 
@@ -311,8 +310,7 @@ l2cap_cl_receive(HciConnection* conn, net_buffer* buffer, uint16 psm)
 		return B_ERROR;
 	}
 
-	return gStackModule->fifo_enqueue_buffer(
-		&endpoint->fReceivingFifo, buffer);
+	return endpoint->EnqueueBuffer(buffer);
 }
 
 

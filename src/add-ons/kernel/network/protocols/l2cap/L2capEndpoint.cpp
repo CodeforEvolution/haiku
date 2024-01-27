@@ -108,15 +108,13 @@ L2capEndpoint::Close()
 			// Issue Disconnection request over the channel
 			MarkClosed();
 
-			bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
-
 			status_t error = l2cap_upper_dis_req(fChannel);
-
 			if (error != B_OK)
 				return error;
 
-			return acquire_sem_etc(fEstablishSemaphore, 1,
-				B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT, timeout);
+			const bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);			
+			return acquire_sem_etc(fEstablishSemaphore, 1, B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT,
+				timeout);
 		}
 	}
 
@@ -140,9 +138,7 @@ L2capEndpoint::Free()
 status_t
 L2capEndpoint::Bind(const struct sockaddr* _address)
 {
-	const sockaddr_l2cap* address
-		= reinterpret_cast<const sockaddr_l2cap*>(_address);
-
+	const sockaddr_l2cap* address = reinterpret_cast<const sockaddr_l2cap*>(_address);
 	if (_address == NULL)
 		return B_ERROR;
 
@@ -212,7 +208,6 @@ L2capEndpoint::Connect(const struct sockaddr* _address)
 	CALLED();
 
 	const sockaddr_l2cap* address = reinterpret_cast<const sockaddr_l2cap*>(_address);
-
 	if (address->l2cap_len != sizeof(*address))
 		return EINVAL;
 
@@ -223,10 +218,8 @@ L2capEndpoint::Connect(const struct sockaddr* _address)
 	// TODO: should not be in the BOUND status first?
 
 	#if 0
-	TRACE("%s: [%ld] %p->L2capEndpoint::Connect(\"%s\")\n", __func__,
-		find_thread(NULL), this,
-		ConstSocketAddress(&gL2cap4AddressModule, _address)
-		.AsString().Data());
+	TRACE("%s: [%ld] %p->L2capEndpoint::Connect(\"%s\")\n", __func__, find_thread(NULL), this,
+		ConstSocketAddress(&gL2cap4AddressModule, _address).AsString().Data());
 	#endif
 
 	// TODO: If we were bound to a specific source address
@@ -241,17 +234,14 @@ L2capEndpoint::Connect(const struct sockaddr* _address)
 		bdaddrUtils::ToString(address->l2cap_bdaddr).String());
 	#endif
 
-	HciConnection* connection = btCoreData->ConnectionByDestination(
-		address->l2cap_bdaddr, hid);
+	HciConnection* connection = btCoreData->ConnectionByDestination(address->l2cap_bdaddr, hid);
 
-	L2capChannel* channel = btCoreData->AddChannel(connection,
-		address->l2cap_psm);
-
+	L2capChannel* channel = btCoreData->AddChannel(connection, address->l2cap_psm);
 	if (channel == NULL)
-		return ENOMEM;
+		return B_NO_MEMORY;
 
 	// Send connection request
-	if (l2cap_upper_connect_request(channel) == B_OK) {
+	if (l2cap_upper_con_req(channel) == B_OK) {
 		fState = CONNECTING;
 
 		BindToChannel(channel);
@@ -263,9 +253,8 @@ L2capEndpoint::Connect(const struct sockaddr* _address)
 		}
 
 		bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
-
-		return acquire_sem_etc(fEstablishSemaphore, 1,
-			B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT, timeout);
+		return acquire_sem_etc(fEstablishSemaphore, 1, B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT,
+			timeout);
 	}
 
 	return ECONNREFUSED;
@@ -280,13 +269,13 @@ L2capEndpoint::Accept(net_socket** _acceptedSocket)
 	// MutexLocker locker(fLock);
 
 	status_t status;
-	bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
+	const bigtime_t timeout = absolute_timeout(300 * 1000 * 1000);
 
 	do {
 		// locker.Unlock();
 
-		status = acquire_sem_etc(fEstablishSemaphore, 1, B_ABSOLUTE_TIMEOUT
-			| B_CAN_INTERRUPT, timeout);
+		status = acquire_sem_etc(fEstablishSemaphore, 1, B_ABSOLUTE_TIMEOUT | B_CAN_INTERRUPT,
+			timeout);
 
 		if (status != B_OK)
 			return status;
@@ -295,17 +284,14 @@ L2capEndpoint::Accept(net_socket** _acceptedSocket)
 		status = gSocketModule->dequeue_connected(socket, _acceptedSocket);
 
 		if (status != B_OK) {
-			ERROR("%s: Could not dequeue socket %s\n", __func__,
-				strerror(status));
+			ERROR("%s: Could not dequeue socket %s\n", __func__, strerror(status));
 		} else {
-
 			((L2capEndpoint*)((*_acceptedSocket)->first_protocol))->fState = ESTABLISHED;
 			// unassign any channel for the parent endpoint
 			fChannel = NULL;
 			// we are listening again
 			fState = LISTEN;
 		}
-
 	} while (status != B_OK);
 
 	return status;
@@ -393,11 +379,8 @@ L2capEndpoint::ForPsm(uint16 psm)
 {
 	L2capEndpoint* endpoint;
 
-	DoublyLinkedList<L2capEndpoint>::Iterator iterator
-		= EndpointList.GetIterator();
-
+	DoublyLinkedList<L2capEndpoint>::Iterator iterator = gEndpointList.GetIterator();
 	while (iterator.HasNext()) {
-
 		endpoint = iterator.Next();
 		if (((struct sockaddr_l2cap*)&endpoint->socket->address)->l2cap_psm == psm
 			&& endpoint->fState == LISTEN) {
@@ -428,8 +411,7 @@ L2capEndpoint::BindNewEnpointToChannel(L2capChannel* channel)
 
 	channel->endpoint = endpoint;
 
-	//debugf("new socket %p/e->%p from parent %p/e->%p\n",
-	//	newSocket, endpoint, socket, this);
+	//debugf("new socket %p/e->%p from parent %p/e->%p\n", newSocket, endpoint, socket, this);
 
 	// Provide the channel the configuration set by the user socket
 	channel->configuration = &fConfiguration;
@@ -437,8 +419,8 @@ L2capEndpoint::BindNewEnpointToChannel(L2capChannel* channel)
 	// It might be used keep the last negotiated channel
 	// fChannel = channel;
 
-	//debugf("New endpoint %p for psm %d, schannel %x dchannel %x\n", endpoint,
-	//	channel->psm, channel->scid, channel->dcid);
+	// debugf("New endpoint %p for psm %d, schannel %x dchannel %x\n", endpoint, channel->psm,
+	//	channel->scid, channel->dcid);
 }
 
 
@@ -466,13 +448,11 @@ L2capEndpoint::MarkEstablished()
 	fState = ESTABLISHED;
 
 	if (fPeerEndpoint != NULL) {
-
 		error = gSocketModule->set_connected(socket);
 		if (error == B_OK) {
 			release_sem(fPeerEndpoint->fEstablishSemaphore);
 		} else {
-			ERROR("%s: Could not set child Endpoint %p %s\n", __func__, this,
-				strerror(error));
+			ERROR("%s: Could not set child Endpoint %p %s\n", __func__, this, strerror(error));
 		}
 	} else
 		release_sem(fEstablishSemaphore);

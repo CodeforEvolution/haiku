@@ -25,7 +25,7 @@
 #include <bluetooth/HCI/btHCI_transport.h>
 
 #include <btModules.h>
-#include <l2cap.h>
+#include <l2cap_definitions.h>
 
 #include "l2cap_internal.h"
 #include "l2cap_signal.h"
@@ -51,43 +51,43 @@ l2cap_receive(HciConnection* conn, net_buffer* buffer)
 	dprintf("\n");
 #endif
 	// Check packet
-	if (buffer->size < sizeof(l2cap_hdr_t)) {
-		ERROR("%s: invalid L2CAP packet. Packet too small, len=%" B_PRIu32 "\n",
-			__func__, buffer->size);
+	if (buffer->size < sizeof(l2cap_basic_header_t)) {
+		ERROR("%s: invalid L2CAP packet. Packet too small, len=%" B_PRIu32 "\n", __func__,
+			buffer->size);
 		gBufferModule->free(buffer);
 		return EMSGSIZE;
 
 	}
 
 	// Get L2CAP header
-	NetBufferHeaderReader<l2cap_hdr_t> bufferHeader(buffer);
+	NetBufferHeaderReader<l2cap_basic_header_t> bufferHeader(buffer);
 	status_t status = bufferHeader.Status();
 	if (status < B_OK) {
 		return ENOBUFS;
 	}
 
-	length = bufferHeader->length = le16toh(bufferHeader->length);
-	dcid = bufferHeader->dcid = le16toh(bufferHeader->dcid);
+	length = bufferHeader->pduLength = B_LENDIAN_TO_HOST_INT16(bufferHeader->pduLength);
+	dcid = bufferHeader->destCID = B_LENDIAN_TO_HOST_INT16(bufferHeader->destCID);
 
 	TRACE("%s: len=%d cid=%x\n", __func__, length, dcid);
 
 	bufferHeader.Remove(); // pulling
 
 	// Check payload size
-	if (length != buffer->size ) {
-		ERROR("%s: Payload length mismatch, packetlen=%d, bufferlen=%" B_PRIu32
-			"\n", __func__, length, buffer->size);
+	if (length != buffer->size) {
+		ERROR("%s: Payload length mismatch, packetlen=%d, bufferlen=%" B_PRIu32 "\n", __func__,
+			length, buffer->size);
 		gBufferModule->free(buffer);
 		return EMSGSIZE;
 	}
 
 	// Process packet
 	switch (dcid) {
-		case L2CAP_SIGNAL_CID: // L2CAP command
+		case L2CAP_SIGNALING_CID: // L2CAP command
 			error = l2cap_process_signal_cmd(conn, buffer);
 		break;
 
-		case L2CAP_CLT_CID: // Connectionless packet
+		case L2CAP_CONNECTIONLESS_CID: // Connectionless packet
 			// error = l2cap_cl_receive(buffer);
 			TRACE("%s: CL FRAME!!\n", __func__);
 		break;
@@ -97,7 +97,7 @@ l2cap_receive(HciConnection* conn, net_buffer* buffer)
 		break;
 	}
 
-	return (error);
+	return error;
 
 }
 
@@ -114,7 +114,7 @@ static thread_id sConnectionThread;
 static void
 AddL2capHeader(L2capFrame* frame)
 {
-	NetBufferPrepend<l2cap_hdr_t> bufferHeader(frame->buffer);
+	NetBufferPrepend<l2cap_basic_header_t> bufferHeader(frame->buffer);
 	status_t status = bufferHeader.Status();
 
 	if (status < B_OK) {
@@ -124,16 +124,17 @@ AddL2capHeader(L2capFrame* frame)
 	}
 
 	// fill
-	bufferHeader->length = htole16(frame->buffer->size - sizeof(l2cap_hdr_t));
+	bufferHeader->pduLength = B_HOST_TO_LENDIAN_INT16(
+		frame->buffer->size - sizeof(l2cap_basic_header_t));
 	switch (frame->type) {
 		case L2CAP_C_FRAME:
-			bufferHeader->dcid = L2CAP_SIGNAL_CID;
+			bufferHeader->destCID = L2CAP_SIGNALING_CID;
 		break;
 		case L2CAP_G_FRAME:
-			bufferHeader->dcid = L2CAP_CLT_CID;
+			bufferHeader->destCID = L2CAP_CONNECTIONLESS_CID;
 		break;
 		default:
-			bufferHeader->dcid = frame->channel->dcid;
+			bufferHeader->destCID = frame->channel->dcid;
 		break;
 	}
 }
@@ -208,26 +209,25 @@ connection_thread(void*)
 		panic("BT Connection port has been deleted");
 	}
 
+	const bigtime_t snoozeTime = 500 * 1000;
 	while ((ssizePort = port_buffer_size(fPort)) != B_BAD_PORT_ID) {
-
 		if (ssizePort <= 0) {
 			ERROR("%s: Error %s\n", __func__, strerror(ssizePort));
-			snooze(500 * 1000);
+			snooze(snoozeTime);
 			continue;
 		}
 
 		if (ssizePort > (ssize_t) sizeof(conn)) {
 			ERROR("%s: Message too big %ld\n", __func__,  ssizePort);
-			snooze(500 * 1000);
+			snooze(snoozeTime);
 			continue;
 		}
 
 		ssizeRead = read_port(fPort, &code, &conn, ssizePort);
 
 		if (ssizeRead != ssizePort) {
-			ERROR("%s: Mismatch size port=%ld read=%ld\n", __func__,
-				ssizePort, ssizeRead);
-			snooze(500 * 1000);
+			ERROR("%s: Mismatch size port=%ld read=%ld\n", __func__, ssizePort, ssizeRead);
+			snooze(snoozeTime);
 			continue;
 		}
 
@@ -248,8 +248,8 @@ InitializeConnectionPurgeThread()
 	}
 
 	// This thread has to catch up connections before first package is sent.
-	sConnectionThread = spawn_kernel_thread(connection_thread,
-				"bluetooth connection purge", B_URGENT_DISPLAY_PRIORITY, NULL);
+	sConnectionThread = spawn_kernel_thread(connection_thread, "bluetooth connection purge",
+		B_URGENT_DISPLAY_PRIORITY, NULL);
 
 	if (sConnectionThread >= B_OK)
 		return resume_thread(sConnectionThread);
@@ -287,5 +287,4 @@ SchedConnectionPurgeThread(HciConnection* conn)
 
 	if (error != B_OK)
 		panic("BT Connection sched failed");
-
 }

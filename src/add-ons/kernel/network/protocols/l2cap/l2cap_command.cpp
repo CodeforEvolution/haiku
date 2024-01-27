@@ -33,67 +33,67 @@
 
 /* Private types */
 struct _cmd_rej {
-	l2cap_cmd_hdr_t	 	hdr;
-	l2cap_cmd_rej_cp 	param;
-	l2cap_cmd_rej_data_t	data;
+	l2cap_command_header_t header;
+	l2cap_command_reject_response_packet_t param;
+	l2cap_command_reject_data_u data;
 } _PACKED;
 
 struct _con_req {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_con_req_cp param;
+	l2cap_command_header_t header;
+	l2cap_connection_request_packet_t param;
 } _PACKED;
 
 struct _con_rsp {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_con_rsp_cp param;
+	l2cap_command_header_t header;
+	l2cap_connection_response_packet_t param;
 } _PACKED;
 
 struct _cfg_req {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_cfg_req_cp param;
+	l2cap_command_header_t header;
+	l2cap_configuration_request_packet_t param;
 } _PACKED;
 
 struct _cfg_rsp {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_cfg_rsp_cp param;
+	l2cap_command_header_t header;
+	l2cap_configuration_response_packet_t param;
 } _PACKED;
 
 struct _discon_req {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_discon_req_cp	 param;
+	l2cap_command_header_t header;
+	l2cap_disconnection_request_packet_t param;
 } _PACKED;
 
 struct _discon_rsp {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_discon_rsp_cp	 param;
+	l2cap_command_header_t header;
+	l2cap_disconnection_response_packet_t param;
 } _PACKED;
 
 struct _info_req {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_info_req_cp	 param;
+	l2cap_command_header_t header;
+	l2cap_info_request_packet_t param;
 } _PACKED;
 
 struct _info_rsp {
-	l2cap_cmd_hdr_t	 hdr;
-	l2cap_info_rsp_cp	 param;
-	l2cap_info_rsp_data_t data;
+	l2cap_command_header_t header;
+	l2cap_info_response_packet_t param;
+	l2cap_info_response_data_u data;
 } _PACKED;
 
 // Configuration options
 struct _cfg_opt_flow {
-	l2cap_cfg_opt_t	 hdr;
-	l2cap_flow_t		 val;
+	l2cap_configuration_option_t header;
+	l2cap_flow_t value;
 } _PACKED;
 
 
 struct _cfg_opt_flush {
-	l2cap_cfg_opt_t	 hdr;
-	uint16		 val;
+	l2cap_configuration_option_t header;
+	uint16 value;
 } _PACKED;
 
 struct _cfg_opt_mtu {
-	l2cap_cfg_opt_t	 hdr;
-	uint16		 val;
+	l2cap_configuration_option_t header;
+	uint16 value;
 } _PACKED;
 
 
@@ -101,7 +101,6 @@ struct _cfg_opt_mtu {
 net_buffer*
 l2cap_cmd_rej(uint8 _ident, uint16 _reason, uint16 _mtu, uint16 _scid, uint16 _dcid)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _cmd_rej));
 	if (buffer == NULL)
 		return NULL;
@@ -113,22 +112,22 @@ l2cap_cmd_rej(uint8 _ident, uint16 _reason, uint16 _mtu, uint16 _scid, uint16 _d
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_CMD_REJ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = sizeof(bufferHeader->param);
+	bufferHeader->header.code = L2CAP_COMMAND_REJECT_RSP;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = sizeof(bufferHeader->param);
 
-	bufferHeader->param.reason = htole16((_reason));
+	bufferHeader->param.reason = B_HOST_TO_LENDIAN_INT16(_reason);
 
-	if ((_reason) == L2CAP_REJ_MTU_EXCEEDED) {
-		bufferHeader->data.mtu.mtu = htole16((_mtu));
-		bufferHeader->hdr.length += sizeof(bufferHeader->data.mtu);
-	} else if ((_reason) == L2CAP_REJ_INVALID_CID) {
-		bufferHeader->data.cid.scid = htole16((_scid));
-		bufferHeader->data.cid.dcid = htole16((_dcid));
-		bufferHeader->hdr.length += sizeof(bufferHeader->data.cid);
+	if (_reason == L2CAP_REJ_MTU_EXCEEDED) {
+		bufferHeader->data.mtu.mtu = B_HOST_TO_LENDIAN_INT16(_mtu);
+		bufferHeader->header.dataLength += sizeof(bufferHeader->data.mtu);
+	} else if (_reason == L2CAP_REJ_INVALID_CID) {
+		bufferHeader->data.cid.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
+		bufferHeader->data.cid.destCID = B_HOST_TO_LENDIAN_INT16(_dcid);
+		bufferHeader->header.dataLength += sizeof(bufferHeader->data.cid);
 	}
 
-	bufferHeader->hdr.length = htole16(bufferHeader->hdr.length);
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(bufferHeader->header.dataLength);
 
 	bufferHeader.Sync();
 
@@ -140,7 +139,6 @@ l2cap_cmd_rej(uint8 _ident, uint16 _reason, uint16 _mtu, uint16 _scid, uint16 _d
 net_buffer*
 l2cap_con_req(uint8 _ident, uint16 _psm, uint16 _scid)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _con_req));
 	if (buffer == NULL)
 		return NULL;
@@ -152,12 +150,12 @@ l2cap_con_req(uint8 _ident, uint16 _psm, uint16 _scid)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_CON_REQ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_CONNECTION_REQ;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.psm = htole16((_psm));
-	bufferHeader->param.scid = htole16((_scid));
+	bufferHeader->param.psm = B_HOST_TO_LENDIAN_INT16(_psm);
+	bufferHeader->param.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
 
 	bufferHeader.Sync();
 
@@ -169,7 +167,6 @@ l2cap_con_req(uint8 _ident, uint16 _psm, uint16 _scid)
 net_buffer*
 l2cap_con_rsp(uint8 _ident, uint16 _dcid, uint16 _scid, uint16 _result, uint16 _status)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _con_rsp));
 	if (buffer == NULL)
 		return NULL;
@@ -181,14 +178,14 @@ l2cap_con_rsp(uint8 _ident, uint16 _dcid, uint16 _scid, uint16 _result, uint16 _
 		return NULL;
 	}
 
-   	bufferHeader->hdr.code = L2CAP_CON_RSP;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+   	bufferHeader->header.code = L2CAP_CONNECTION_RSP;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.dcid = htole16((_dcid));
-	bufferHeader->param.scid = htole16((_scid));
-	bufferHeader->param.result = htole16((_result));
-	bufferHeader->param.status = htole16((_status)); /* reason */
+	bufferHeader->param.destCID = B_HOST_TO_LENDIAN_INT16(_dcid);
+	bufferHeader->param.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
+	bufferHeader->param.result = B_HOST_TO_LENDIAN_INT16(_result);
+	bufferHeader->param.status = B_HOST_TO_LENDIAN_INT16(_status); /* reason */
 
 	bufferHeader.Sync();
 
@@ -200,7 +197,6 @@ l2cap_con_rsp(uint8 _ident, uint16 _dcid, uint16 _scid, uint16 _result, uint16 _
 net_buffer*
 l2cap_cfg_req(uint8 _ident, uint16 _dcid, uint16 _flags, net_buffer* _data)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _cfg_req));
 	if (buffer == NULL){
 		/* TODO free the _data buffer? */
@@ -214,12 +210,12 @@ l2cap_cfg_req(uint8 _ident, uint16 _dcid, uint16 _flags, net_buffer* _data)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_CFG_REQ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_CONFIGURATION_REQ;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.dcid = htole16((_dcid));
-	bufferHeader->param.flags = htole16((_flags));
+	bufferHeader->param.destCID = B_HOST_TO_LENDIAN_INT16(_dcid);
+	bufferHeader->param.flags = B_HOST_TO_LENDIAN_INT16(_flags);
 
 	bufferHeader.Sync();
 
@@ -250,13 +246,13 @@ l2cap_cfg_rsp(uint8 _ident, uint16 _scid, uint16 _flags, uint16 _result, net_buf
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_CFG_RSP;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_CONFIGURATION_RSP;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.scid = htole16((_scid));
-	bufferHeader->param.flags = htole16((_flags));
-	bufferHeader->param.result = htole16((_result));
+	bufferHeader->param.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
+	bufferHeader->param.flags = B_HOST_TO_LENDIAN_INT16(_flags);
+	bufferHeader->param.result = B_HOST_TO_LENDIAN_INT16(_result);
 
 	bufferHeader.Sync();
 	
@@ -285,12 +281,12 @@ l2cap_discon_req(uint8 _ident, uint16 _dcid, uint16 _scid)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_DISCON_REQ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_DISCONNECTION_REQ;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.dcid = htole16((_dcid));
-	bufferHeader->param.scid = htole16((_scid));
+	bufferHeader->param.destCID = B_HOST_TO_LENDIAN_INT16(_dcid);
+	bufferHeader->param.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
 
 	bufferHeader.Sync();
 
@@ -315,12 +311,12 @@ l2cap_discon_rsp(uint8 _ident, uint16 _dcid, uint16 _scid)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_DISCON_RSP;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_DISCONNECTION_RSP;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.dcid = htole16((_dcid));
-	bufferHeader->param.scid = htole16((_scid));
+	bufferHeader->param.destCID = B_HOST_TO_LENDIAN_INT16(_dcid);
+	bufferHeader->param.sourceCID = B_HOST_TO_LENDIAN_INT16(_scid);
 
 	bufferHeader.Sync();
 
@@ -332,7 +328,7 @@ l2cap_discon_rsp(uint8 _ident, uint16 _dcid, uint16 _scid)
 net_buffer*
 l2cap_echo_req(uint8 _ident, void* _data, size_t _size)
 {
-	net_buffer* buffer = gBufferModule->create(sizeof(l2cap_cmd_hdr_t));
+	net_buffer* buffer = gBufferModule->create(sizeof(l2cap_command_header_t));
 	if (buffer == NULL){
 		/* TODO free the _data buffer */
 		return NULL;
@@ -349,7 +345,6 @@ l2cap_echo_req(uint8 _ident, void* _data, size_t _size)
 net_buffer*
 l2cap_info_req(uint8 _ident, uint16 _type)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _info_req));
 	if (buffer == NULL)
 		return NULL;
@@ -361,11 +356,11 @@ l2cap_info_req(uint8 _ident, uint16 _type)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_INFO_REQ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = htole16(sizeof(bufferHeader->param));
+	bufferHeader->header.code = L2CAP_INFORMATION_REQ;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(sizeof(bufferHeader->param));
 
-	bufferHeader->param.type = htole16((_type));
+	bufferHeader->param.type = B_HOST_TO_LENDIAN_INT16(_type);
 
 	bufferHeader.Sync();
 
@@ -377,7 +372,6 @@ l2cap_info_req(uint8 _ident, uint16 _type)
 net_buffer*
 l2cap_info_rsp(uint8 _ident, uint16 _type, uint16 _result, uint16 _mtu)
 {
-
 	net_buffer* buffer = gBufferModule->create(sizeof(struct _info_rsp));
 	if (buffer == NULL)
 		return NULL;
@@ -389,23 +383,23 @@ l2cap_info_rsp(uint8 _ident, uint16 _type, uint16 _result, uint16 _mtu)
 		return NULL;
 	}
 
-	bufferHeader->hdr.code = L2CAP_INFO_REQ;
-	bufferHeader->hdr.ident = (_ident);
-	bufferHeader->hdr.length = sizeof(bufferHeader->param);
+	bufferHeader->header.code = L2CAP_INFORMATION_RSP;
+	bufferHeader->header.identifier = _ident;
+	bufferHeader->header.dataLength = sizeof(bufferHeader->param);
 
-	bufferHeader->param.type = htole16((_type));
-	bufferHeader->param.result = htole16((_result));
+	bufferHeader->param.type = B_HOST_TO_LENDIAN_INT16(_type);
+	bufferHeader->param.result = B_HOST_TO_LENDIAN_INT16(_result);
 
 	if (_result == L2CAP_SUCCESS) {
 		switch (_type) {
 		case L2CAP_CONNLESS_MTU:
-			bufferHeader->data.mtu.mtu = htole16((_mtu));
-			bufferHeader->hdr.length += sizeof((bufferHeader->data.mtu.mtu));
+			bufferHeader->data.mtu.mtu = B_HOST_TO_LENDIAN_INT16(_mtu);
+			bufferHeader->header.dataLength += sizeof(bufferHeader->data.mtu.mtu);
 			break;
 		}
 	}
 
-	bufferHeader->hdr.length = htole16(bufferHeader->hdr.length);
+	bufferHeader->header.dataLength = B_HOST_TO_LENDIAN_INT16(bufferHeader->header.dataLength);
 
 	bufferHeader.Sync();
 
@@ -427,7 +421,6 @@ l2cap_build_cfg_options(uint16* _mtu, uint16* _flush_timo, l2cap_flow_t* _flow)
 	if (_mtu != NULL)
 		requestedSize += sizeof(*_mtu);
 
-
 	if (_flush_timo != NULL)
 		requestedSize += sizeof(*_flush_timo);
 
@@ -447,9 +440,9 @@ l2cap_build_cfg_options(uint16* _mtu, uint16* _flush_timo, l2cap_flow_t* _flow)
 			return NULL;
 		}
 
-		bufferHeader->hdr.type = L2CAP_OPT_MTU;
-		bufferHeader->hdr.length = sizeof(bufferHeader->val);
-		bufferHeader->val = htole16(*(uint16 *)(_mtu));
+		bufferHeader->header.type = L2CAP_OPT_MTU;
+		bufferHeader->header.length = sizeof(bufferHeader->value);
+		bufferHeader->value = B_HOST_TO_LENDIAN_INT16(*(uint16*)(_mtu));
 
 		bufferHeader.Sync();
 	}
@@ -463,9 +456,9 @@ l2cap_build_cfg_options(uint16* _mtu, uint16* _flush_timo, l2cap_flow_t* _flow)
 			return NULL;
 		}
 
-		bufferHeader->hdr.type = L2CAP_OPT_FLUSH_TIMO;
-		bufferHeader->hdr.length = sizeof(bufferHeader->val);
-		bufferHeader->val = htole16(*(int16 *)(_flush_timo));
+		bufferHeader->header.type = L2CAP_OPT_FLUSH_TIMO;
+		bufferHeader->header.length = sizeof(bufferHeader->value);
+		bufferHeader->value = B_HOST_TO_LENDIAN_INT16(*(int16*)(_flush_timo));
 
 		bufferHeader.Sync();
 	}
@@ -478,15 +471,15 @@ l2cap_build_cfg_options(uint16* _mtu, uint16* _flush_timo, l2cap_flow_t* _flow)
 			return NULL;
 		}
 
-		bufferHeader->hdr.type = L2CAP_OPT_QOS;
-		bufferHeader->hdr.length = sizeof(bufferHeader->val);
-		bufferHeader->val.flags = _flow->flags;
-		bufferHeader->val.service_type = _flow->service_type;
-		bufferHeader->val.token_rate = htole32(_flow->token_rate);
-		bufferHeader->val.token_bucket_size = htole32(_flow->token_bucket_size);
-		bufferHeader->val.peak_bandwidth = htole32(_flow->peak_bandwidth);
-		bufferHeader->val.latency = htole32(_flow->latency);
-		bufferHeader->val.delay_variation = htole32(_flow->delay_variation);
+		bufferHeader->header.type = L2CAP_OPT_QOS;
+		bufferHeader->header.length = sizeof(bufferHeader->value);
+		bufferHeader->value.flags = _flow->flags;
+		bufferHeader->value.service_type = _flow->service_type;
+		bufferHeader->value.token_rate = B_HOST_TO_LENDIAN_INT32(_flow->token_rate);
+		bufferHeader->value.token_bucket_size = B_HOST_TO_LENDIAN_INT32(_flow->token_bucket_size);
+		bufferHeader->value.peak_bandwidth = B_HOST_TO_LENDIAN_INT32(_flow->peak_bandwidth);
+		bufferHeader->value.latency = B_HOST_TO_LENDIAN_INT32(_flow->latency);
+		bufferHeader->value.delay_variation = B_HOST_TO_LENDIAN_INT32(_flow->delay_variation);
 
 		bufferHeader.Sync();
 	}

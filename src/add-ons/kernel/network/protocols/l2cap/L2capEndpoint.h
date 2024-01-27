@@ -79,6 +79,12 @@ public:
 	{
 		return fConfigurationSet;
 	}
+	
+	status_t EnqueueBuffer(net_buffer* buffer)
+	{
+		return gStackModule->fifo_enqueue_buffer(&fReceivingFifo, buffer);
+	}
+	
 
 private:
 	typedef enum {
@@ -111,7 +117,6 @@ private:
 	L2capChannel* 	fChannel;
 
 };
-
 
 extern DoublyLinkedList<L2capEndpoint> gEndpointList;
 
