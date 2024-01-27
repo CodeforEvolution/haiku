@@ -57,7 +57,7 @@ l2cap_uninit_protocol(net_protocol* protocol)
 	L2capEndpoint* endpoint = static_cast<L2capEndpoint*>(protocol);
 	delete endpoint;
 
-	return result;
+	return B_OK;
 }
 
 
