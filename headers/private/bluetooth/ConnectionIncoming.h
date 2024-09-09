@@ -14,9 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <AppKit.h>
-#include <SupportKit.h>
-#include <InterfaceKit.h>
+#include <Message.h>
+#include <Window.h>
 
 #include <ConnectionView.h>
 #include <bluetooth/RemoteDevice.h>
