@@ -33,7 +33,7 @@ public:
 
 			DiscoveryAgent*	GetDiscoveryAgent();
 			BString			GetFriendlyName();
-			status_t		SetFriendlyName(BString& name);
+			status_t		SetFriendlyName(const BString& name);
 			DeviceClass		GetDeviceClass();
 			status_t		SetDeviceClass(DeviceClass deviceClass);
 
