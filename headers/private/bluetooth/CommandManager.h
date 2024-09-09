@@ -22,22 +22,22 @@
 
 #define typed_command(type) type, sizeof(type)
 
-template <typename Type = void, int paramSize = 0, int HeaderSize = HCI_COMMAND_HDR_SIZE>
+template <typename Type = void, int ParamSize = 0, int HeaderSize = HCI_COMMAND_HDR_SIZE>
 class BluetoothCommand {
 public:
 	BluetoothCommand(uint8 ogf, uint8 ocf)
 	{
-		fHeader = static_cast<struct hci_command_header*>(fBuffer);
+		fHeader = reinterpret_cast<struct hci_command_header*>(fBuffer);
 
-		if (paramSize != 0)
-			fContent = static_cast<Type*>(fHeader + 1);
+		if (ParamSize != 0)
+			fContent = reinterpret_cast<Type*>(fHeader + 1);
 		else {
 			// avoid pointing outside in case of not having parameters
-			fContent = static_cast<Type*>(fHeader);
+			fContent = reinterpret_cast<Type*>(fHeader);
 		}
 
 		fHeader->opcode = B_HOST_TO_LENDIAN_INT16(PACK_OPCODE(ogf, ocf));
-		fHeader->clen = paramSize;
+		fHeader->clen = ParamSize;
 	}
 
 	Type*
@@ -49,17 +49,18 @@ public:
 	void*
 	Data() const
 	{
-		return static_cast<void*>(fBuffer);
+		// Makes me feel warm and fuzzy. Wow. Much wow.
+		return const_cast<void*>(reinterpret_cast<const void*>(fBuffer));
 	}
 
 	size_t
 	Size() const
 	{
-		return HeaderSize + paramSize;
+		return HeaderSize + ParamSize;
 	}
 
 private:
-	char fBuffer[paramSize + HeaderSize];
+	char fBuffer[ParamSize + HeaderSize];
 	Type* fContent;
 	struct hci_command_header* fHeader;
 };

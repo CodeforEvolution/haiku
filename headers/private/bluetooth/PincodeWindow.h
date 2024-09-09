@@ -20,6 +20,7 @@
 
 #include <BluetoothIconView.h>
 
+
 class BStringView;
 class BButton;
 class BTextControl;

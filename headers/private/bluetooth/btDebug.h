@@ -6,7 +6,6 @@
 #ifndef _BTDEBUG_H
 #define _BTDEBUG_H
 
-
 #ifdef DEBUG
 #   define TRACE(x...) dprintf("bt: " x)
 #else

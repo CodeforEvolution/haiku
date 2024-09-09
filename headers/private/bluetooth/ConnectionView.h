@@ -10,9 +10,9 @@
 #define _CONNECTION_VIEW_H_
 
 
-#include <View.h>
-#include <StringView.h>
 #include <String.h>
+#include <StringView.h>
+#include <View.h>
 
 
 namespace Bluetooth {
