@@ -24,7 +24,7 @@ CreateL2capSocket(const bdaddr_t* bdaddr, struct sockaddr_l2cap& l2sa, uint16 ps
 	/* Create the socket. */
 	printf("Creating socket ...\n");
 
-	sock = socket(PF_BLUETOOTH, SOCK_STREAM, BLUETOOTH_PROTO_L2CAP);
+	sock = socket(AF_BLUETOOTH, SOCK_STREAM, BLUETOOTH_PROTO_L2CAP);
 	if (sock < 0) {
 		perror ("socket");
 		exit (EXIT_FAILURE);
@@ -35,7 +35,7 @@ CreateL2capSocket(const bdaddr_t* bdaddr, struct sockaddr_l2cap& l2sa, uint16 ps
 
 	size = sizeof(struct sockaddr_l2cap);
 
-	l2sa.l2cap_family = PF_BLUETOOTH;
+	l2sa.l2cap_family = AF_BLUETOOTH;
 	l2sa.l2cap_len = size;
 	memcpy(&l2sa.l2cap_bdaddr, bdaddr, sizeof(bdaddr_t));
     l2sa.l2cap_psm = psm;
