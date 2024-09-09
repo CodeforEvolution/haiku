@@ -120,7 +120,6 @@ BString
 LocalDevice::GetProperty(const char* property)
 {
 	return NULL;
-
 }
 
 
@@ -296,7 +295,7 @@ LocalDevice::GetFriendlyName()
 
 
 status_t
-LocalDevice::SetFriendlyName(BString& name)
+LocalDevice::SetFriendlyName(const BString& name)
 {
 	int8 btStatus = BT_ERROR;
 

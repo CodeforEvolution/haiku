@@ -38,7 +38,7 @@ ExistConnectionByHandle(uint16 handle, hci_id hid)
 status_t
 PostEvent(bluetooth_device* ndev, void* event, size_t size)
 {
-	struct hci_event_header* outgoingEvent = (struct hci_event_header*) event;
+	struct hci_event_header* outgoingEvent = static_cast<struct hci_event_header*>(event);
 	status_t err;
 
 	// Take actions on certain type of events.
@@ -51,9 +51,9 @@ PostEvent(bluetooth_device* ndev, void* event, size_t size)
 			// TODO: XXX parse handle field
 			HciConnection* conn = AddConnection(data->handle, BT_ACL,
 				data->bdaddr, ndev->index);
-
 			if (conn == NULL)
 				panic("no mem for conn desc");
+
 			conn->ndevice = ndev;
 			TRACE("%s: Registered connection handle=%#x\n", __func__,
 				data->handle);
