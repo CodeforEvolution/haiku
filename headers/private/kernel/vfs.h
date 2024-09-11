@@ -55,11 +55,19 @@ typedef struct io_context {
 	struct file_descriptor **fds;
 	struct select_info **select_infos;
 	uint8		*fds_close_on_exec;
+	uint8		*fds_close_on_fork;
 	struct list node_monitors;
 	uint32		num_monitors;
 	uint32		max_monitors;
 	bool		inherit_fds;
 } io_context;
+
+
+enum fd_purge_type {
+	PURGE_NONE,
+	PURGE_CLOSE_ON_EXEC,
+	PURGE_CLOSE_ON_FORK,
+};
 
 
 #ifdef __cplusplus
@@ -69,9 +77,8 @@ extern "C" {
 status_t	vfs_init(struct kernel_args *args);
 status_t	vfs_bootstrap_file_systems(void);
 void		vfs_mount_boot_file_system(struct kernel_args *args);
-void		vfs_exec_io_context(io_context *context);
-io_context*	vfs_new_io_context(io_context* parentContext,
-				bool purgeCloseOnExec);
+void		vfs_close_fds_io_context(io_context *context, int closeFlags);
+io_context*	vfs_new_io_context(io_context* parentContext, fd_purge_type purge);
 void		vfs_get_io_context(io_context *context);
 void		vfs_put_io_context(io_context *context);
 status_t	vfs_resize_fd_table(struct io_context* context, uint32 newSize);

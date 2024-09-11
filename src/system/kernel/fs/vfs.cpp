@@ -2870,6 +2870,7 @@ get_new_fd(struct fd_ops* ops, struct fs_mount* mount, struct vnode* vnode,
 
 	mutex_lock(&context->io_mutex);
 	fd_set_close_on_exec(context, fd, (openMode & O_CLOEXEC) != 0);
+	fd_set_close_on_fork(context, fd, (openMode & O_CLOFORK) != 0);
 	mutex_unlock(&context->io_mutex);
 
 	return fd;
@@ -4891,20 +4892,27 @@ vfs_release_posix_lock(io_context* context, struct file_descriptor* descriptor)
 
 
 /*!	Closes all file descriptors of the specified I/O context that
-	have the O_CLOEXEC flag set.
+	have the specified flag (FD_CLOEXEC or FD_CLOFORK) set.
 */
 void
-vfs_exec_io_context(io_context* context)
+vfs_close_fds_io_context(io_context* context, int closeFlags)
 {
-	uint32 i;
+	if (!closeFlags)
+		return;
 
-	for (i = 0; i < context->table_size; i++) {
+	bool closeOnExec = (closeFlags & FD_CLOEXEC) != 0;
+	bool closeOnFork = (closeFlags & FD_CLOFORK) != 0;
+
+	for (uint32 i = 0; i < context->table_size; i++) {
 		mutex_lock(&context->io_mutex);
 
 		struct file_descriptor* descriptor = context->fds[i];
 		bool remove = false;
 
-		if (descriptor != NULL && fd_close_on_exec(context, i)) {
+		if (descriptor != NULL
+			&& ((fd_close_on_exec(context, i) && closeOnExec)
+				|| (fd_close_on_fork(context, i) && closeOnFork))
+		{
 			context->fds[i] = NULL;
 			context->num_used_fds--;
 
@@ -4925,7 +4933,7 @@ vfs_exec_io_context(io_context* context)
 	of the parent io_control if it is given.
 */
 io_context*
-vfs_new_io_context(io_context* parentContext, bool purgeCloseOnExec)
+vfs_new_io_context(io_context* parentContext, fd_purge_type purge)
 {
 	io_context* context = (io_context*)malloc(sizeof(io_context));
 	if (context == NULL)
@@ -4945,22 +4953,23 @@ vfs_new_io_context(io_context* parentContext, bool purgeCloseOnExec)
 	} else
 		tableSize = DEFAULT_FD_TABLE_SIZE;
 
-	// allocate space for FDs and their close-on-exec flag
-	context->fds = (file_descriptor**)malloc(
+	// allocate space for FDs, their close-on-exec flag, and their close-on-fork flag
+	context->fds = static_cast<file_descriptor**>(malloc(
 		sizeof(struct file_descriptor*) * tableSize
 		+ sizeof(struct select_info**) * tableSize
-		+ (tableSize + 7) / 8);
+		+ ((tableSize * 2) + 7) / 8));
 	if (context->fds == NULL) {
 		free(context);
 		return NULL;
 	}
 
-	context->select_infos = (select_info**)(context->fds + tableSize);
-	context->fds_close_on_exec = (uint8*)(context->select_infos + tableSize);
+	context->select_infos = reinterpret_cast<select_info**>(context->fds + tableSize);
+	context->fds_close_on_exec = reinterpret_cast<uint8*>(context->select_infos + tableSize);
+	context->fds_close_on_fork = reinterpret_cast<uint8*>(context->fds_close_on_exec + ((tableSize + 7) / 8));
 
 	memset(context->fds, 0, sizeof(struct file_descriptor*) * tableSize
 		+ sizeof(struct select_info**) * tableSize
-		+ (tableSize + 7) / 8);
+		+ ((tableSize * 2) + 7) / 8);
 
 	mutex_init(&context->io_mutex, "I/O context");
 
@@ -4986,7 +4995,9 @@ vfs_new_io_context(io_context* parentContext, bool purgeCloseOnExec)
 				if (descriptor != NULL
 					&& (descriptor->open_mode & O_DISCONNECTED) == 0) {
 					bool closeOnExec = fd_close_on_exec(parentContext, i);
-					if (closeOnExec && purgeCloseOnExec)
+					bool closeOnFork = fd_close_on_fork(parentContext, i);
+					if ((closeOnExec && purge == PURGE_CLOSE_ON_EXEC)
+						|| (closeOnFork && purge == PURGE_CLOSE_ON_FORK))
 						continue;
 
 					TFD(InheritFD(context, i, descriptor, parentContext));
@@ -4998,6 +5009,9 @@ vfs_new_io_context(io_context* parentContext, bool purgeCloseOnExec)
 
 					if (closeOnExec)
 						fd_set_close_on_exec(context, i, true);
+
+					if (closeOnFork)
+						fd_set_close_on_fork(context, i, true);
 				}
 			}
 		}
@@ -5048,10 +5062,10 @@ vfs_resize_fd_table(struct io_context* context, uint32 newSize)
 	TIOC(ResizeIOContext(context, newSize));
 
 	MutexLocker _(context->io_mutex);
-
+.
 	uint32 oldSize = context->table_size;
-	int oldCloseOnExitBitmapSize = (oldSize + 7) / 8;
-	int newCloseOnExitBitmapSize = (newSize + 7) / 8;
+	int oldCloseOnBitmapSize = ((oldSize) + 7) / 8;
+	int newCloseOnBitmapSize = ((newSize) + 7) / 8;
 
 	// If the tables shrink, make sure none of the fds being dropped are in use.
 	if (newSize < oldSize) {
@@ -5065,18 +5079,20 @@ vfs_resize_fd_table(struct io_context* context, uint32 newSize)
 	file_descriptor** oldFDs = context->fds;
 	select_info** oldSelectInfos = context->select_infos;
 	uint8* oldCloseOnExecTable = context->fds_close_on_exec;
+	uint8* oldCloseOnForkTable = context->fds_close_on_fork;
 
 	// allocate new tables
-	file_descriptor** newFDs = (file_descriptor**)malloc(
+	file_descriptor** newFDs = static_cast<file_descriptor**>(malloc(
 		sizeof(struct file_descriptor*) * newSize
 		+ sizeof(struct select_infos**) * newSize
-		+ newCloseOnExitBitmapSize);
+		+ (newCloseOnBitmapSize * 2)));
 	if (newFDs == NULL)
 		return B_NO_MEMORY;
 
 	context->fds = newFDs;
 	context->select_infos = (select_info**)(context->fds + newSize);
 	context->fds_close_on_exec = (uint8*)(context->select_infos + newSize);
+	context->fds_close_on_fork = reinterpret_cast<uint8*>(context->fds_close_on_fork + newCloseOnBitmapSize);
 	context->table_size = newSize;
 
 	// copy entries from old tables
@@ -5084,16 +5100,21 @@ vfs_resize_fd_table(struct io_context* context, uint32 newSize)
 
 	memcpy(context->fds, oldFDs, sizeof(void*) * toCopy);
 	memcpy(context->select_infos, oldSelectInfos, sizeof(void*) * toCopy);
-	memcpy(context->fds_close_on_exec, oldCloseOnExecTable,
-		min_c(oldCloseOnExitBitmapSize, newCloseOnExitBitmapSize));
+	memcpy(context->fds_close_on_exec, oldCloseOnExecTable, min_c(oldCloseOnBitmapSize,
+		newCloseOnBitmapSize));
+	memcpy(context->fds_close_on_fork, oldCloseOnForkTable, min_c(oldCloseOnBitmapSize,
+		newCloseOnBitmapSize));
+
 
 	// clear additional entries, if the tables grow
 	if (newSize > oldSize) {
 		memset(context->fds + oldSize, 0, sizeof(void*) * (newSize - oldSize));
 		memset(context->select_infos + oldSize, 0,
 			sizeof(void*) * (newSize - oldSize));
-		memset(context->fds_close_on_exec + oldCloseOnExitBitmapSize, 0,
-			newCloseOnExitBitmapSize - oldCloseOnExitBitmapSize);
+		memset(context->fds_close_on_exec + oldCloseOnBitmapSize, 0,
+			newCloseOnBitmapSize - oldCloseOnBitmapSize);
+		memset(context->fds_close_on_fork + oldCloseOnBitmapSize, 0,
+			newCloseOnBitmapSize - oldCloseOnBitmapSize);
 	}
 
 	free(oldFDs);
@@ -6241,9 +6262,10 @@ common_fcntl(int fd, int op, size_t argument, bool kernel)
 		{
 			// Set file descriptor flags
 
-			// O_CLOEXEC is the only flag available at this time
+			// FD_CLOEXEC and FD_CLOFORK are the current flags available at this time
 			mutex_lock(&context->io_mutex);
 			fd_set_close_on_exec(context, fd, (argument & FD_CLOEXEC) != 0);
+			fd_set_close_on_fork(context, fd, (argument & FD_CLOFORK) != 0);
 			mutex_unlock(&context->io_mutex);
 
 			status = B_OK;
@@ -6254,7 +6276,8 @@ common_fcntl(int fd, int op, size_t argument, bool kernel)
 		{
 			// Get file descriptor flags
 			mutex_lock(&context->io_mutex);
-			status = fd_close_on_exec(context, fd) ? FD_CLOEXEC : 0;
+			status |= fd_close_on_exec(context, fd) ? FD_CLOEXEC : 0;
+			status |= fd_close_on_fork(context, fd) ? FD_CLOFORK : 0;
 			mutex_unlock(&context->io_mutex);
 			break;
 		}
@@ -6291,11 +6314,13 @@ common_fcntl(int fd, int op, size_t argument, bool kernel)
 
 		case F_DUPFD:
 		case F_DUPFD_CLOEXEC:
+		case F_DUPFD_CLOFORK:
 		{
 			status = new_fd_etc(context, descriptor.Get(), (int)argument);
 			if (status >= 0) {
 				mutex_lock(&context->io_mutex);
 				fd_set_close_on_exec(context, status, op == F_DUPFD_CLOEXEC);
+				fd_set_close_on_fork(context, status, op == F_DUPFD_CLOFORK);
 				mutex_unlock(&context->io_mutex);
 
 				atomic_add(&descriptor->ref_count, 1);

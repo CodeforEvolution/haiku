@@ -1811,7 +1811,7 @@ load_image_internal(char**& _flatArgs, size_t flatArgsSize, int32 argCount,
 	team->SetArgs(path, teamArgs->flat_args + 1, argCount - 1);
 
 	// create a new io_context for this team
-	team->io_context = vfs_new_io_context(parentIOContext, true);
+	team->io_context = vfs_new_io_context(parentIOContext, PURGE_CLOSE_ON_EXEC);
 	if (!team->io_context) {
 		status = B_NO_MEMORY;
 		goto err2;
@@ -1821,8 +1821,8 @@ load_image_internal(char**& _flatArgs, size_t flatArgsSize, int32 argCount,
 	vfs_put_io_context(parentIOContext);
 	parentIOContext = NULL;
 
-	// remove any fds that have the CLOEXEC flag set (emulating BeOS behaviour)
-	vfs_exec_io_context(team->io_context);
+	// remove any fds that have the FD_CLOEXEC flag set (emulating BeOS behaviour)
+	vfs_close_fds_io_context(team->io_context, FD_CLOEXEC);
 
 	// create an address space for this team
 	status = VMAddressSpace::Create(team->id, USER_BASE, USER_SIZE, false,
@@ -2032,7 +2032,7 @@ exec_team(const char* path, char**& _flatArgs, size_t flatArgsSize,
 	delete_owned_ports(team);
 	sem_delete_owned_sems(team);
 	remove_images(team);
-	vfs_exec_io_context(team->io_context);
+	vfs_close_fds_io_context(team->io_context, FD_CLOEXEC);
 	delete_user_mutex_context(team->user_mutex_context);
 	team->user_mutex_context = NULL;
 	delete_realtime_sem_context(team->realtime_sem_context);
@@ -2166,11 +2166,14 @@ fork_team(void)
 	}
 
 	// create a new io_context for this team
-	team->io_context = vfs_new_io_context(parentTeam->io_context, false);
+	team->io_context = vfs_new_io_context(parentTeam->io_context, PURGE_CLOSE_ON_FORK);
 	if (!team->io_context) {
 		status = B_NO_MEMORY;
 		goto err2;
 	}
+
+	// close fds with FD_CLOFORK set
+	vfs_close_fds_io_context(team->io_context, FD_CLOFORK);
 
 	// duplicate the realtime sem context
 	if (parentTeam->realtime_sem_context) {
@@ -2912,7 +2915,7 @@ team_init(kernel_args* args)
 
 	insert_team_into_group(group, sKernelTeam);
 
-	sKernelTeam->io_context = vfs_new_io_context(NULL, false);
+	sKernelTeam->io_context = vfs_new_io_context(NULL, PURGE_NONE);
 	if (sKernelTeam->io_context == NULL)
 		panic("could not create io_context for kernel team!\n");
 

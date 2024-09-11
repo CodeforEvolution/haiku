@@ -109,6 +109,23 @@ fd_set_close_on_exec(struct io_context* context, int fd, bool closeFD)
 }
 
 
+bool
+fd_close_on_fork(struct io_context* context, int fd)
+{
+	return CHECK_BIT(context->fds_close_on_fork[fd / 8], fd & 7) ? true : false;
+}
+
+
+void
+fd_set_close_on_fork(struct io_context* context, int fd, bool closeFD)
+{
+	if (closeFD)
+		context->fds_close_on_fork[fd / 8] |= (1 << (fd & 7));
+	else
+		context->fds_close_on_fork[fd / 8] &= ~(1 << (fd & 7));
+}
+
+
 /*!	Searches a free slot in the FD table of the provided I/O context, and
 	inserts the specified descriptor into it.
 */
@@ -321,6 +338,7 @@ remove_fd(struct io_context* context, int fd)
 
 		context->fds[fd] = NULL;
 		fd_set_close_on_exec(context, fd, false);
+		fd_set_close_on_fork(context, fd, false);
 		context->num_used_fds--;
 
 		selectInfos = context->select_infos[fd];
@@ -359,6 +377,7 @@ dup_fd(int fd, bool kernel)
 	else {
 		mutex_lock(&context->io_mutex);
 		fd_set_close_on_exec(context, status, false);
+		fd_set_close_on_fork(context, status, false);
 		mutex_unlock(&context->io_mutex);
 	}
 
@@ -419,6 +438,7 @@ dup2_fd(int oldfd, int newfd, bool kernel)
 	}
 
 	fd_set_close_on_exec(context, newfd, false);
+	fd_set_close_on_fork(context, newfd, false);
 
 	mutex_unlock(&context->io_mutex);
 

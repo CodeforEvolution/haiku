@@ -625,6 +625,7 @@ _user_event_queue_create(int openFlags)
 
 	mutex_lock(&context->io_mutex);
 	fd_set_close_on_exec(context, fd, (openFlags & O_CLOEXEC) != 0);
+	fd_set_close_on_fork(context, fd, (openFlags & O_CLOFORK) != 0);
 	mutex_unlock(&context->io_mutex);
 
 	deleter.Detach();
