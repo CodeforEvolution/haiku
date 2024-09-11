@@ -560,6 +560,19 @@ realloc(void *ptr, size_t size)
 }
 
 
+extern "C" void *
+reallocarray(void *ptr, size_t elementCount, size_t elementSize)
+{
+	size_t totalSize = 0;
+	if (__builtin_mul_overflow(elementCount, elementSize, &totalSize) {
+		__set_errno(B_NO_MEMORY);
+		return NULL;
+	}
+
+	return realloc(ptr, totalSize);
+}
+
+
 extern "C" size_t
 malloc_usable_size(void *ptr)
 {
