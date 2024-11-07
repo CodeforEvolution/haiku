@@ -573,6 +573,7 @@ TabDecorator::_MoveBy(BPoint offset)
 		Decorator::Tab* tab = fTabList.ItemAt(i);
 		tab->zoomRect.OffsetBy(offset);
 		tab->closeRect.OffsetBy(offset);
+		tab->minimizeRect.OffsetBy(offset);
 		tab->tabRect.OffsetBy(offset);
 	}
 
@@ -1063,7 +1064,7 @@ TabDecorator::_LayoutTabItems(Decorator::Tab* _tab, const BRect& tabRect)
 }
 
 
-float
+inline float
 TabDecorator::_DefaultTextOffset() const
 {
 	if (fTopTab->look == B_FLOATING_WINDOW_LOOK
@@ -1073,7 +1074,7 @@ TabDecorator::_DefaultTextOffset() const
 }
 
 
-float
+inline float
 TabDecorator::_SingleTabOffsetAndSize(float& tabSize)
 {
 	float maxLocation;

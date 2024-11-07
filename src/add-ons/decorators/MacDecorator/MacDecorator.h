@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2014 Haiku, Inc. All rights reserved.
+ * Copyright 2009-2024 Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -36,51 +36,43 @@ public:
 
 	virtual	Region				RegionAt(BPoint where, int32& tab) const;
 
-	virtual	bool				SetRegionHighlight(Region region,
-									uint8 highlight, BRegion* dirty,
+	virtual	bool				SetRegionHighlight(Region region, uint8 highlight, BRegion* dirty,
 									int32 tab = -1);
 
 protected:
-			void				_DoLayout();
+	virtual	void				_DoLayout();
+	virtual void				_DoTabLayout();
 
 	virtual	void				_DrawFrame(BRect invalid);
 
 	virtual	void				_DrawTab(Decorator::Tab* tab, BRect invalid);
-	virtual	void				_DrawButtons(Decorator::Tab* tab,
-									const BRect& invalid);
+	virtual	void				_DrawButtons(Decorator::Tab* tab, const BRect& invalid);
 	virtual	void				_DrawTitle(Decorator::Tab* tab, BRect rect);
 
-	virtual	void				_DrawMinimize(Decorator::Tab* tab, bool direct,
-									BRect rect);
-	virtual	void				_DrawZoom(Decorator::Tab* tab, bool direct,
-									BRect rect);
-	virtual	void				_DrawClose(Decorator::Tab* tab, bool direct,
-									BRect rect);
+	virtual	void				_DrawMinimize(Decorator::Tab* tab, bool direct, BRect rect);
+	virtual	void				_DrawZoom(Decorator::Tab* tab, bool direct, BRect rect);
+	virtual	void				_DrawClose(Decorator::Tab* tab, bool direct, BRect rect);
 
-	virtual	void				_SetTitle(Tab* tab, const char* string,
-									BRegion* updateRegion = NULL);
-
-	virtual void				_MoveBy(BPoint offset);
+	virtual	void				_MoveBy(BPoint offset);
 	virtual	void				_ResizeBy(BPoint offset, BRegion* dirty);
-
-			Decorator::Tab*		_AllocateNewTab();
-
-	virtual	bool				_AddTab(DesktopSettings& settings,
-									int32 index = -1,
+	
+	virtual	void				_SetFocus(Decorator::Tab* tab);
+	virtual	bool				_SetTabLocation(Decorator::Tab* tab,
+									float location, bool isShifting,
 									BRegion* updateRegion = NULL);
-	virtual	bool				_RemoveTab(int32 index,
-									BRegion* updateRegion = NULL);
+									
 	virtual	bool				_MoveTab(int32 from, int32 to, bool isMoving,
 									BRegion* updateRegion = NULL);
 
-	virtual	void				_GetFootprint(BRegion* region);
+private:
+			void				_DrawButton(Decorator::Tab* tab, bool direct, BRect rect,
+									bool pressed);
+			void				_DrawBlendedRect(DrawingEngine* engine, BRect rect, bool down);
+
+			void				_LayoutTabItems(Decorator::Tab* tab,
+									const BRect& tabRect);
 
 private:
-			void				_DrawButton(Decorator::Tab* tab, bool direct,
-									BRect rect, bool pressed);
-			void				_DrawBlendedRect(DrawingEngine* engine,
-									BRect r, bool down);
-
 			rgb_color			fButtonHighColor;
 			rgb_color			fButtonLowColor;
 

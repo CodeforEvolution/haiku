@@ -129,8 +129,8 @@ private:
 									const BRect& tabRect);
 
 protected:
-	inline	float				_DefaultTextOffset() const;
-	inline	float				_SingleTabOffsetAndSize(float& tabSize);
+			float				_DefaultTextOffset() const;
+			float				_SingleTabOffsetAndSize(float& tabSize);
 
 			void				_CalculateTabsRegion();
 
