@@ -9,54 +9,8 @@
 #include <stdlib.h>
 
 #include "RNDISDevice.h"
+#include "RNDISDefinitions.h"
 #include "Driver.h"
-
-
-const uint32 OID_GEN_MAXIMUM_FRAME_SIZE = 0x00010106;
-const uint32 OID_GEN_LINK_SPEED = 0x00010107;
-const uint32 OID_GEN_CURRENT_PACKET_FILTER = 0x0001010E;
-const uint32 OID_GEN_MEDIA_CONNECT_STATUS = 0x00010114;
-const uint32 OID_802_3_PERMANENT_ADDRESS = 0x01010101;
-
-
-enum RndisCommands {
-	REMOTE_NDIS_PACKET_MSG = 1,
-	REMOTE_NDIS_INITIALIZE_MSG = 2,
-	REMOTE_NDIS_INITIALIZE_CMPLT = 0x80000002,
-	REMOTE_NDIS_HALT_MSG = 3,
-	REMOTE_NDIS_QUERY_MSG = 4,
-	REMOTE_NDIS_QUERY_CMPLT = 0x80000004,
-	REMOTE_NDIS_SET_MSG = 5,
-	REMOTE_NDIS_SET_CMPLT = 0x80000005,
-	REMOTE_NDIS_RESET_MSG = 6,
-	REMOTE_NDIS_RESET_CMPLT = 0x80000006,
-	REMOTE_NDIS_INDICATE_STATUS_MSG = 7,
-	REMOTE_NDIS_KEEPALIVE_MSG = 8,
-	REMOTE_NDIS_KEEPALIVE_CMPLT = 0x80000008
-};
-
-
-enum Status
-{
-	RNDIS_STATUS_SUCCESS = 0,
-	RNDIS_STATUS_FAILURE = 0xC0000001,
-	RNDIS_STATUS_INVALID_DATA = 0xC0010015,
-	RNDIS_STATUS_NOT_SUPPORTED = 0xC00000BB,
-	RNDIS_STATUS_MEDIA_CONNECT = 0x4001000B,
-	RNDIS_STATUS_MEDIA_DISCONNECT = 0x4001000C,
-};
-
-
-enum MediaConnectStatus
-{
-	MEDIA_STATE_UNKNOWN,
-	MEDIA_STATE_CONNECTED,
-	MEDIA_STATE_DISCONNECTED
-};
-
-
-const uint32 NDIS_PACKET_TYPE_ALL_MULTICAST = 0x00000004;
-const uint32 NDIS_PACKET_TYPE_BROADCAST = 0x00000008;
 
 
 
@@ -78,7 +32,9 @@ RNDISDevice::RNDISDevice(usb_device device)
 		fReadHeader(NULL),
 		fLinkStateChangeSem(-1),
 		fMediaConnectState(MEDIA_STATE_UNKNOWN),
-		fDownstreamSpeed(0)
+		fDownstreamSpeed(0),
+		fMulticastAddresses(),
+		fMaxMulticastAddressListSize(0)
 {
 	const usb_device_descriptor *deviceDescriptor
 		= gUSBModule->get_device_descriptor(device);
@@ -208,6 +164,11 @@ RNDISDevice::Open()
 	if (status != B_OK) {
 		fDownstreamSpeed = 1000 * 100; // 10Mbps
 		TRACE_ALWAYS("failed to read link speed\n");
+	}
+	
+	status = _ReadMax();
+	if (status != B_OK) {
+		TRACE_ALWAYS("failed to read maximum multicast address list size\n");
 	}
 
 	// Tell the device to connect
@@ -437,7 +398,7 @@ RNDISDevice::Write(const uint8 *buffer, size_t *numBytes)
 
 
 status_t
-RNDISDevice::Control(uint32 op, void *buffer, size_t length)
+RNDISDevice::Control(uint32 op, void* buffer, size_t length)
 {
 	switch (op) {
 		case ETHER_INIT:
@@ -448,11 +409,11 @@ RNDISDevice::Control(uint32 op, void *buffer, size_t length)
 			return B_OK;
 
 		case ETHER_GETFRAMESIZE:
-			*(uint32 *)buffer = fMaxSegmentSize;
+			*(uint32*)buffer = fMaxSegmentSize;
 			return B_OK;
 
 		case ETHER_SET_LINK_STATE_SEM:
-			fLinkStateChangeSem = *(sem_id *)buffer;
+			fLinkStateChangeSem = *(sem_id*)buffer;
 			return B_OK;
 
 		case ETHER_GET_LINK_STATE:
@@ -465,6 +426,13 @@ RNDISDevice::Control(uint32 op, void *buffer, size_t length)
 			state->quality = 1000;
 			state->speed = fDownstreamSpeed * 100;
 			return B_OK;
+		}
+		
+		case ETHER_ADDMULTI:
+		case ETHER_REMMULTI:
+		{
+		
+			
 		}
 
 		default:
@@ -753,6 +721,37 @@ RNDISDevice::_ReadLinkSpeed(usb_device device)
 
 	TRACE_ALWAYS("link speed: %" B_PRId32 " * 100bps\n", fDownstreamSpeed);
 	return B_OK;
+}
+
+
+status_t
+RNDISDevice::_ReadMaxMulticastAddressListSize(usb_device device)
+{
+	status_t result = _GetOID(OID_802_3_MAXIMUM_LIST_SIZE, &fMaxMulticastAddressListSize,
+		sizeof(fMaxMulticastAddressListSize));
+	if (result != B_OK)
+		return result;
+		
+	TRACE_ALWAYS("max multicast address list size: %" B_PRId32 "\n", fMaxMulticastAddressListSize);
+	return B_OK;
+}
+
+
+status_t
+RNDISDevice::_WriteMulticastList(usb_device device)
+{
+	uint32 request[] = {
+		REMOTE_NDIS_SET_MSG,
+		, // Length of the request
+		0x00000001, // Request ID (TODO: Generate dynamically!)
+		OID_802_3_MULTICAST_LIST, // OID
+		,
+		,
+		,
+		,
+	
+	};
+
 }
 
 
