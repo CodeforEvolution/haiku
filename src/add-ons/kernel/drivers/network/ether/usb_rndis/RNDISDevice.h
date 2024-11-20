@@ -88,6 +88,9 @@ static	void				_NotifyCallback(void *cookie, int32 status,
 		uint8				fMACAddress[6];
 		uint32				fMediaConnectState;
 		uint32				fDownstreamSpeed;
+		
+		// multicast info
+		Vector<ether_address_t>	fMulticastAddresses;
 };
 
 #endif //_USB_RNDIS_DEVICE_H_
