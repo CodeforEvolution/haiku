@@ -377,13 +377,18 @@ create_socket_fd(net_socket* socket, bool kernel)
 	// init it
 	descriptor->ops = &sSocketFDOps;
 	descriptor->cookie = socket;
-	descriptor->open_mode = O_RDWR | (nonBlock ? O_NONBLOCK : 0);
+	descriptor->open_mode = O_RDWR | ((nonBlock || socket->type & SOCK_NONBLOCK) ? O_NONBLOCK : 0);
 
 	// publish it
-	int fd = new_fd(get_current_io_context(kernel), descriptor);
+	const io_context* context = get_current_io_context(kernel);
+	int fd = new_fd(context, descriptor);
 	if (fd < 0) {
 		descriptor->ops = NULL;
 		put_fd(descriptor);
+	} else {
+		// set close-on-exec and close-on-fork if desired
+		fd_set_close_on_exec(context, fd, socket->type & SOCK_CLOEXEC);
+		fd_set_close_on_fork(context, fd, socket->type & SOCK_CLOFORK);
 	}
 
 	return fd;

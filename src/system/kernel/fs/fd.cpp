@@ -435,10 +435,71 @@ dup2_fd(int oldfd, int newfd, bool kernel)
 			context->num_used_fds++;
 
 		deselect_select_infos(evicted, selectInfos, true);
+
+		fd_set_close_on_exec(context, newfd, false);
+		fd_set_close_on_fork(context, newfd, false);
 	}
 
-	fd_set_close_on_exec(context, newfd, false);
-	fd_set_close_on_fork(context, newfd, false);
+	mutex_unlock(&context->io_mutex);
+
+	// Say bye bye to the evicted fd
+	if (evicted) {
+		close_fd(context, evicted);
+		put_fd(evicted);
+	}
+
+	return newfd;
+}
+
+
+/*!
+	POSIX says dup3() is the same as dup2(), except:
+		- It's an error for oldFD to equal newFD
+		- The state of FD_CLOEXEC and FD_CLOFORK is determined by the "flags" parameter
+*/
+static int
+dup3_fd(int oldFD, int newFD, int flags, bool kernel)
+{
+	TRACE(("dup3_fd: ofd = %d, nfd = %d, flags = %x\n", oldfd, newfd, flags));
+
+	if (oldFD == newFD)
+		return B_BAD_VALUE;
+
+	// quick check
+	if (oldfd < 0 || newfd < 0)
+		return B_FILE_ERROR;
+
+	// Get current I/O context and lock it
+	struct io_context* context = get_current_io_context(kernel);
+	mutex_lock(&context->io_mutex);
+
+	// Check if the fds are valid (mutex must be locked because
+	// the table size could be changed)
+	if ((uint32)oldfd >= context->table_size
+		|| (uint32)newfd >= context->table_size
+		|| context->fds[oldfd] == NULL
+		|| (context->fds[oldfd]->open_mode & O_DISCONNECTED) != 0) {
+		mutex_unlock(&context->io_mutex);
+		return B_FILE_ERROR;
+	}
+
+	// Now do the work
+	TFD(Dup3FD(context, oldfd, newfd, flags));
+
+	struct file_descriptor* evicted = context->fds[newfd];
+	select_info* selectInfos = context->select_infos[newfd];
+	context->select_infos[newfd] = NULL;
+	atomic_add(&context->fds[oldfd]->ref_count, 1);
+	atomic_add(&context->fds[oldfd]->open_count, 1);
+	context->fds[newfd] = context->fds[oldfd];
+
+	if (evicted == NULL)
+		context->num_used_fds++;
+
+	deselect_select_infos(evicted, selectInfos, true);
+
+	fd_set_close_on_exec(context, newfd, flags & O_CLOEXEC);
+	fd_set_close_on_fork(context, newfd, flags & O_CLOFORK);
 
 	mutex_unlock(&context->io_mutex);
 
@@ -1040,6 +1101,13 @@ _user_dup2(int ofd, int nfd)
 }
 
 
+int
+_user_dup3(int oldFD, int newFD, int flags)
+{
+	return dup3_fd(oldFD, newFD, flags, false);
+}
+
+
 //	#pragma mark - Kernel calls
 
 
@@ -1229,5 +1297,11 @@ int
 _kern_dup2(int ofd, int nfd)
 {
 	return dup2_fd(ofd, nfd, true);
+}
+
+int
+_kern_dup3(int oldFD, int newFD, int flags)
+{
+	return dup3_fd(oldFD, newFD, flags, true);
 }
 

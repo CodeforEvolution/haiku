@@ -155,6 +155,40 @@ private:
 };
 
 
+class Dup3FD : public FDTraceEntry {
+public:
+	Dup3FD(io_context* context, int oldFD, int newFD, int flags)
+		:
+		FDTraceEntry(context->fds[oldFD]),
+		fContext(context),
+		fEvictedDescriptor(context->fds[newFD]),
+		fEvictedReferenceCount(
+			fEvictedDescriptor != NULL ? fEvictedDescriptor->ref_count : 0),
+		fOldFD(oldFD),
+		fNewFD(newFD),
+		fFlags(flags)
+	{
+		Initialized();
+	}
+
+	virtual void AddDump(TraceOutput& out)
+	{
+		out.Print("fd dup3:    descriptor: %p (%" B_PRId32 "), context: %p, "
+			"fd: %d -> %d, flags: %x, evicted: %p (%" B_PRId32 ")", fDescriptor,
+			fReferenceCount, fContext, fOldFD, fNewFD, fFlags, fEvictedDescriptor,
+			fEvictedReferenceCount);
+	}
+
+private:
+	io_context*			fContext;
+	file_descriptor*	fEvictedDescriptor;
+	int32				fEvictedReferenceCount;
+	int					fOldFD;
+	int					fNewFD;
+	int					fFlags;
+};
+
+
 class InheritFD : public FDTraceEntry {
 public:
 	InheritFD(io_context* context, int fd, file_descriptor* descriptor,
