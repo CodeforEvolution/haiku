@@ -35,6 +35,7 @@ local platform_src =
 	acpi.cpp
 	timer.cpp
 	menu.cpp
+	network.cpp
 	devices.cpp
 	quirks.cpp
 	smp.cpp
