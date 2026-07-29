@@ -25,8 +25,7 @@
 #include <bluetoothserver_p.h>
 
 
-extern "C" _EXPORT BView *instantiate_deskbar_item(float maxWidth, float maxHeight);
-status_t our_image(image_info& image);
+extern "C" _EXPORT BView* instantiate_deskbar_item(float maxWidth, float maxHeight);
 
 const uint32 kMsgOpenBluetoothPreferences = 'obtp';
 const uint32 kMsgQuitBluetoothServer = 'qbts';
@@ -43,15 +42,17 @@ const char* kClassName = "DeskbarReplicant";
 
 
 DeskbarReplicant::DeskbarReplicant(BRect frame, int32 resizingMode)
-	: BView(frame, kDeskbarItemName, resizingMode,
-		B_WILL_DRAW | B_TRANSPARENT_BACKGROUND | B_FRAME_EVENTS)
+	:
+	BView(frame, kDeskbarItemName, resizingMode, B_WILL_DRAW | B_TRANSPARENT_BACKGROUND
+		| B_FRAME_EVENTS)
 {
 	_Init();
 }
 
 
 DeskbarReplicant::DeskbarReplicant(BMessage* archive)
-	: BView(archive)
+	:
+	BView(archive)
 {
 	_Init();
 }
@@ -68,7 +69,7 @@ DeskbarReplicant::_Init()
 	fIcon = NULL;
 
 	image_info info;
-	if (our_image(info) != B_OK)
+	if (get_image_info(B_CURRENT_IMAGE_SYMBOL, &info) != B_OK)
 		return;
 
 	BFile file(info.name, B_READ_ONLY);
@@ -80,13 +81,12 @@ DeskbarReplicant::_Init()
 		return;
 
 	size_t size;
-	const void* data = resources.LoadResource(B_VECTOR_ICON_TYPE,
-		"tray_icon", &size);
+	const void* data = resources.LoadResource(B_VECTOR_ICON_TYPE, "tray_icon", &size);
 	if (data != NULL) {
 		BBitmap* icon = new BBitmap(Bounds(), B_RGBA32);
 		if (icon->InitCheck() == B_OK
-			&& BIconUtils::GetVectorIcon((const uint8 *)data,
-				size, icon) == B_OK) {
+			&& BIconUtils::GetVectorIcon(reinterpret_cast<const uint8*>(data), size, icon)
+				== B_OK) {
 			fIcon = icon;
 		} else
 			delete icon;
@@ -94,13 +94,13 @@ DeskbarReplicant::_Init()
 }
 
 
-DeskbarReplicant *
+DeskbarReplicant*
 DeskbarReplicant::Instantiate(BMessage* archive)
 {
 	if (!validate_instantiation(archive, kClassName))
 		return NULL;
 
-	return new DeskbarReplicant(archive);
+	return new(std::nothrow) DeskbarReplicant(archive);
 }
 
 
@@ -133,8 +133,8 @@ DeskbarReplicant::AttachedToWindow()
 void
 DeskbarReplicant::Draw(BRect updateRect)
 {
-	if (!fIcon) {
-		/* At least display something... */
+	if (fIcon == NULL) {
+		// At least display something...
 		rgb_color lowColor = LowColor();
 		SetLowColor(0, 113, 187, 255);
 		FillRoundRect(Bounds().InsetBySelf(3.f, 0.f), 5.f, 7.f, B_SOLID_LOW);
@@ -148,9 +148,9 @@ DeskbarReplicant::Draw(BRect updateRect)
 
 
 void
-DeskbarReplicant::MessageReceived(BMessage* msg)
+DeskbarReplicant::MessageReceived(BMessage* message)
 {
-	switch (msg->what) {
+	switch (message->what) {
 		case kMsgOpenBluetoothPreferences:
 			be_roster->Launch(BLUETOOTH_APP_SIGNATURE);
 			break;
@@ -160,7 +160,7 @@ DeskbarReplicant::MessageReceived(BMessage* msg)
 			break;
 
 		default:
-			BView::MessageReceived(msg);
+			BView::MessageReceived(message);
 	}
 }
 
@@ -171,19 +171,17 @@ DeskbarReplicant::MouseDown(BPoint where)
 	BPoint point;
 	uint32 buttons;
 	GetMouse(&point, &buttons);
-	if (!(buttons & B_SECONDARY_MOUSE_BUTTON)) {
+	if (!(buttons & B_SECONDARY_MOUSE_BUTTON))
 		return;
-	}
 
 	BPopUpMenu* menu = new BPopUpMenu(B_EMPTY_STRING, false, false);
 
 	menu->AddItem(new BMenuItem(B_TRANSLATE("Settings" B_UTF8_ELLIPSIS),
 		new BMessage(kMsgOpenBluetoothPreferences)));
 
-	// TODO show list of known/paired devices
+	// TODO: Show list of known/paired devices
 
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Quit"),
-		new BMessage(kMsgQuitBluetoothServer)));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(kMsgQuitBluetoothServer)));
 
 	menu->SetTargetForItems(this);
 	ConvertToScreen(&point);
@@ -203,22 +201,20 @@ DeskbarReplicant::_QuitBluetoothServer()
 
 		return;
 	}
-	status_t status = BMessenger(BLUETOOTH_SIGNATURE).SendMessage(
-		B_QUIT_REQUESTED);
-	if (status < B_OK) {
-		_ShowErrorAlert(B_TRANSLATE("Stopping the Bluetooth server failed."),
-			status);
-	}
+
+	status_t status = BMessenger(BLUETOOTH_SIGNATURE).SendMessage(B_QUIT_REQUESTED);
+	if (status < B_OK)
+		_ShowErrorAlert(B_TRANSLATE("Stopping the Bluetooth server failed."), status);
 }
 
 
 void
-DeskbarReplicant::_ShowErrorAlert(BString msg, status_t status)
+DeskbarReplicant::_ShowErrorAlert(BString message, status_t status)
 {
 	BString error = B_TRANSLATE("Error: %status%");
 	error.ReplaceFirst("%status%", strerror(status));
-	msg << "\n\n" << error;
-	BAlert* alert = new BAlert(B_TRANSLATE("Bluetooth error"), msg.String(),
+	message << "\n\n" << error;
+	BAlert* alert = new BAlert(B_TRANSLATE("Bluetooth error"), message.String(),
 		B_TRANSLATE("OK"));
 	alert->SetFlags(alert->Flags() | B_CLOSE_ON_ESCAPE);
 	alert->Go(NULL);
@@ -228,26 +224,10 @@ DeskbarReplicant::_ShowErrorAlert(BString msg, status_t status)
 //	#pragma mark -
 
 
-extern "C" _EXPORT BView *
+extern "C" _EXPORT BView*
 instantiate_deskbar_item(float maxWidth, float maxHeight)
 {
-	return new DeskbarReplicant(BRect(0, 0, maxHeight - 1, maxHeight - 1),
+	return new(std::nothrow) DeskbarReplicant(BRect(0, 0, maxHeight - 1, maxHeight - 1),
 		B_FOLLOW_NONE);
 }
 
-
-//	#pragma mark -
-
-
-status_t
-our_image(image_info& image)
-{
-	int32 cookie = 0;
-	while (get_next_image_info(B_CURRENT_TEAM, &cookie, &image) == B_OK) {
-		if ((char *)our_image >= (char *)image.text
-			&& (char *)our_image <= (char *)image.text + image.text_size)
-			return B_OK;
-	}
-
-	return B_ERROR;
-}

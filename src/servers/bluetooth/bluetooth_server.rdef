@@ -15,7 +15,7 @@ resource app_version {
 	internal = 0,
 
 	short_info = "bluetooth_server",
-	long_info = "bluetooth_server ©2007-2009 Haiku"
+	long_info = "bluetooth_server ©2007-2025 Haiku"
 };
 
 resource vector_icon array {

@@ -16,29 +16,26 @@ extern const char* kDeskbarItemName;
 
 
 class DeskbarReplicant : public BView {
-	public:
-		DeskbarReplicant(BRect frame, int32 resizingMode);
-		DeskbarReplicant(BMessage* archive);
-		virtual ~DeskbarReplicant();
+public:
+								DeskbarReplicant(BRect frame, int32 resizingMode);
+								DeskbarReplicant(BMessage* archive);
+	virtual						~DeskbarReplicant();
 
-		static	DeskbarReplicant* Instantiate(BMessage* archive);
-		virtual	status_t Archive(BMessage* archive, bool deep = true) const;
+	static	DeskbarReplicant*	Instantiate(BMessage* archive);
+	virtual	status_t			Archive(BMessage* archive, bool deep = true) const;
 
-		virtual	void	AttachedToWindow();
+	virtual	void				AttachedToWindow();
+	virtual	void				Draw(BRect updateRect);
+	virtual	void				MessageReceived(BMessage* message);
+	virtual	void				MouseDown(BPoint where);
 
-		virtual	void	Draw(BRect updateRect);
+private:
+			void				_Init();
+			void				_QuitBluetoothServer();
+			void				_ShowErrorAlert(BString message, status_t status);
 
-		virtual	void	MessageReceived(BMessage* message);
-		virtual	void	MouseDown(BPoint where);
-
-	private:
-		void			_Init();
-
-		void			_QuitBluetoothServer();
-
-		void			_ShowErrorAlert(BString msg, status_t status);
-
-		BBitmap*		fIcon;
+private:
+			BBitmap*			fIcon;
 };
 
 #endif	// DESKBAR_REPLICANT_H

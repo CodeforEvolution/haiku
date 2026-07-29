@@ -22,6 +22,7 @@
 
 #include <PortListener.h>
 
+
 #define BT "bluetooth_server: "
 
 typedef enum {
@@ -33,62 +34,52 @@ typedef enum {
 	BLACKBOARD_END
 } BluetoothServerBlackBoardIndex;
 
-#define BLACKBOARD_LD(X) (BLACKBOARD_END+X-HCI_DEVICE_INDEX_OFFSET)
+#define BLACKBOARD_LD(X) (BLACKBOARD_END + X - HCI_DEVICE_INDEX_OFFSET)
 
-typedef BObjectList<LocalDeviceImpl> LocalDevicesList;
+typedef BObjectList<LocalDeviceImpl, true> LocalDevicesList;
 typedef PortListener<struct hci_event_header,
 	HCI_MAX_EVENT_SIZE, // Event Body can hold max 255 + 2 header
 	24					// Some devices have sent chunks of 24 events(inquiry result)
 	> BluetoothPortListener;
 
-class BluetoothServer : public BApplication
-{
+
+class BluetoothServer : public BApplication {
 public:
+								BluetoothServer();
 
-	BluetoothServer();
+	virtual	bool				QuitRequested();
+	virtual	void				ArgvReceived(int32 argc, char** argv);
+	virtual	void				ReadyToRun();
+	virtual	void				MessageReceived(BMessage* message);
 
-	virtual bool QuitRequested(void);
-	virtual void ArgvReceived(int32 argc, char **argv);
-	virtual void ReadyToRun(void);
-
-
-	virtual void AppActivated(bool act);
-	virtual void MessageReceived(BMessage *message);
-
-	static int32 SDPServerThread(void* data);
+	static	status_t			SDPServerThread(void* data);
 
 	/* Messages reply */
-	status_t	HandleLocalDevicesCount(BMessage* message, BMessage* reply);
-	status_t    HandleAcquireLocalDevice(BMessage* message, BMessage* reply);
+			status_t			HandleLocalDevicesCount(BMessage* message, BMessage* reply);
+			status_t    		HandleAcquireLocalDevice(BMessage* message, BMessage* reply);
 
-	status_t    HandleGetProperty(BMessage* message, BMessage* reply);
-	status_t    HandleSimpleRequest(BMessage* message, BMessage* reply);
+			status_t    		HandleGetProperty(BMessage* message, BMessage* reply);
+			status_t    		HandleSimpleRequest(BMessage* message, BMessage* reply);
 
-
-    LocalDeviceImpl*    LocateLocalDeviceImpl(hci_id hid);
+    		LocalDeviceImpl*    LocateLocalDeviceImpl(hci_id hid);
 
 private:
+			LocalDeviceImpl*	LocateDelegateFromMessage(BMessage* message);
 
-	LocalDeviceImpl*	LocateDelegateFromMessage(BMessage* message);
+			void 				ShowWindow(BWindow* window);
 
-	void 				ShowWindow(BWindow* pWindow);
+			void				_InstallDeskbarIcon();
+			void				_RemoveDeskbarIcon();
 
-	void				_InstallDeskbarIcon();
-	void				_RemoveDeskbarIcon();
+private:
+			LocalDevicesList	fLocalDevicesList;
 
-	LocalDevicesList   	fLocalDevicesList;
+			// Notification system
+			BluetoothPortListener*	fEventListener;
 
-
-	// Notification system
-	BluetoothPortListener*	fEventListener;
-
-	DeviceManager*			fDeviceManager;
-
-	BPoint 					fCenter;
-
-	thread_id				fSDPThreadID;
-
-	bool					fIsShuttingDown;
+			DeviceManager*		fDeviceManager;
+			thread_id			fSDPThreadID;
+			bool				fIsShuttingDown;
 };
 
 #endif

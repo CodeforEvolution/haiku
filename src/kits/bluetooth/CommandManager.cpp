@@ -18,7 +18,7 @@ buildCommand(uint8 ogf, uint8 ocf, void** param, size_t psize, size_t* outsize)
 {
 	CALLED();
 
-	struct hci_command_header* header = (struct hci_command_header*)malloc(psize +
+	struct hci_command_header* header = static_cast<struct hci_command_header*>malloc(psize +
 		sizeof(struct hci_command_header));
 
 	*outsize = psize + sizeof(struct hci_command_header);

@@ -1,50 +1,57 @@
+/*
+ * Copyright 2025, Haiku, Inc. All Rights Reserved.
+ * Distributed under the terms of the MIT License.
+ *
+ * Authors:
+ *		???
+ *		Jacob Secunda, secundaja@gmail.com
+ */
+
+
+#include "DeviceManager.h"
+
 #include <Application.h>
 #include <Autolock.h>
-#include <String.h>
-
 #include <Directory.h>
 #include <Entry.h>
 #include <FindDirectory.h>
-#include <Path.h>
-#include <NodeMonitor.h>
-
-
 #include <image.h>
+#include <NodeMonitor.h>
+#include <Path.h>
+#include <String.h>
+
 #include <stdio.h>
 #include <string.h>
 
-#include "DeviceManager.h"
-#include "LocalDeviceImpl.h"
-
-#include "Debug.h"
-#include "BluetoothServer.h"
-
 #include <bluetoothserver_p.h>
+
+#include "BluetoothServer.h"
+#include "Debug.h"
+#include "LocalDeviceImpl.h"
 
 
 void
-DeviceManager::MessageReceived(BMessage* msg)
+DeviceManager::MessageReceived(BMessage* message)
 {
-	if (msg->what == B_NODE_MONITOR) {
+	if (message->what == B_NODE_MONITOR) {
 		int32 opcode;
-		if (msg->FindInt32("opcode", &opcode) == B_OK) {
+		if (message->FindInt32("opcode", &opcode) == B_OK) {
 			switch (opcode)	{
 				case B_ENTRY_CREATED:
 				case B_ENTRY_MOVED:
 				{
 					entry_ref ref;
-					const char *name;
+					const char* name;
 					BDirectory dir;
 
 					TRACE_BT("Something new in the bus ... ");
 
-					if ((msg->FindInt32("device", &ref.device)!=B_OK)
-						|| (msg->FindInt64("directory", &ref.directory)!=B_OK)
-						|| (msg->FindString("name",	&name) != B_OK))
+					if ((message->FindInt32("device", &ref.device) != B_OK)
+						|| (message->FindInt64("directory", &ref.directory) != B_OK)
+						|| (message->FindString("name",	&name) != B_OK))
 						return;
 
 					TRACE_BT("DeviceManager: -> %s\n", name);
-
 					ref.set_name(name);
 
 					// Check if	the	entry is a File	or a directory
@@ -53,34 +60,28 @@ DeviceManager::MessageReceived(BMessage* msg)
 					    node_ref nref;
 					    dir.GetNodeRef(&nref);
 						AddDirectory(&nref);
-
 					} else {
 						printf("%s: Entry %s is taken as a file\n", __FUNCTION__, name);
                         AddDevice(&ref);
-					}
+					}					
+					break;
 				}
-				break;
+			
 				case B_ENTRY_REMOVED:
 				{
 					TRACE_BT("Something removed from the bus ...\n");
-
+					break;
 				}
-				break;
-				case B_STAT_CHANGED:
-				case B_ATTR_CHANGED:
-				case B_DEVICE_MOUNTED:
-				case B_DEVICE_UNMOUNTED:
-				default:
-					BLooper::MessageReceived(msg);
-				break;
 			}
 		}
 	}
+
+	BLooper::MessageReceived(message);
 }
 
 
 status_t
-DeviceManager::AddDirectory(node_ref *nref)
+DeviceManager::AddDirectory(node_ref* nref)
 {
 	BDirectory directory(nref);
 	status_t status	= directory.InitCheck();
@@ -91,25 +92,24 @@ DeviceManager::AddDirectory(node_ref *nref)
 
 	status = watch_node(nref, B_WATCH_DIRECTORY, this);
 	if (status != B_OK)	{
-		TRACE_BT("AddDirectory::watch_node	Failed\n");
+		TRACE_BT("AddDirectory::watch_node Failed\n");
 		return status;
 	}
 
 //	BPath path(*nref);
 //	BString	str(path.Path());
-//
 //	TRACE_BT("DeviceManager: Exploring entries in %s\n", str.String());
 
 	entry_ref ref;
 	status_t error;
 	while ((error =	directory.GetNextRef(&ref))	== B_OK) {
-		// its supposed to be devices ...
+		// These are supposed to be devices...
 		AddDevice(&ref);
 	}
 
 	TRACE_BT("DeviceManager: Finished exploring entries(%s)\n", strerror(error));
 
-	return (error == B_OK || error == B_ENTRY_NOT_FOUND)?B_OK:error;
+	return (error == B_OK || error == B_ENTRY_NOT_FOUND) ? B_OK : error;
 }
 
 
@@ -145,87 +145,94 @@ status_t
 DeviceManager::AddDevice(entry_ref* ref)
 {
 	BPath path(ref);
-	BString* str = new BString(path.Path());
+	BString devicePath(path.Path());
 
-	BMessage* msg =	new	BMessage(BT_MSG_ADD_DEVICE);
-	msg->AddInt32("opcode",	B_ENTRY_CREATED);
-	msg->AddInt32("device",	ref->device);
-	msg->AddInt64("directory", ref->directory);
-
-	msg->AddString("name", *str	);
+	BMessage* message =	new	BMessage(BT_MSG_ADD_DEVICE);
+	message->AddInt32("opcode",	B_ENTRY_CREATED);
+	message->AddInt32("device",	ref->device);
+	message->AddInt64("directory", ref->directory);
+	message->AddString("name", devicePath);
 
 	TRACE_BT("DeviceManager: Device %s registered\n", path.Path());
-	return be_app_messenger.SendMessage(msg);
+	return be_app_messenger.SendMessage(message);
 }
 
 
-DeviceManager::DeviceManager() :
+DeviceManager::DeviceManager()
+	:
 	fLock("device manager")
 {
-
 }
 
 
 DeviceManager::~DeviceManager()
 {
-
 }
 
 
 void
 DeviceManager::LoadState()
 {
-	if (!Lock())
+	if (!LockLooperWithTimeout(10000))
 		return;
+
 	Run();
-	Unlock();
+	UnlockLooper();
 }
 
 
 void
 DeviceManager::SaveState()
 {
-
 }
 
 
 status_t
 DeviceManager::StartMonitoringDevice(const char	*device)
 {
-
-	status_t err;
 	node_ref nref;
 	BDirectory directory;
 	BPath path("/dev");
 
-	/* Build the path */
-	if ((err = path.Append(device))	!= B_OK) {
-		printf("DeviceManager::StartMonitoringDevice BPath::Append() error %s: %s\n", path.Path(), strerror(err));
-		return err;
+	// Build the path
+	status_t status = path.Append(device);
+	if (status != B_OK) {
+		printf("DeviceManager::StartMonitoringDevice BPath::Append() error %s: %s\n", path.Path(),
+			strerror(status));
+		return status;
 	}
 
-	/* Check the path */
-	if ((err = directory.SetTo(path.Path())) !=	B_OK) {
-		/* Entry not there ... */
-		if (err	!= B_ENTRY_NOT_FOUND) {	// something else we cannot	handle
-			printf("DeviceManager::StartMonitoringDevice SetTo error %s: %s\n",	path.Path(), strerror(err));
-			return err;
+	// Check the path
+	status = directory.SetTo(path.Path());
+	if (status != B_OK) {
+		// Entry not there...
+		if (status != B_ENTRY_NOT_FOUND) {
+			// Something else we cannot handle
+			printf("DeviceManager::StartMonitoringDevice SetTo error %s: %s\n",	path.Path(),
+				strerror(status));
+			return status;
 		}
-		/* Create it */
-		if ((err = create_directory(path.Path(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) != B_OK
-			|| (err	= directory.SetTo(path.Path()))	!= B_OK) {
-			printf("DeviceManager::StartMonitoringDevice CreateDirectory error %s: %s\n", path.Path(), strerror(err));
-			return err;
+
+		// Create it
+		status = create_directory(path.Path(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+		if (status == B_OK)
+			status = directory.SetTo(path.Path());
+
+		if (status != B_OK) {
+			printf("DeviceManager::StartMonitoringDevice CreateDirectory error %s: %s\n",
+					path.Path(), strerror(status));
+			return status;
 		}
 	}
 
-	// get noderef
-	if ((err = directory.GetNodeRef(&nref))	!= B_OK) {
-		printf("DeviceManager::StartMonitoringDevice GetNodeRef	error %s: %s\n", path.Path(), strerror(err));
-		return err;
+	status = directory.GetNodeRef(&nref);
+	if (status != B_OK) {
+		printf("DeviceManager::StartMonitoringDevice GetNodeRef	error %s: %s\n", path.Path(),
+			strerror(status));
+		return status;
 	}
 
-	// start monitoring	the	root
+	// Start monitoring the root
 	status_t error = watch_node(&nref, B_WATCH_DIRECTORY, this);
 	if (error != B_OK)
 		return error;
@@ -236,8 +243,7 @@ DeviceManager::StartMonitoringDevice(const char	*device)
 	// to be monitored
 	entry_ref driverRef;
 	while ((error =	directory.GetNextRef(&driverRef)) == B_OK) {
-
-		// its suposed to be directories that needs	to be monitored...
+		// It's supposed to be directories that needs to be monitored...
 		BNode driverNode(&driverRef);
 		node_ref driverNRef;
 		driverNode.GetNodeRef(&driverNRef);
@@ -247,21 +253,18 @@ DeviceManager::StartMonitoringDevice(const char	*device)
     TRACE_BT("DeviceManager: Finished exploring entries(%s)\n", strerror(error));
 
 #if	0
-	HCIDelegate	*tmphd = NULL;
-	int32 i	= 0;
-
-	// TODO!! ask the server if	this needs to be monitored
-
-	while ((tmphd =	(HCIDelegate *)fDelegatesList.ItemAt(i++)) !=NULL) {
+	// TODO: Ask the server if this needs to be monitored
+	HCIDelegate* delegate = NULL;
+	int32 index = 0;
+	while ((delegate = static_cast<HCIDelegate*>(fDelegatesList.ItemAt(index++))) != NULL) {
 
 		/* Find	out	the	reference*/
-		node_ref *dnref	= (node_ref	*)tmphd->fMonitoredRefs	;
-		if (*dnref == nref)	{
+		node_ref* dnref = static_cast<node_ref*>(delegate->fMonitoredRefs);
+		if (*dnref == nref) {
 			printf("StartMonitoringDevice already monitored\n");
 			alreadyMonitored = true;
 			break;
 		}
-
 	}
 #endif
 
@@ -270,18 +273,17 @@ DeviceManager::StartMonitoringDevice(const char	*device)
 
 
 status_t
-DeviceManager::StopMonitoringDevice(const char *device)
-{
-	status_t err;
+DeviceManager::StopMonitoringDevice(const char* device)
+{	
+	BPath path("/dev", device);
+	BDirectory directory(path.Path());
+	
 	node_ref nref;
-	BDirectory directory;
-	BPath path("/dev");
-	if (((err =	path.Append(device)) !=	B_OK)
-		|| ((err = directory.SetTo(path.Path())) !=	B_OK)
-		|| ((err = directory.GetNodeRef(&nref))	!= B_OK))
-		return err;
+	status_t result = directory.GetNodeRef(&nref);
+	if (result != B_OK)
+		return result;
 
-	// test	if still monitored
+	// Test	if still monitored
 /*
 	bool stillMonitored	= false;
 	int32 i	= 0;
