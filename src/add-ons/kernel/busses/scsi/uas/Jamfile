@@ -1,0 +1,9 @@
+SubDir HAIKU_TOP src add-ons kernel busses scsi uas ;
+
+UsePrivateKernelHeaders ;
+
+KernelAddon usb_attached_scsi :
+	USBAttachedSCSI.cpp
+	USBAttachedSCSIModule.cpp
+	USBAttachedSCSIRequest.cpp
+;
